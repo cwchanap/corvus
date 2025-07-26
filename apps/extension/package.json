@@ -1,0 +1,31 @@
+{
+  "name": "extension",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@repo/ui-components": "workspace:*",
+    "@repo/common": "workspace:*",
+    "solid-js": "^1.8.11",
+    "wxt": "^0.19.9"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "eslint": "^9.31.0",
+    "typescript": "5.8.2",
+    "vite-plugin-solid": "^2.8.2"
+  }
+}

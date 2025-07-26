@@ -1,0 +1,10 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["@solidjs/start/env"]
+  },
+  "include": ["src/**/*", "app.config.ts"],
+  "exclude": ["node_modules", ".vinxi", ".output"]
+}
