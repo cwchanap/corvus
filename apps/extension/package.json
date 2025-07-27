@@ -15,14 +15,15 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
-    "@repo/ui-components": "workspace:*",
     "@repo/common": "workspace:*",
+    "@repo/ui-components": "workspace:*",
     "solid-js": "^1.8.11",
     "wxt": "^0.19.9"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@types/chrome": "^0.1.1",
     "@types/node": "^22.15.3",
     "eslint": "^9.31.0",
     "typescript": "5.8.2",

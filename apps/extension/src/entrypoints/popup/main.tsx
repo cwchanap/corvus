@@ -1,20 +1,54 @@
-import { render } from 'solid-js/web';
-import { Button } from '@repo/ui-components/button';
-import '@repo/ui-components/styles';
+import { render } from "solid-js/web";
+import { createSignal, Show } from "solid-js";
+import "@repo/ui-components/styles";
+import { AddToWishlist } from "../../components/AddToWishlist";
+import { WishlistView } from "../../components/WishlistView";
+import { CategoryManager } from "../../components/CategoryManager";
+
+type View = "list" | "add" | "categories";
 
 function Popup() {
+  const [currentView, setCurrentView] = createSignal<View>("list");
+
+  const handleAddSuccess = () => {
+    setCurrentView("list");
+  };
+
   return (
-    <div class="p-4 w-64">
-      <h1 class="text-lg font-bold mb-4">Extension Popup</h1>
-      <Button onClick={() => console.log('Button clicked!')}>
-        Click me
-      </Button>
+    <div class="w-96 max-h-[600px] overflow-hidden">
+      <Show
+        when={currentView() === "add"}
+        fallback={
+          <Show
+            when={currentView() === "categories"}
+            fallback={
+              <div class="p-4">
+                <WishlistView
+                  onAddNew={() => setCurrentView("add")}
+                  onManageCategories={() => setCurrentView("categories")}
+                />
+              </div>
+            }
+          >
+            <div class="p-4">
+              <CategoryManager onClose={() => setCurrentView("list")} />
+            </div>
+          </Show>
+        }
+      >
+        <div class="p-4">
+          <AddToWishlist
+            onSuccess={handleAddSuccess}
+            onCancel={() => setCurrentView("list")}
+          />
+        </div>
+      </Show>
     </div>
   );
 }
 
 // Mount the app when the script loads
-const root = document.getElementById('app');
+const root = document.getElementById("app");
 if (root) {
   render(() => <Popup />, root);
 }

@@ -6,6 +6,9 @@
   "exports": {
     "./button": "./src/button.tsx",
     "./card": "./src/card.tsx",
+    "./input": "./src/input.tsx",
+    "./select": "./src/select.tsx",
+    "./badge": "./src/badge.tsx",
     "./styles": "./src/styles.css"
   },
   "scripts": {
