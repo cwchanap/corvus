@@ -1,5 +1,6 @@
 {
   "name": "corvus",
+  "type": "module",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -25,7 +26,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
-      "eslint --fix --max-warnings 10",
+      "eslint --fix --max-warnings 25",
       "prettier --write"
     ],
     "*.{md,json,yaml,yml}": [

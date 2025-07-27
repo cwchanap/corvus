@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.output/
+.vinxi/
+dist/
+
+# Environment variables
+.dev.vars
+.env
+.env.local
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+
+.wrangler/

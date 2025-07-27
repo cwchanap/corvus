@@ -1,0 +1,5 @@
+# Development environment variables for Cloudflare Workers
+# Copy this file to .dev.vars and update the values
+
+# Session secret for encrypting session cookies (must be at least 32 characters)
+SESSION_SECRET="your-super-long-secret-for-session-encryption-here-at-least-32-chars"
