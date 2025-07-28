@@ -1,7 +1,5 @@
 import { createSignal, createResource, For, Show } from "solid-js";
 import { Button } from "@repo/ui-components/button";
-import { Input } from "@repo/ui-components/input";
-import { Select, SelectOption } from "@repo/ui-components/select";
 import {
   Card,
   CardContent,
@@ -34,7 +32,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
         title: page.title,
         url: page.url,
         description: customDescription() || undefined,
-        categoryId: selectedCategoryId(),
+        category_id: selectedCategoryId(),
         favicon: page.favicon,
       });
 
@@ -92,20 +90,19 @@ export function AddToWishlist(props: AddToWishlistProps) {
                 <label class="text-sm font-medium">Category</label>
                 <Show when={wishlistData()}>
                   {(data) => (
-                    <Select
+                    <select
                       value={selectedCategoryId()}
                       onChange={(e) =>
                         setSelectedCategoryId(e.currentTarget.value)
                       }
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     >
                       <For each={data().categories}>
                         {(category) => (
-                          <SelectOption value={category.id}>
-                            {category.name}
-                          </SelectOption>
+                          <option value={category.id}>{category.name}</option>
                         )}
                       </For>
-                    </Select>
+                    </select>
                   )}
                 </Show>
               </div>
@@ -114,10 +111,12 @@ export function AddToWishlist(props: AddToWishlistProps) {
                 <label class="text-sm font-medium">
                   Description (optional)
                 </label>
-                <Input
+                <textarea
                   placeholder="Add a note about this page..."
                   value={customDescription()}
                   onInput={(e) => setCustomDescription(e.currentTarget.value)}
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none"
+                  rows="2"
                 />
               </div>
 

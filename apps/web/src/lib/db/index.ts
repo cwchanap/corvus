@@ -1,87 +1,103 @@
-import {
-  Kysely,
-  SqliteAdapter,
-  SqliteIntrospector,
-  SqliteQueryCompiler,
-  Driver,
-  DatabaseConnection,
-  CompiledQuery,
-  QueryResult,
-} from "kysely";
-import type { Database } from "./types";
+import { Kysely, SqliteDialect } from "kysely";
+import Database from "better-sqlite3";
+import type { Database as DatabaseSchema } from "./schema.js";
 
-// Custom D1 Driver for Kysely
-class D1Driver implements Driver {
-  constructor(private d1: D1Database) {}
+// Create database connection
+const sqlite = new Database("corvus.db");
 
-  async init(): Promise<void> {
-    // D1 doesn't need initialization
-  }
+// Enable WAL mode for better performance
+sqlite.pragma("journal_mode = WAL");
 
-  async acquireConnection(): Promise<DatabaseConnection> {
-    return new D1Connection(this.d1);
-  }
+export const db = new Kysely<DatabaseSchema>({
+  dialect: new SqliteDialect({
+    database: sqlite,
+  }),
+});
 
-  async beginTransaction(): Promise<void> {
-    // D1 doesn't support explicit transactions
-  }
+// Initialize database with tables
+export async function initializeDatabase() {
+  try {
+    // Create users table
+    await db.schema
+      .createTable("users")
+      .ifNotExists()
+      .addColumn("id", "text", (col) => col.primaryKey())
+      .addColumn("name", "text", (col) => col.notNull())
+      .addColumn("email", "text", (col) => col.notNull().unique())
+      .addColumn("email_verified", "boolean", (col) =>
+        col.notNull().defaultTo(false),
+      )
+      .addColumn("image", "text")
+      .addColumn("created_at", "datetime", (col) =>
+        col.notNull().defaultTo("CURRENT_TIMESTAMP"),
+      )
+      .addColumn("updated_at", "datetime", (col) =>
+        col.notNull().defaultTo("CURRENT_TIMESTAMP"),
+      )
+      .execute();
 
-  async commitTransaction(): Promise<void> {
-    // D1 doesn't support explicit transactions
-  }
+    // Create sessions table
+    await db.schema
+      .createTable("sessions")
+      .ifNotExists()
+      .addColumn("id", "text", (col) => col.primaryKey())
+      .addColumn("user_id", "text", (col) =>
+        col.notNull().references("users.id").onDelete("cascade"),
+      )
+      .addColumn("expires_at", "datetime", (col) => col.notNull())
+      .addColumn("token", "text", (col) => col.notNull().unique())
+      .addColumn("created_at", "datetime", (col) =>
+        col.notNull().defaultTo("CURRENT_TIMESTAMP"),
+      )
+      .addColumn("updated_at", "datetime", (col) =>
+        col.notNull().defaultTo("CURRENT_TIMESTAMP"),
+      )
+      .execute();
 
-  async rollbackTransaction(): Promise<void> {
-    // D1 doesn't support explicit transactions
-  }
+    // Create wishlist_categories table
+    await db.schema
+      .createTable("wishlist_categories")
+      .ifNotExists()
+      .addColumn("id", "text", (col) => col.primaryKey())
+      .addColumn("user_id", "text", (col) =>
+        col.notNull().references("users.id").onDelete("cascade"),
+      )
+      .addColumn("name", "text", (col) => col.notNull())
+      .addColumn("color", "text")
+      .addColumn("created_at", "datetime", (col) =>
+        col.notNull().defaultTo("CURRENT_TIMESTAMP"),
+      )
+      .addColumn("updated_at", "datetime", (col) =>
+        col.notNull().defaultTo("CURRENT_TIMESTAMP"),
+      )
+      .execute();
 
-  async releaseConnection(): Promise<void> {
-    // D1 doesn't need connection release
-  }
+    // Create wishlist_items table
+    await db.schema
+      .createTable("wishlist_items")
+      .ifNotExists()
+      .addColumn("id", "text", (col) => col.primaryKey())
+      .addColumn("user_id", "text", (col) =>
+        col.notNull().references("users.id").onDelete("cascade"),
+      )
+      .addColumn("category_id", "text", (col) =>
+        col.notNull().references("wishlist_categories.id").onDelete("cascade"),
+      )
+      .addColumn("title", "text", (col) => col.notNull())
+      .addColumn("url", "text", (col) => col.notNull())
+      .addColumn("description", "text")
+      .addColumn("favicon", "text")
+      .addColumn("created_at", "datetime", (col) =>
+        col.notNull().defaultTo("CURRENT_TIMESTAMP"),
+      )
+      .addColumn("updated_at", "datetime", (col) =>
+        col.notNull().defaultTo("CURRENT_TIMESTAMP"),
+      )
+      .execute();
 
-  async destroy(): Promise<void> {
-    // D1 doesn't need cleanup
+    console.log("Database initialized successfully");
+  } catch (error) {
+    console.error("Error initializing database:", error);
+    throw error;
   }
 }
-
-class D1Connection implements DatabaseConnection {
-  constructor(private d1: D1Database) {}
-
-  async executeQuery<O>(compiledQuery: CompiledQuery): Promise<QueryResult<O>> {
-    const { sql, parameters } = compiledQuery;
-
-    const result = await this.d1
-      .prepare(sql)
-      .bind(...parameters)
-      .all();
-
-    return {
-      rows: (result.results || []) as O[],
-      numAffectedRows: BigInt(result.meta?.changes || 0),
-    };
-  }
-
-  async *streamQuery<O>(): AsyncIterableIterator<QueryResult<O>> {
-    // D1 does not support streaming, so we yield nothing
-    yield* [];
-  }
-}
-
-export function createDatabase(d1?: D1Database): Kysely<Database> {
-  // Use mock database for local development if D1 is not available
-  if (!d1) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createMockDatabase } = require("./mock");
-    return createMockDatabase();
-  }
-
-  return new Kysely<Database>({
-    dialect: {
-      createAdapter: () => new SqliteAdapter(),
-      createDriver: () => new D1Driver(d1),
-      createIntrospector: (db) => new SqliteIntrospector(db),
-      createQueryCompiler: () => new SqliteQueryCompiler(),
-    },
-  });
-}
-
-export * from "./types";

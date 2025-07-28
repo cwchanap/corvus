@@ -9,6 +9,7 @@
     "start": "vinxi start",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
+    "migrate": "tsx scripts/migrate.ts",
     "setup-db": "node scripts/setup-db.js",
     "db:local": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql",
     "db:remote": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql --remote"
@@ -16,8 +17,11 @@
   "dependencies": {
     "@repo/ui-components": "workspace:*",
     "@repo/common": "workspace:*",
+    "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.1",
     "@solidjs/start": "^1.0.8",
+    "better-auth": "^0.8.0",
+    "better-sqlite3": "^9.2.2",
     "solid-js": "^1.8.11",
     "vinxi": "^0.5.7",
     "kysely": "^0.28.3"
@@ -26,11 +30,13 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
+    "@types/better-sqlite3": "^7.6.8",
     "@cloudflare/workers-types": "^4.20241218.0",
     "autoprefixer": "^10.4.17",
     "eslint": "^9.31.0",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.7.0",
     "typescript": "5.8.2",
     "vite-plugin-solid": "^2.8.2",
     "wrangler": "^3.95.0"

@@ -5,7 +5,11 @@
   "type": "module",
   "exports": {
     "./utils": "./src/utils.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./types/wishlist": "./src/types/wishlist.ts",
+    "./storage/base": "./src/storage/base.ts",
+    "./storage/browser": "./src/storage/browser.ts",
+    "./utils/page-info": "./src/utils/page-info.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

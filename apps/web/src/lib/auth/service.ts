@@ -1,6 +1,7 @@
 import type { Kysely } from "kysely";
 import type { Database, User, NewUser } from "../db/types";
 import { hashPassword, verifyPassword, generateSessionId } from "./crypto";
+import { createDefaultCategories } from "../db/migrations";
 
 export class AuthService {
   constructor(private db: Kysely<Database>) {}
@@ -32,6 +33,9 @@ export class AuthService {
       .values(newUser)
       .returning(["id", "email", "name", "created_at", "updated_at"])
       .executeTakeFirstOrThrow();
+
+    // Create default wishlist categories for new user
+    await createDefaultCategories(this.db, user.id);
 
     return user;
   }
