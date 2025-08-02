@@ -1,10 +1,14 @@
-import { splitProps, type ComponentProps } from "solid-js";
-import { cn } from "./utils.js";
+import { splitProps, JSX, For } from "solid-js";
+import { cn } from "./utils";
 
-export type SelectProps = ComponentProps<"select">;
+export interface SelectProps
+  extends JSX.SelectHTMLAttributes<HTMLSelectElement> {
+  class?: string;
+  options?: Array<{ value: string; label: string }>;
+}
 
 export function Select(props: SelectProps) {
-  const [local, others] = splitProps(props, ["class"]);
+  const [local, others] = splitProps(props, ["class", "options", "children"]);
 
   return (
     <select
@@ -13,12 +17,11 @@ export function Select(props: SelectProps) {
         local.class,
       )}
       {...others}
-    />
+    >
+      {local.children}
+      <For each={local.options}>
+        {(option) => <option value={option.value}>{option.label}</option>}
+      </For>
+    </select>
   );
-}
-
-export type SelectOptionProps = ComponentProps<"option">;
-
-export function SelectOption(props: SelectOptionProps) {
-  return <option {...props} />;
 }

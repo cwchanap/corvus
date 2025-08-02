@@ -15,23 +15,26 @@
     "db:remote": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql --remote"
   },
   "dependencies": {
-    "@repo/ui-components": "workspace:*",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@repo/common": "workspace:*",
+    "@repo/ui-components": "workspace:*",
     "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.1",
     "@solidjs/start": "^1.0.8",
     "better-auth": "^0.8.0",
     "better-sqlite3": "^9.2.2",
+    "kysely": "^0.28.3",
     "solid-js": "^1.8.11",
-    "vinxi": "^0.5.7",
-    "kysely": "^0.28.3"
+    "vinxi": "^0.5.7"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/node": "^22.15.3",
     "@types/better-sqlite3": "^7.6.8",
-    "@cloudflare/workers-types": "^4.20241218.0",
+    "@types/node": "^22.15.3",
     "autoprefixer": "^10.4.17",
     "eslint": "^9.31.0",
     "postcss": "^8.4.35",

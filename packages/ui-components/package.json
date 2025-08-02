@@ -9,6 +9,7 @@
     "./input": "./src/input.tsx",
     "./select": "./src/select.tsx",
     "./badge": "./src/badge.tsx",
+    "./theme-toggle": "./src/theme-toggle.tsx",
     "./styles": "./src/styles.css"
   },
   "scripts": {

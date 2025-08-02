@@ -56,8 +56,9 @@
   body {
     @apply bg-background text-foreground;
   }
-}@lay
-er utilities {
+}
+
+@layer utilities {
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;

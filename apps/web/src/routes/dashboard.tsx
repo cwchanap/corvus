@@ -2,22 +2,23 @@ import { Show } from "solid-js";
 import { Title } from "@solidjs/meta";
 import { useAuth } from "../lib/auth/context";
 import { WishlistDashboard } from "../components/WishlistDashboard";
+import { ThemeProvider } from "../lib/theme/context";
 
 export default function Dashboard() {
   const auth = useAuth();
 
   return (
-    <>
+    <ThemeProvider>
       <Title>Dashboard - Corvus</Title>
       <Show
         when={auth.user()}
         fallback={
-          <div class="min-h-screen flex items-center justify-center">
+          <div class="min-h-screen flex items-center justify-center bg-background">
             <div class="text-center">
-              <h1 class="text-2xl font-bold text-gray-900 mb-4">
+              <h1 class="text-2xl font-bold text-foreground mb-4">
                 Access Denied
               </h1>
-              <p class="text-gray-600">
+              <p class="text-muted-foreground">
                 Please sign in to access your dashboard.
               </p>
             </div>
@@ -26,6 +27,6 @@ export default function Dashboard() {
       >
         <WishlistDashboard user={auth.user()!} />
       </Show>
-    </>
+    </ThemeProvider>
   );
 }
