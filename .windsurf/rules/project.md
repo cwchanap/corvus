@@ -124,3 +124,7 @@ cd apps/extension && npm run zip
 - Web app: `.vinxi/` and `.output/` directories
 - Extension: `.wxt/` and `dist/` directories
 - Turbo cache: `.turbo/` directory
+
+# IMPORTANT!!
+
+Use Playwright MCP to interact with browser for testing. DON't USE windsurf built browser! Also don't run `npm run dev` to start the server as it may already started, check if it is running first: http://localhost:5000/

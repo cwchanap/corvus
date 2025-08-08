@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "vinxi dev --port 3000",
+    "dev": "vinxi dev --port 5000",
     "build": "vinxi build",
     "start": "vinxi start",
     "lint": "eslint . --max-warnings 0",
@@ -12,7 +12,9 @@
     "migrate": "tsx scripts/migrate.ts",
     "setup-db": "node scripts/setup-db.js",
     "db:local": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql",
-    "db:remote": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql --remote"
+    "db:remote": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql --remote",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -31,6 +33,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
+    "@playwright/test": "^1.54.2",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/better-sqlite3": "^7.6.8",

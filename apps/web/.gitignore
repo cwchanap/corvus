@@ -28,3 +28,6 @@ Thumbs.db
 
 .wrangler/
 corvus.db*
+
+playwright-report/
+test-results/

@@ -21,17 +21,14 @@ export async function initializeDatabase() {
     await db.schema
       .createTable("users")
       .ifNotExists()
-      .addColumn("id", "text", (col) => col.primaryKey())
-      .addColumn("name", "text", (col) => col.notNull())
+      .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
       .addColumn("email", "text", (col) => col.notNull().unique())
-      .addColumn("email_verified", "boolean", (col) =>
-        col.notNull().defaultTo(false),
-      )
-      .addColumn("image", "text")
-      .addColumn("created_at", "datetime", (col) =>
+      .addColumn("password_hash", "text", (col) => col.notNull())
+      .addColumn("name", "text", (col) => col.notNull())
+      .addColumn("created_at", "text", (col) =>
         col.notNull().defaultTo("CURRENT_TIMESTAMP"),
       )
-      .addColumn("updated_at", "datetime", (col) =>
+      .addColumn("updated_at", "text", (col) =>
         col.notNull().defaultTo("CURRENT_TIMESTAMP"),
       )
       .execute();
@@ -41,17 +38,35 @@ export async function initializeDatabase() {
       .createTable("sessions")
       .ifNotExists()
       .addColumn("id", "text", (col) => col.primaryKey())
-      .addColumn("user_id", "text", (col) =>
+      .addColumn("user_id", "integer", (col) =>
         col.notNull().references("users.id").onDelete("cascade"),
       )
-      .addColumn("expires_at", "datetime", (col) => col.notNull())
-      .addColumn("token", "text", (col) => col.notNull().unique())
-      .addColumn("created_at", "datetime", (col) =>
+      .addColumn("expires_at", "text", (col) => col.notNull())
+      .addColumn("created_at", "text", (col) =>
         col.notNull().defaultTo("CURRENT_TIMESTAMP"),
       )
-      .addColumn("updated_at", "datetime", (col) =>
-        col.notNull().defaultTo("CURRENT_TIMESTAMP"),
-      )
+      .execute();
+
+    // Create indexes
+    await db.schema
+      .createIndex("idx_users_email")
+      .ifNotExists()
+      .on("users")
+      .column("email")
+      .execute();
+
+    await db.schema
+      .createIndex("idx_sessions_user_id")
+      .ifNotExists()
+      .on("sessions")
+      .column("user_id")
+      .execute();
+
+    await db.schema
+      .createIndex("idx_sessions_expires_at")
+      .ifNotExists()
+      .on("sessions")
+      .column("expires_at")
       .execute();
 
     // Create wishlist_categories table
@@ -59,15 +74,15 @@ export async function initializeDatabase() {
       .createTable("wishlist_categories")
       .ifNotExists()
       .addColumn("id", "text", (col) => col.primaryKey())
-      .addColumn("user_id", "text", (col) =>
+      .addColumn("user_id", "integer", (col) =>
         col.notNull().references("users.id").onDelete("cascade"),
       )
       .addColumn("name", "text", (col) => col.notNull())
       .addColumn("color", "text")
-      .addColumn("created_at", "datetime", (col) =>
+      .addColumn("created_at", "text", (col) =>
         col.notNull().defaultTo("CURRENT_TIMESTAMP"),
       )
-      .addColumn("updated_at", "datetime", (col) =>
+      .addColumn("updated_at", "text", (col) =>
         col.notNull().defaultTo("CURRENT_TIMESTAMP"),
       )
       .execute();
@@ -77,7 +92,7 @@ export async function initializeDatabase() {
       .createTable("wishlist_items")
       .ifNotExists()
       .addColumn("id", "text", (col) => col.primaryKey())
-      .addColumn("user_id", "text", (col) =>
+      .addColumn("user_id", "integer", (col) =>
         col.notNull().references("users.id").onDelete("cascade"),
       )
       .addColumn("category_id", "text", (col) =>
@@ -87,10 +102,10 @@ export async function initializeDatabase() {
       .addColumn("url", "text", (col) => col.notNull())
       .addColumn("description", "text")
       .addColumn("favicon", "text")
-      .addColumn("created_at", "datetime", (col) =>
+      .addColumn("created_at", "text", (col) =>
         col.notNull().defaultTo("CURRENT_TIMESTAMP"),
       )
-      .addColumn("updated_at", "datetime", (col) =>
+      .addColumn("updated_at", "text", (col) =>
         col.notNull().defaultTo("CURRENT_TIMESTAMP"),
       )
       .execute();
@@ -101,3 +116,6 @@ export async function initializeDatabase() {
     throw error;
   }
 }
+
+// Initialize database on module load
+initializeDatabase();
