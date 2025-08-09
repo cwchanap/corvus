@@ -1,5 +1,4 @@
 import { createSignal, createResource, For, Show, createMemo } from "solid-js";
-import { A } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
@@ -11,25 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import type { WishlistCategory, WishlistItem } from "../lib/db/types";
-import { useTheme } from "../lib/theme/context";
+import type { WishlistCategory, WishlistItem } from "../lib/db/types.js";
+import { useTheme } from "../lib/theme/context.jsx";
+
+type WishlistData = {
+  categories: WishlistCategory[];
+  items: WishlistItem[];
+};
 
 interface WishlistDashboardProps {
   user: {
@@ -44,35 +31,16 @@ function SortableWishlistItem(props: {
   item: WishlistItem;
   onDelete: (id: string) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: props.item.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+  const style = {} as const;
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <Card class={`transition-all ${isDragging ? "shadow-lg" : ""}`}>
+    <div style={style}>
+      <Card class={"transition-all"}>
         <CardContent class="p-4">
           <div class="flex items-start justify-between">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
-                <button
-                  {...listeners}
-                  class="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1"
-                  title="Drag to reorder"
-                >
-                  ⋮⋮
-                </button>
+                {/* Drag handle removed for now */}
                 <h3 class="font-medium text-foreground">{props.item.title}</h3>
               </div>
               <a
@@ -117,26 +85,37 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   );
   const [items, setItems] = createSignal<WishlistItem[]>([]);
 
-  // Drag and drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-
   // Fetch wishlist data
-  const [wishlistData] = createResource(async () => {
+  const [wishlistData, { refetch }] = createResource<WishlistData>(async () => {
+    if (typeof window === "undefined") {
+      // Avoid relative fetch on server
+      return { categories: [], items: [] } as WishlistData;
+    }
+
     const response = await fetch("/api/wishlist");
 
     if (!response.ok) {
       throw new Error("Failed to fetch wishlist data");
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as WishlistData;
     setItems(data.items || []);
     return data;
   });
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "GET",
+        credentials: "include",
+      });
+    } catch {
+      // ignore
+    } finally {
+      // Force full reload to refresh server-authenticated state
+      window.location.href = "/";
+    }
+  };
 
   // Enhanced filtering and sorting
   const filteredAndSortedItems = createMemo(() => {
@@ -173,22 +152,6 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     return result;
   });
 
-  // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = items().findIndex((item) => item.id === active.id);
-      const newIndex = items().findIndex((item) => item.id === over.id);
-
-      const newItems = arrayMove(items(), oldIndex, newIndex);
-      setItems(newItems);
-
-      // TODO: Update order in backend
-      // updateItemOrder(newItems.map(item => item.id));
-    }
-  };
-
   const addItem = async (title: string, url: string, description?: string) => {
     const categoryId = selectedCategory() || wishlistData()?.categories[0]?.id;
 
@@ -208,7 +171,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     });
 
     if (response.ok) {
-      wishlistData.refetch();
+      refetch();
     }
   };
 
@@ -220,7 +183,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     if (response.ok) {
       // Update local state immediately
       setItems((prev) => prev.filter((item) => item.id !== itemId));
-      wishlistData.refetch();
+      refetch();
     }
   };
 
@@ -244,9 +207,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                 setTheme={theme.setTheme}
                 resolvedTheme={theme.resolvedTheme}
               />
-              <A href="/api/auth/logout">
-                <Button variant="outline">Sign Out</Button>
-              </A>
+              <Button variant="outline" onClick={handleLogout}>
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>
@@ -388,27 +351,13 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
               </Show>
 
               <Show when={filteredAndSortedItems().length > 0}>
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={filteredAndSortedItems().map((item) => item.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div class="space-y-4">
-                      <For each={filteredAndSortedItems()}>
-                        {(item: WishlistItem) => (
-                          <SortableWishlistItem
-                            item={item}
-                            onDelete={deleteItem}
-                          />
-                        )}
-                      </For>
-                    </div>
-                  </SortableContext>
-                </DndContext>
+                <div class="space-y-4">
+                  <For each={filteredAndSortedItems()}>
+                    {(item: WishlistItem) => (
+                      <SortableWishlistItem item={item} onDelete={deleteItem} />
+                    )}
+                  </For>
+                </div>
               </Show>
             </div>
           </div>

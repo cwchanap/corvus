@@ -1,6 +1,6 @@
 import { getCookie, setCookie, deleteCookie } from "vinxi/http";
 import { redirect } from "@solidjs/router";
-import type { User } from "../db/types";
+import type { User } from "../db/types.js";
 
 export interface SessionData {
   userId: number;
@@ -17,7 +17,7 @@ export function getSessionCookie(): string | undefined {
 export function setSessionCookie(sessionId: string): void {
   setCookie(SESSION_COOKIE_NAME, sessionId, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: SESSION_MAX_AGE,
     path: "/",
@@ -25,7 +25,8 @@ export function setSessionCookie(sessionId: string): void {
 }
 
 export function clearSessionCookie(): void {
-  deleteCookie(SESSION_COOKIE_NAME);
+  // Must match the same attributes (at least path) used when setting the cookie
+  deleteCookie(SESSION_COOKIE_NAME, { path: "/" });
 }
 
 export function requireAuth(user: User | null): User {

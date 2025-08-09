@@ -1,18 +1,17 @@
 import { action, redirect } from "@solidjs/router";
-import { getRequestEvent } from "solid-js/web";
-import { createDatabase } from "../db";
-import { AuthService } from "./service";
+import { createDatabase } from "../db.js";
+import { runMigrations } from "../db/migrations.js";
+import { AuthService } from "./service.js";
 import {
   getSessionCookie,
   setSessionCookie,
   clearSessionCookie,
-} from "./session";
+} from "./session.js";
 
-function getAuthService() {
-  const event = getRequestEvent();
-  const d1Database = event?.nativeEvent.context?.cloudflare?.env?.DB;
-
-  const db = createDatabase(d1Database);
+async function getAuthService() {
+  // For local dev use SQLite. In production, wire up D1 via adapter-specific event.
+  const db = createDatabase();
+  await runMigrations(db);
   return new AuthService(db);
 }
 
@@ -26,7 +25,7 @@ export const loginAction = action(async (formData: FormData) => {
     throw new Error("Email and password are required");
   }
 
-  const authService = getAuthService();
+  const authService = await getAuthService();
   const user = await authService.login(email, password);
 
   if (!user) {
@@ -37,7 +36,7 @@ export const loginAction = action(async (formData: FormData) => {
   const sessionId = await authService.createSession(user.id);
   setSessionCookie(sessionId);
 
-  throw redirect("/dashboard");
+  return { success: true } as const;
 });
 
 export const registerAction = action(async (formData: FormData) => {
@@ -55,7 +54,7 @@ export const registerAction = action(async (formData: FormData) => {
     throw new Error("Password must be at least 8 characters long");
   }
 
-  const authService = getAuthService();
+  const authService = await getAuthService();
 
   try {
     const user = await authService.register(email, password, name);
@@ -64,7 +63,7 @@ export const registerAction = action(async (formData: FormData) => {
     const sessionId = await authService.createSession(user.id);
     setSessionCookie(sessionId);
 
-    throw redirect("/dashboard");
+    return { success: true } as const;
   } catch (error) {
     if (error instanceof Error && error.message === "User already exists") {
       throw new Error("An account with this email already exists");
@@ -78,7 +77,7 @@ export const logoutAction = action(async () => {
 
   const sessionId = getSessionCookie();
   if (sessionId) {
-    const authService = getAuthService();
+    const authService = await getAuthService();
     await authService.deleteSession(sessionId);
   }
 

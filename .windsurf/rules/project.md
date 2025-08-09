@@ -128,3 +128,8 @@ cd apps/extension && npm run zip
 # IMPORTANT!!
 
 Use Playwright MCP to interact with browser for testing. DON't USE windsurf built browser! Also don't run `npm run dev` to start the server as it may already started, check if it is running first: http://localhost:5000/
+
+## E2E Test Account (Local/Dev Only)
+
+Email: pwtester.20250808.001@example.com
+Password: Password123!

@@ -1,5 +1,6 @@
 import type { Kysely } from "kysely";
 import type { Database } from "./types";
+import { randomUUID } from "node:crypto";
 
 export async function runMigrations(db: Kysely<Database>) {
   try {
@@ -117,7 +118,7 @@ export async function createDefaultCategories(
     await db
       .insertInto("wishlist_categories")
       .values({
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         user_id: userId,
         ...category,
       })

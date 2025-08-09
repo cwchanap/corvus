@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { A } from "@solidjs/router";
+import { A, useAction } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import {
   Card,
@@ -8,23 +8,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import { loginAction } from "../../lib/auth/server";
+import { loginAction } from "../../lib/auth/server.js";
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string>("");
+  const login = useAction(loginAction);
 
   const handleSubmit = async (event: Event) => {
     event.preventDefault();
     setIsLoading(true);
     setError("");
 
-    const form = event.target as HTMLFormElement;
+    const form = event.currentTarget as HTMLFormElement;
     const formData = new FormData(form);
 
     try {
-      await loginAction(formData);
+      await login(formData);
+      // Full reload so server picks up HTTP-only session cookie
+      window.location.href = "/dashboard";
     } catch (err) {
+      // Allow router redirects to propagate
+      if (err instanceof Response && err.status >= 300 && err.status < 400) {
+        throw err;
+      }
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
