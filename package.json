@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "dev": "turbo run dev --filter=web --filter=extension",
     "dev:web": "turbo run dev --filter=web",
     "dev:extension": "turbo run dev --filter=extension",
     "lint": "turbo run lint",
