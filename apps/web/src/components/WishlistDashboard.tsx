@@ -1,4 +1,5 @@
 import { createSignal, createResource, For, Show, createMemo } from "solid-js";
+import { A } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
@@ -12,6 +13,7 @@ import {
 } from "@repo/ui-components/card";
 import type { WishlistCategory, WishlistItem } from "../lib/db/types.js";
 import { useTheme } from "../lib/theme/context.jsx";
+import { AddItemDialog } from "./AddItemDialog";
 
 type WishlistData = {
   categories: WishlistCategory[];
@@ -32,6 +34,10 @@ function SortableWishlistItem(props: {
   onDelete: (id: string) => void;
 }) {
   const style = {} as const;
+  const createdAtLabel = () => {
+    const d = new Date(props.item.created_at as unknown as string);
+    return isNaN(d.getTime()) ? "just now" : d.toLocaleDateString();
+  };
 
   return (
     <div style={style}>
@@ -57,7 +63,7 @@ function SortableWishlistItem(props: {
                 </p>
               </Show>
               <div class="text-xs text-muted-foreground mt-2 ml-6">
-                Added {new Date(props.item.created_at).toLocaleDateString()}
+                Added {createdAtLabel()}
               </div>
             </div>
             <button
@@ -84,6 +90,8 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     "custom",
   );
   const [items, setItems] = createSignal<WishlistItem[]>([]);
+  const [addOpen, setAddOpen] = createSignal(false);
+  const [adding, setAdding] = createSignal(false);
 
   // Fetch wishlist data
   const [wishlistData, { refetch }] = createResource<WishlistData>(async () => {
@@ -115,6 +123,23 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       // Force full reload to refresh server-authenticated state
       window.location.href = "/";
     }
+  };
+
+  const handleAddSubmit = (payload: {
+    title: string;
+    url: string;
+    description?: string;
+    category_id?: string;
+  }) => {
+    setAdding(true);
+    addItem(
+      payload.title,
+      payload.url,
+      payload.description,
+      payload.category_id,
+    )
+      .then(() => setAddOpen(false))
+      .finally(() => setAdding(false));
   };
 
   // Enhanced filtering and sorting
@@ -152,8 +177,16 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     return result;
   });
 
-  const addItem = async (title: string, url: string, description?: string) => {
-    const categoryId = selectedCategory() || wishlistData()?.categories[0]?.id;
+  const addItem = async (
+    title: string,
+    url: string,
+    description?: string,
+    categoryIdOverride?: string,
+  ) => {
+    const categoryId =
+      categoryIdOverride ||
+      selectedCategory() ||
+      wishlistData()?.categories[0]?.id;
 
     if (!categoryId) return;
 
@@ -207,6 +240,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                 setTheme={theme.setTheme}
                 resolvedTheme={theme.resolvedTheme}
               />
+              <A href="/profile">
+                <Button variant="ghost">Profile</Button>
+              </A>
               <Button variant="outline" onClick={handleLogout}>
                 Sign Out
               </Button>
@@ -300,11 +336,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                   </h2>
                   <Button
                     onClick={() => {
-                      const title = prompt("Item title:");
-                      const url = prompt("Item URL:");
-                      if (title && url) {
-                        addItem(title, url);
-                      }
+                      setAddOpen(true);
                     }}
                   >
                     Add Item
@@ -363,6 +395,14 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
           </div>
         </Show>
       </div>
+      <AddItemDialog
+        open={addOpen()}
+        onOpenChange={setAddOpen}
+        onSubmit={handleAddSubmit}
+        categories={wishlistData()?.categories || []}
+        initialCategoryId={selectedCategory()}
+        submitting={adding()}
+      />
     </div>
   );
 }
