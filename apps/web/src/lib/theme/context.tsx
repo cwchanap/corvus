@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   createSignal,
+  createEffect,
   onMount,
   JSX,
 } from "solid-js";
@@ -43,21 +44,18 @@ export function ThemeProvider(props: ThemeProviderProps) {
   const updateTheme = (newTheme: Theme) => {
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
-    applyTheme(newTheme);
   };
 
-  const applyTheme = (currentTheme: Theme) => {
-    const root = document.documentElement;
+  // Reactively apply theme whenever theme or system preference changes
+  createEffect(() => {
+    const current = theme();
+    const sys = systemTheme();
     const isDark =
-      currentTheme === "dark" ||
-      (currentTheme === "system" && systemTheme() === "dark");
-
-    if (isDark) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-  };
+      current === "dark" || (current === "system" && sys === "dark");
+    const root = document.documentElement;
+    if (isDark) root.classList.add("dark");
+    else root.classList.remove("dark");
+  });
 
   onMount(() => {
     // Load saved theme
@@ -73,15 +71,9 @@ export function ThemeProvider(props: ThemeProviderProps) {
     // Listen for system theme changes
     const handleChange = (e: MediaQueryListEvent) => {
       setSystemTheme(e.matches ? "dark" : "light");
-      if (theme() === "system") {
-        applyTheme("system");
-      }
     };
 
     mediaQuery.addEventListener("change", handleChange);
-
-    // Apply initial theme
-    applyTheme(theme());
 
     return () => {
       mediaQuery.removeEventListener("change", handleChange);

@@ -9,7 +9,6 @@
     "start": "vinxi start",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "migrate": "tsx scripts/migrate.ts",
     "setup-db": "node scripts/setup-db.js",
     "db:local": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql",
     "db:remote": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql --remote",
@@ -26,7 +25,6 @@
     "@solidjs/router": "^0.15.1",
     "@solidjs/start": "^1.0.8",
     "better-auth": "^0.8.0",
-    "better-sqlite3": "^9.2.2",
     "kysely": "^0.28.3",
     "solid-js": "^1.8.11",
     "vinxi": "^0.5.7"
@@ -36,7 +34,6 @@
     "@playwright/test": "^1.54.2",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^22.15.3",
     "autoprefixer": "^10.4.17",
     "eslint": "^9.31.0",

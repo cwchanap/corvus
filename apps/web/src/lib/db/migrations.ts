@@ -1,5 +1,5 @@
 import type { Kysely } from "kysely";
-import type { Database } from "./types";
+import type { Database } from "./types.js";
 import { randomUUID } from "node:crypto";
 
 export async function runMigrations(db: Kysely<Database>) {

@@ -15,11 +15,23 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
+// Minimal Chrome-like types we use (no dependency on @types/chrome required)
+type ChromeStorageLocal = {
+  get(key: string): Promise<Record<string, string | undefined>>;
+  set(items: Record<string, string>): Promise<void>;
+  remove(key: string): Promise<void>;
+};
+
+type ChromeLike = {
+  storage?: { local: ChromeStorageLocal };
+};
+
 // Extension storage adapter
 export class ExtensionStorageAdapter implements StorageAdapter {
   async getItem(key: string): Promise<string | null> {
-    if (typeof chrome !== "undefined" && chrome.storage) {
-      const result = await chrome.storage.local.get(key);
+    const chromeObj = (globalThis as { chrome?: ChromeLike }).chrome;
+    if (chromeObj?.storage) {
+      const result = await chromeObj.storage.local.get(key);
       return result[key] || null;
     }
     // Fallback to localStorage
@@ -27,8 +39,9 @@ export class ExtensionStorageAdapter implements StorageAdapter {
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    if (typeof chrome !== "undefined" && chrome.storage) {
-      await chrome.storage.local.set({ [key]: value });
+    const chromeObj = (globalThis as { chrome?: ChromeLike }).chrome;
+    if (chromeObj?.storage) {
+      await chromeObj.storage.local.set({ [key]: value });
     } else {
       // Fallback to localStorage
       localStorage.setItem(key, value);
@@ -36,8 +49,9 @@ export class ExtensionStorageAdapter implements StorageAdapter {
   }
 
   async removeItem(key: string): Promise<void> {
-    if (typeof chrome !== "undefined" && chrome.storage) {
-      await chrome.storage.local.remove(key);
+    const chromeObj = (globalThis as { chrome?: ChromeLike }).chrome;
+    if (chromeObj?.storage) {
+      await chromeObj.storage.local.remove(key);
     } else {
       // Fallback to localStorage
       localStorage.removeItem(key);
@@ -47,10 +61,10 @@ export class ExtensionStorageAdapter implements StorageAdapter {
 
 // Factory function for creating storage instances
 export function createWishlistStorage(storageKey = "corvus_wishlist") {
-  const adapter =
-    typeof chrome !== "undefined" && chrome.storage
-      ? new ExtensionStorageAdapter()
-      : new LocalStorageAdapter();
+  const chromeObj = (globalThis as { chrome?: ChromeLike }).chrome;
+  const adapter = chromeObj?.storage
+    ? new ExtensionStorageAdapter()
+    : new LocalStorageAdapter();
 
   return new BaseWishlistStorage(storageKey, adapter);
 }

@@ -1,6 +1,15 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "LOCALAPPDATA",
+    "CHROME_PROFILE_DIR",
+    "CHROME_USER_DATA_DIR",
+    "CHROME_PROFILE_NAME",
+    "FIREFOX_PROFILE_DIR",
+    "CI",
+    "NODE_ENV"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

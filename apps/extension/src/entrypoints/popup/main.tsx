@@ -1,9 +1,9 @@
 import { render } from "solid-js/web";
 import { createSignal, Show } from "solid-js";
 import "@repo/ui-components/styles";
-import { AddToWishlist } from "../../components/AddToWishlist";
-import { WishlistView } from "../../components/WishlistView";
-import { CategoryManager } from "../../components/CategoryManager";
+import { AddToWishlist } from "../../components/AddToWishlist.js";
+import { WishlistView } from "../../components/WishlistView.js";
+import { CategoryManager } from "../../components/CategoryManager.js";
 
 type View = "list" | "add" | "categories";
 

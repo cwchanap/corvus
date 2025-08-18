@@ -7,7 +7,7 @@ import type {
   WishlistItem,
   NewWishlistItem,
   WishlistItemUpdate,
-} from "../db/types";
+} from "../db/types.js";
 
 export class WishlistService {
   constructor(private db: Kysely<Database>) {}

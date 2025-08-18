@@ -1,17 +1,15 @@
 import { action, redirect } from "@solidjs/router";
 import { createDatabase } from "../db.js";
-import { runMigrations } from "../db/migrations.js";
 import { AuthService } from "./service.js";
 import {
   getSessionCookie,
   setSessionCookie,
   clearSessionCookie,
 } from "./session.js";
+import { getD1 } from "../cloudflare.js";
 
 async function getAuthService() {
-  // For local dev use SQLite. In production, wire up D1 via adapter-specific event.
-  const db = createDatabase();
-  await runMigrations(db);
+  const db = createDatabase(getD1());
   return new AuthService(db);
 }
 

@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
-import { WishlistStorage } from "../utils/storage";
+import { WishlistStorage } from "../utils/storage.js";
 
 interface CategoryManagerProps {
   onClose?: () => void;

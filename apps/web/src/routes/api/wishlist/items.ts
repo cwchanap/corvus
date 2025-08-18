@@ -1,9 +1,9 @@
 import { json } from "@solidjs/router";
-import { getRequestEvent } from "solid-js/web";
-import { createDatabase } from "../../../lib/db";
-import { AuthService } from "../../../lib/auth/service";
-import { WishlistService } from "../../../lib/wishlist/service";
-import { getSessionCookie } from "../../../lib/auth/session";
+import { createDatabase } from "../../../lib/db.js";
+import { AuthService } from "../../../lib/auth/service.js";
+import { WishlistService } from "../../../lib/wishlist/service.js";
+import { getSessionCookie } from "../../../lib/auth/session.js";
+import { getD1 } from "../../../lib/cloudflare.js";
 
 export async function POST({ request }: { request: Request }) {
   try {
@@ -13,9 +13,7 @@ export async function POST({ request }: { request: Request }) {
       return json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const event = getRequestEvent();
-    const d1Database = event?.nativeEvent.context?.cloudflare?.env?.DB;
-    const db = createDatabase(d1Database);
+    const db = createDatabase(getD1());
 
     const authService = new AuthService(db);
     const user = await authService.validateSession(sessionId);
@@ -24,7 +22,12 @@ export async function POST({ request }: { request: Request }) {
       return json({ error: "Invalid session" }, { status: 401 });
     }
 
-    const { title, url, description, category_id } = await request.json();
+    const { title, url, description, category_id } = (await request.json()) as {
+      title: string;
+      url: string;
+      description?: string;
+      category_id: string;
+    };
 
     if (!title || !url || !category_id) {
       return json(

@@ -1,20 +1,20 @@
 import { createContext, useContext, ParentComponent } from "solid-js";
 import { createAsync } from "@solidjs/router";
-import { getRequestEvent } from "solid-js/web";
-import { createDatabase } from "../db";
-import { AuthService } from "./service";
-import { getSessionCookie } from "./session";
-import type { User } from "../db/types";
+import { createDatabase } from "../db.js";
+import { AuthService } from "./service.js";
+import { getSessionCookie } from "./session.js";
+import { getD1 } from "../cloudflare.js";
+import type { PublicUser } from "../db/types.js";
 
 interface AuthContextValue {
-  user: () => User | undefined;
+  user: () => PublicUser | undefined;
   isAuthenticated: () => boolean;
   isLoading: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue>();
 
-async function getCurrentUser(): Promise<User | null> {
+async function getCurrentUser(): Promise<PublicUser | null> {
   "use server";
 
   const sessionId = getSessionCookie();
@@ -23,10 +23,7 @@ async function getCurrentUser(): Promise<User | null> {
     return null;
   }
 
-  const event = getRequestEvent();
-  const d1Database = event?.nativeEvent.context?.cloudflare?.env?.DB;
-
-  const db = createDatabase(d1Database);
+  const db = createDatabase(getD1());
   const authService = new AuthService(db);
 
   return await authService.validateSession(sessionId);
@@ -38,7 +35,8 @@ export const AuthProvider: ParentComponent = (props) => {
   const contextValue: AuthContextValue = {
     user: () => user() || undefined,
     isAuthenticated: () => !!user(),
-    isLoading: () => user.loading,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    isLoading: () => (user as any).state === "pending",
   };
 
   return (

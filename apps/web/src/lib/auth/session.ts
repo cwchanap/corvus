@@ -1,6 +1,6 @@
 import { getCookie, setCookie, deleteCookie } from "vinxi/http";
 import { redirect } from "@solidjs/router";
-import type { User } from "../db/types.js";
+import type { PublicUser } from "../db/types.js";
 
 export interface SessionData {
   userId: number;
@@ -29,7 +29,7 @@ export function clearSessionCookie(): void {
   deleteCookie(SESSION_COOKIE_NAME, { path: "/" });
 }
 
-export function requireAuth(user: User | null): User {
+export function requireAuth(user: PublicUser | null): PublicUser {
   if (!user) {
     throw redirect("/login");
   }

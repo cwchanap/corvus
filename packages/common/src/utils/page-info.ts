@@ -3,8 +3,17 @@ import type { PageInfo } from "../types/wishlist.js";
 export async function getCurrentPageInfo(): Promise<PageInfo> {
   try {
     // Check if we're in a browser extension context
-    if (typeof chrome !== "undefined" && chrome.tabs) {
-      const [tab] = await chrome.tabs.query({
+    type ChromeTab = { title?: string; url?: string; favIconUrl?: string };
+    type ChromeTabs = {
+      query(queryInfo: {
+        active: boolean;
+        currentWindow: boolean;
+      }): Promise<ChromeTab[]>;
+    };
+    type ChromeLike = { tabs?: ChromeTabs };
+    const chromeObj = (globalThis as { chrome?: ChromeLike }).chrome;
+    if (chromeObj?.tabs) {
+      const [tab] = await chromeObj.tabs.query({
         active: true,
         currentWindow: true,
       });

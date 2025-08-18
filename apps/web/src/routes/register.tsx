@@ -1,5 +1,5 @@
 import { Title } from "@solidjs/meta";
-import { RegisterForm } from "../components/auth/RegisterForm";
+import { RegisterForm } from "../components/auth/RegisterForm.jsx";
 
 export default function Register() {
   return (

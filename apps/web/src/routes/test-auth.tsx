@@ -1,11 +1,12 @@
 import { json } from "@solidjs/router";
-import { createDatabase } from "../lib/db";
-import { AuthService } from "../lib/auth/service";
+import { createDatabase } from "../lib/db.js";
+import { AuthService } from "../lib/auth/service.js";
+import { getD1 } from "../lib/cloudflare.js";
 
 export async function GET() {
   try {
-    // Create a database instance
-    const db = createDatabase();
+    // Create a database instance bound to Cloudflare D1
+    const db = createDatabase(getD1());
 
     // Create AuthService instance
     const authService = new AuthService(db);

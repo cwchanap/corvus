@@ -112,11 +112,22 @@ export class BaseWishlistStorage {
     const itemIndex = data.items.findIndex((item) => item.id === itemId);
 
     if (itemIndex !== -1) {
-      data.items[itemIndex] = {
-        ...data.items[itemIndex],
-        ...updates,
+      const current = data.items[itemIndex]!;
+      const updated: WishlistItem = {
+        ...current,
         updatedAt: new Date(),
       };
+
+      if (updates.title !== undefined) updated.title = updates.title;
+      if (updates.url !== undefined) updated.url = updates.url;
+      if (updates.description !== undefined)
+        updated.description = updates.description;
+      if (updates.categoryId !== undefined)
+        updated.categoryId = updates.categoryId;
+      if (updates.favicon !== undefined) updated.favicon = updates.favicon;
+      if (updates.userId !== undefined) updated.userId = updates.userId;
+
+      data.items[itemIndex] = updated;
       await this.saveWishlistData(data);
     }
   }

@@ -13,7 +13,7 @@ import {
 } from "@repo/ui-components/card";
 import type { WishlistCategory, WishlistItem } from "../lib/db/types.js";
 import { useTheme } from "../lib/theme/context.jsx";
-import { AddItemDialog } from "./AddItemDialog";
+import { AddItemDialog } from "./AddItemDialog.jsx";
 
 type WishlistData = {
   categories: WishlistCategory[];

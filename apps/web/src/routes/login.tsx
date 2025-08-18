@@ -1,5 +1,5 @@
 import { Title } from "@solidjs/meta";
-import { LoginForm } from "../components/auth/LoginForm";
+import { LoginForm } from "../components/auth/LoginForm.jsx";
 
 export default function Login() {
   return (

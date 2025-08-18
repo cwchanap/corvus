@@ -1,21 +1,29 @@
-import { Kysely, SqliteDialect } from "kysely";
-import Database from "better-sqlite3";
-import type { Database as DatabaseSchema } from "./db/types";
+import type { Kysely } from "kysely";
+import type { D1Database } from "@cloudflare/workers-types";
+import type { Database as DatabaseSchema } from "./db/types.js";
+import { createD1Kysely } from "./db/d1.js";
+import { createMockDatabase } from "./db/mock.js";
 
-export function createDatabase(d1Database?: any): Kysely<DatabaseSchema> {
-  if (d1Database) {
-    // For Cloudflare D1 in production
-    // This would need a D1 dialect, but for now we'll use SQLite
-    console.warn("D1 database not fully implemented, falling back to SQLite");
+// Persist across dev server reloads
+const g = globalThis as unknown as {
+  __CORVUS_MOCK_DB?: Kysely<DatabaseSchema>;
+};
+
+export function createDatabase(
+  d1Database?: D1Database,
+): Kysely<DatabaseSchema> {
+  if (!d1Database) {
+    if (process.env.NODE_ENV !== "production") {
+      // Prefer global cache if present (survives HMR)
+      if (!g.__CORVUS_MOCK_DB) {
+        g.__CORVUS_MOCK_DB = createMockDatabase();
+      }
+      return g.__CORVUS_MOCK_DB;
+    }
+    throw new Error(
+      "D1 database binding is required. Ensure Cloudflare env.DB is available.",
+    );
   }
 
-  // For local development, use SQLite
-  const sqlite = new Database("corvus.db");
-  sqlite.pragma("journal_mode = WAL");
-
-  return new Kysely<DatabaseSchema>({
-    dialect: new SqliteDialect({
-      database: sqlite,
-    }),
-  });
+  return createD1Kysely(d1Database);
 }

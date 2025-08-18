@@ -6,8 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import { WishlistStorage } from "../utils/storage";
-import { getCurrentPageInfo } from "../utils/page-info";
+import { WishlistStorage } from "../utils/storage.js";
+import { getCurrentPageInfo } from "../utils/page-info.js";
 
 interface AddToWishlistProps {
   onSuccess?: () => void;
@@ -32,7 +32,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
         title: page.title,
         url: page.url,
         description: customDescription() || undefined,
-        category_id: selectedCategoryId(),
+        categoryId: selectedCategoryId(),
         favicon: page.favicon,
       });
 

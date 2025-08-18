@@ -2,7 +2,7 @@ import { createSignal, createResource, For, Show } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Card } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
-import { WishlistStorage } from "../utils/storage";
+import { WishlistStorage } from "../utils/storage.js";
 import type { WishlistCategory } from "../types/wishlist";
 
 interface WishlistViewProps {

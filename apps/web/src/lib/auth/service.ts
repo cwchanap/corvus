@@ -1,12 +1,16 @@
 import type { Kysely } from "kysely";
-import type { Database, User, NewUser } from "../db/types";
-import { hashPassword, verifyPassword, generateSessionId } from "./crypto";
-import { createDefaultCategories } from "../db/migrations";
+import type { Database, NewUser, PublicUser } from "../db/types.js";
+import { hashPassword, verifyPassword, generateSessionId } from "./crypto.js";
+import { createDefaultCategories } from "../db/migrations.js";
 
 export class AuthService {
   constructor(private db: Kysely<Database>) {}
 
-  async register(email: string, password: string, name: string): Promise<User> {
+  async register(
+    email: string,
+    password: string,
+    name: string,
+  ): Promise<PublicUser> {
     // Check if user already exists
     const existingUser = await this.db
       .selectFrom("users")
@@ -40,7 +44,7 @@ export class AuthService {
     return user;
   }
 
-  async login(email: string, password: string): Promise<User | null> {
+  async login(email: string, password: string): Promise<PublicUser | null> {
     // Find user by email
     const user = await this.db
       .selectFrom("users")
@@ -61,7 +65,7 @@ export class AuthService {
     // Return user without password hash
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, ...userWithoutPassword } = user;
-    return userWithoutPassword as User;
+    return userWithoutPassword as PublicUser;
   }
 
   async createSession(userId: number): Promise<string> {
@@ -81,7 +85,7 @@ export class AuthService {
     return sessionId;
   }
 
-  async validateSession(sessionId: string): Promise<User | null> {
+  async validateSession(sessionId: string): Promise<PublicUser | null> {
     const session = await this.db
       .selectFrom("sessions")
       .innerJoin("users", "users.id", "sessions.user_id")
@@ -117,7 +121,7 @@ export class AuthService {
       .execute();
   }
 
-  async getUserById(id: number): Promise<User | null> {
+  async getUserById(id: number): Promise<PublicUser | null> {
     const user = await this.db
       .selectFrom("users")
       .select(["id", "email", "name", "created_at", "updated_at"])

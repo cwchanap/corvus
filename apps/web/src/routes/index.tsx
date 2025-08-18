@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import { useAuth } from "../lib/auth/context";
+import { useAuth } from "../lib/auth/context.jsx";
 
 export default function Home() {
   const auth = useAuth();

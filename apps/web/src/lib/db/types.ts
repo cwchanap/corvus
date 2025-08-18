@@ -26,6 +26,7 @@ export interface SessionTable {
 export type User = Selectable<UserTable>;
 export type NewUser = Insertable<UserTable>;
 export type UserUpdate = Updateable<UserTable>;
+export type PublicUser = Omit<User, "password_hash">;
 
 export type Session = Selectable<SessionTable>;
 export type NewSession = Insertable<SessionTable>;
