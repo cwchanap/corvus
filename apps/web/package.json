@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "vinxi dev --port 5000",
+    "dev:cf": "pnpm build && npx wrangler pages dev dist --port=8788 --d1=DB=corvus",
     "build": "vinxi build",
     "start": "vinxi start",
     "lint": "eslint . --max-warnings 0",
@@ -42,6 +43,6 @@
     "tsx": "^4.7.0",
     "typescript": "5.8.2",
     "vite-plugin-solid": "^2.8.2",
-    "wrangler": "^3.95.0"
+    "wrangler": "^4.31.0"
   }
 }

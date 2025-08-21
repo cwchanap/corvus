@@ -11,16 +11,12 @@ export type CloudflareEvent = {
   };
 };
 
-export function getD1(): D1Database | undefined {
+export function getD1(): D1Database {
   const event = getRequestEvent() as unknown as CloudflareEvent | undefined;
   const db = event?.nativeEvent?.context?.cloudflare?.env?.DB;
   if (!db) {
-    if (process.env.NODE_ENV !== "production") {
-      // Allow callers to fall back to mock DB in development
-      return undefined;
-    }
     throw new Error(
-      "D1 database binding is missing. Ensure Cloudflare env.DB is configured in wrangler.toml and available in the request context.",
+      'D1 binding missing. Ensure wrangler.toml has [[d1_databases]] with binding="DB" and run the app with Cloudflare env available (e.g. `wrangler dev`, or appropriate SolidStart/adapter that injects cloudflare.env).',
     );
   }
   return db;
