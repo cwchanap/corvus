@@ -37,13 +37,13 @@ A modern SolidJS web application with authentication, built for Cloudflare Worke
    pnpm install
    ```
 
-2. **Set up the database**:
+2. **Apply local database schema**:
 
    ```bash
-   pnpm setup-db
+   pnpm db:local
    ```
 
-   This will create a new D1 database and execute the schema.
+   This applies `src/lib/db/schema.sql` to your local D1 database binding `corvus`.
 
 3. **Update configuration**:
    - Copy the database ID from the setup output
@@ -59,7 +59,6 @@ A modern SolidJS web application with authentication, built for Cloudflare Worke
 
 - **Create local database**: `pnpm db:local`
 - **Create remote database**: `pnpm db:remote`
-- **Full setup**: `pnpm setup-db`
 
 ## Project Structure
 

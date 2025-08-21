@@ -62,9 +62,6 @@ turbo build --filter=extension
 ### Web App Database Commands
 
 ```bash
-# Set up local database
-cd apps/web && npm run setup-db
-
 # Apply schema to local D1 database
 cd apps/web && npm run db:local
 

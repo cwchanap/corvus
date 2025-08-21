@@ -10,7 +10,6 @@
     "start": "vinxi start",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "setup-db": "node scripts/setup-db.js",
     "db:local": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql",
     "db:remote": "npx wrangler d1 execute corvus --file=./src/lib/db/schema.sql --remote",
     "test": "playwright test",
