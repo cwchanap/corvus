@@ -10,3 +10,9 @@ declare module "@solidjs/start/server" {
     };
   }
 }
+
+// Support importing raw SQL via Vite query suffix
+declare module "*.sql?raw" {
+  const content: string;
+  export default content;
+}
