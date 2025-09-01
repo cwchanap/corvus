@@ -68,7 +68,7 @@ export default function Home() {
                         </li>
                         <li class="flex items-center">
                           <span class="w-2 h-2 bg-green-500 rounded-full mr-3" />
-                          Type-safe database queries with Kysely
+                          Type-safe database queries with Drizzle ORM
                         </li>
                         <li class="flex items-center">
                           <span class="w-2 h-2 bg-green-500 rounded-full mr-3" />

@@ -1,6 +1,5 @@
-import type { Kysely } from "kysely";
+import type { DB } from "../db.js";
 import type {
-  Database,
   WishlistCategory,
   NewWishlistCategory,
   WishlistCategoryUpdate,
@@ -8,48 +7,43 @@ import type {
   NewWishlistItem,
   WishlistItemUpdate,
 } from "../db/types.js";
+import { wishlistCategories, wishlistItems } from "../db/schema.js";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 export class WishlistService {
-  constructor(private db: Kysely<Database>) {}
+  constructor(private db: DB) {}
 
   // Category operations
   async getUserCategories(userId: number): Promise<WishlistCategory[]> {
     return await this.db
-      .selectFrom("wishlist_categories")
-      .selectAll()
-      .where("user_id", "=", userId)
-      .orderBy("created_at", "asc")
-      .execute();
+      .select()
+      .from(wishlistCategories)
+      .where(eq(wishlistCategories.user_id, userId))
+      .orderBy(asc(wishlistCategories.created_at))
+      .all();
   }
 
   async createCategory(
     categoryData: Omit<NewWishlistCategory, "id" | "created_at" | "updated_at">,
   ): Promise<WishlistCategory> {
     return await this.db
-      .insertInto("wishlist_categories")
-      .values({
-        id: crypto.randomUUID(),
-        ...categoryData,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+      .insert(wishlistCategories)
+      .values({ id: crypto.randomUUID(), ...categoryData })
+      .returning()
+      .get();
   }
 
   async updateCategory(
     categoryId: string,
     updates: WishlistCategoryUpdate,
   ): Promise<WishlistCategory | null> {
-    return (
-      (await this.db
-        .updateTable("wishlist_categories")
-        .set({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .where("id", "=", categoryId)
-        .returningAll()
-        .executeTakeFirst()) || null
-    );
+    const row = await this.db
+      .update(wishlistCategories)
+      .set({ ...updates, updated_at: new Date().toISOString() })
+      .where(eq(wishlistCategories.id, categoryId))
+      .returning()
+      .get();
+    return row || null;
   }
 
   async deleteCategory(categoryId: string, userId: number): Promise<void> {
@@ -67,31 +61,39 @@ export class WishlistService {
 
     // Move items to fallback category
     await this.db
-      .updateTable("wishlist_items")
+      .update(wishlistItems)
       .set({
         category_id: fallbackCategory.id,
         updated_at: new Date().toISOString(),
       })
-      .where("category_id", "=", categoryId)
-      .where("user_id", "=", userId)
-      .execute();
+      .where(
+        and(
+          eq(wishlistItems.category_id, categoryId),
+          eq(wishlistItems.user_id, userId),
+        ),
+      )
+      .run();
 
     // Delete the category
     await this.db
-      .deleteFrom("wishlist_categories")
-      .where("id", "=", categoryId)
-      .where("user_id", "=", userId)
-      .execute();
+      .delete(wishlistCategories)
+      .where(
+        and(
+          eq(wishlistCategories.id, categoryId),
+          eq(wishlistCategories.user_id, userId),
+        ),
+      )
+      .run();
   }
 
   // Item operations
   async getUserItems(userId: number): Promise<WishlistItem[]> {
     return await this.db
-      .selectFrom("wishlist_items")
-      .selectAll()
-      .where("user_id", "=", userId)
-      .orderBy("created_at", "desc")
-      .execute();
+      .select()
+      .from(wishlistItems)
+      .where(eq(wishlistItems.user_id, userId))
+      .orderBy(desc(wishlistItems.created_at))
+      .all();
   }
 
   async getItemsByCategory(
@@ -99,50 +101,48 @@ export class WishlistService {
     categoryId: string,
   ): Promise<WishlistItem[]> {
     return await this.db
-      .selectFrom("wishlist_items")
-      .selectAll()
-      .where("user_id", "=", userId)
-      .where("category_id", "=", categoryId)
-      .orderBy("created_at", "desc")
-      .execute();
+      .select()
+      .from(wishlistItems)
+      .where(
+        and(
+          eq(wishlistItems.user_id, userId),
+          eq(wishlistItems.category_id, categoryId),
+        ),
+      )
+      .orderBy(desc(wishlistItems.created_at))
+      .all();
   }
 
   async createItem(
     itemData: Omit<NewWishlistItem, "id" | "created_at" | "updated_at">,
   ): Promise<WishlistItem> {
     return await this.db
-      .insertInto("wishlist_items")
-      .values({
-        id: crypto.randomUUID(),
-        ...itemData,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+      .insert(wishlistItems)
+      .values({ id: crypto.randomUUID(), ...itemData })
+      .returning()
+      .get();
   }
 
   async updateItem(
     itemId: string,
     updates: WishlistItemUpdate,
   ): Promise<WishlistItem | null> {
-    return (
-      (await this.db
-        .updateTable("wishlist_items")
-        .set({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .where("id", "=", itemId)
-        .returningAll()
-        .executeTakeFirst()) || null
-    );
+    const row = await this.db
+      .update(wishlistItems)
+      .set({ ...updates, updated_at: new Date().toISOString() })
+      .where(eq(wishlistItems.id, itemId))
+      .returning()
+      .get();
+    return row || null;
   }
 
   async deleteItem(itemId: string, userId: number): Promise<void> {
     await this.db
-      .deleteFrom("wishlist_items")
-      .where("id", "=", itemId)
-      .where("user_id", "=", userId)
-      .execute();
+      .delete(wishlistItems)
+      .where(
+        and(eq(wishlistItems.id, itemId), eq(wishlistItems.user_id, userId)),
+      )
+      .run();
   }
 
   // Combined operations

@@ -1,10 +1,12 @@
-import type { Kysely } from "kysely";
-import type { Database, NewUser, PublicUser } from "../db/types.js";
+import type { PublicUser } from "../db/types.js";
+import type { DB } from "../db.js";
+import { users, sessions } from "../db/schema.js";
+import { eq, and, gt, lt } from "drizzle-orm";
 import { hashPassword, verifyPassword, generateSessionId } from "./crypto.js";
 import { createDefaultCategories } from "../db/migrations.js";
 
 export class AuthService {
-  constructor(private db: Kysely<Database>) {}
+  constructor(private db: DB) {}
 
   async register(
     email: string,
@@ -13,10 +15,10 @@ export class AuthService {
   ): Promise<PublicUser> {
     // Check if user already exists
     const existingUser = await this.db
-      .selectFrom("users")
-      .select(["id"])
-      .where("email", "=", email)
-      .executeTakeFirst();
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email))
+      .get();
 
     if (existingUser) {
       throw new Error("User already exists");
@@ -26,17 +28,17 @@ export class AuthService {
     const passwordHash = await hashPassword(password);
 
     // Create user
-    const newUser: NewUser = {
-      email,
-      password_hash: passwordHash,
-      name,
-    };
-
     const user = await this.db
-      .insertInto("users")
-      .values(newUser)
-      .returning(["id", "email", "name", "created_at", "updated_at"])
-      .executeTakeFirstOrThrow();
+      .insert(users)
+      .values({ email, password_hash: passwordHash, name })
+      .returning({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+      })
+      .get();
 
     // Create default wishlist categories for new user
     await createDefaultCategories(this.db, user.id);
@@ -47,10 +49,10 @@ export class AuthService {
   async login(email: string, password: string): Promise<PublicUser | null> {
     // Find user by email
     const user = await this.db
-      .selectFrom("users")
-      .selectAll()
-      .where("email", "=", email)
-      .executeTakeFirst();
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .get();
 
     if (!user) {
       return null;
@@ -74,32 +76,37 @@ export class AuthService {
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
     await this.db
-      .insertInto("sessions")
+      .insert(sessions)
       .values({
         id: sessionId,
         user_id: userId,
         expires_at: expiresAt.toISOString(),
+        created_at: new Date().toISOString(),
       })
-      .execute();
+      .run();
 
     return sessionId;
   }
 
   async validateSession(sessionId: string): Promise<PublicUser | null> {
     const session = await this.db
-      .selectFrom("sessions")
-      .innerJoin("users", "users.id", "sessions.user_id")
-      .select([
-        "users.id",
-        "users.email",
-        "users.name",
-        "users.created_at",
-        "users.updated_at",
-        "sessions.expires_at",
-      ])
-      .where("sessions.id", "=", sessionId)
-      .where("sessions.expires_at", ">", new Date().toISOString())
-      .executeTakeFirst();
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        expires_at: sessions.expires_at,
+      })
+      .from(sessions)
+      .innerJoin(users, eq(users.id, sessions.user_id))
+      .where(
+        and(
+          eq(sessions.id, sessionId),
+          gt(sessions.expires_at, new Date().toISOString()),
+        ),
+      )
+      .get();
 
     if (!session) {
       return null;
@@ -111,22 +118,28 @@ export class AuthService {
   }
 
   async deleteSession(sessionId: string): Promise<void> {
-    await this.db.deleteFrom("sessions").where("id", "=", sessionId).execute();
+    await this.db.delete(sessions).where(eq(sessions.id, sessionId)).run();
   }
 
   async cleanupExpiredSessions(): Promise<void> {
     await this.db
-      .deleteFrom("sessions")
-      .where("expires_at", "<", new Date().toISOString())
-      .execute();
+      .delete(sessions)
+      .where(lt(sessions.expires_at, new Date().toISOString()))
+      .run();
   }
 
   async getUserById(id: number): Promise<PublicUser | null> {
     const user = await this.db
-      .selectFrom("users")
-      .select(["id", "email", "name", "created_at", "updated_at"])
-      .where("id", "=", id)
-      .executeTakeFirst();
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .get();
 
     return user || null;
   }

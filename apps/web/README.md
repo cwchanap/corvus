@@ -6,7 +6,7 @@ A modern SolidJS web application with authentication, built for Cloudflare Worke
 
 - 🔐 **Secure Authentication** - Password hashing with Web Crypto API
 - 🗄️ **Cloudflare D1 Database** - Serverless SQLite database
-- 🔍 **Type-safe Queries** - Kysely ORM with full TypeScript support
+- 🔍 **Type-safe Queries** - Drizzle ORM with full TypeScript support
 - 🎨 **Modern UI** - Tailwind CSS with shadcn/ui components
 - ⚡ **Edge Deployment** - Optimized for Cloudflare Workers
 - 🛡️ **Session Management** - Secure cookie-based sessions
@@ -15,7 +15,7 @@ A modern SolidJS web application with authentication, built for Cloudflare Worke
 
 - **Framework**: SolidJS with SolidStart
 - **Database**: Cloudflare D1 (SQLite)
-- **ORM**: Kysely with D1 dialect
+- **ORM**: Drizzle ORM (D1)
 - **Styling**: Tailwind CSS
 - **UI Components**: shadcn/ui (SolidJS port)
 - **Deployment**: Cloudflare Pages/Workers
