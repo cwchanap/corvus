@@ -90,9 +90,9 @@ cd apps/extension && npm run zip
 ### Web Application
 
 - Built with SolidStart and Vinxi
-- Uses Cloudflare D1 database with Kysely query builder
+- Uses Cloudflare D1 database with Drizzle ORM
 - Authentication system with session management
-- Custom D1 driver for Kysely integration
+- Drizzle ORM integration for D1
 - Falls back to mock database for local development when D1 is unavailable
 
 ### Browser Extension

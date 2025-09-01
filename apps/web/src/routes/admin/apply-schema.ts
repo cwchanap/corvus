@@ -1,7 +1,6 @@
 import { json } from "@solidjs/router";
 import { getD1 } from "../../lib/cloudflare.js";
 // Vite raw import to embed the SQL at build time
-// eslint-disable-next-line import/no-unresolved
 import schemaSql from "../../lib/db/schema.sql?raw";
 
 export async function POST() {
@@ -11,8 +10,8 @@ export async function POST() {
     // Split SQL into individual statements, ignoring line comments starting with '--'
     const lines = schemaSql
       .split(/\r?\n/)
-      .map((l) => l.replace(/--.*$/, "")) // strip '--' comments
-      .map((l) => l.trim());
+      .map((l: string) => l.replace(/--.*$/, "")) // strip '--' comments
+      .map((l: string) => l.trim());
 
     const statements: string[] = [];
     let current = "";
