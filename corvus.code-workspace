@@ -1,0 +1,60 @@
+{
+    "folders": [
+        {
+            "name": "Root",
+            "path": "."
+        },
+        {
+            "name": "Web App",
+            "path": "apps/web"
+        },
+        {
+            "name": "Browser Extension",
+            "path": "apps/extension"
+        },
+        {
+            "name": "UI Components",
+            "path": "packages/ui-components"
+        },
+        {
+            "name": "Common",
+            "path": "packages/common"
+        },
+        {
+            "name": "ESLint Config",
+            "path": "packages/eslint-config"
+        },
+        {
+            "name": "TypeScript Config",
+            "path": "packages/typescript-config"
+        }
+    ],
+    "settings": {
+        "eslint.workingDirectories": [
+            {
+                "mode": "auto"
+            }
+        ],
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit"
+        },
+        "typescript.preferences.importModuleSpecifier": "relative",
+        "tailwindCSS.includeLanguages": {
+            "typescript": "html",
+            "typescriptreact": "html"
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "esbenp.prettier-vscode",
+            "dbaeumer.vscode-eslint",
+            "bradlc.vscode-tailwindcss",
+            "ms-vscode.vscode-typescript-next",
+            "ms-vscode.vscode-json",
+            "formulahendry.auto-rename-tag",
+            "christian-kohler.path-intellisense"
+        ]
+    }
+}
