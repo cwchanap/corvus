@@ -10,9 +10,9 @@ export default defineConfig({
     },
     server: {
       proxy: {
-        "/api": "http://localhost:8799",
-        "/admin": "http://localhost:8799",
-        "/_actions": "http://localhost:8799",
+        "/api/*": "http://localhost:8799",
+        "/admin/*": "http://localhost:8799",
+        "/_actions/*": "http://localhost:8799",
       },
     },
   },
