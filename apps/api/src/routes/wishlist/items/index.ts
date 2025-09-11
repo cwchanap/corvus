@@ -1,0 +1,52 @@
+import { Hono } from "hono";
+import { createDatabase } from "../../../lib/db.js";
+import { AuthService } from "../../../lib/auth/service.js";
+import { WishlistService } from "../../../lib/wishlist/service.js";
+import { getSessionCookie } from "../../../lib/auth/session.js";
+import { getD1 } from "../../../lib/cloudflare.js";
+
+const app = new Hono();
+
+app.post("/", async (c) => {
+  try {
+    const sessionId = getSessionCookie(c);
+
+    if (!sessionId) {
+      return c.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const db = createDatabase(getD1(c));
+
+    const authService = new AuthService(db);
+    const user = await authService.validateSession(sessionId);
+
+    if (!user) {
+      return c.json({ error: "Invalid session" }, { status: 401 });
+    }
+
+    const { title, url, description, category_id } = await c.req.json();
+
+    if (!title || !url || !category_id) {
+      return c.json(
+        { error: "Title, URL, and category are required" },
+        { status: 400 },
+      );
+    }
+
+    const wishlistService = new WishlistService(db);
+    const item = await wishlistService.createItem({
+      user_id: user.id,
+      category_id,
+      title,
+      url,
+      description,
+    });
+
+    return c.json(item);
+  } catch (error) {
+    console.error("Create item error:", error);
+    return c.json({ error: "Failed to create item" }, { status: 500 });
+  }
+});
+
+export default app;
