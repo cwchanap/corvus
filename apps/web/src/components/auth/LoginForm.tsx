@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { A, useAction } from "@solidjs/router";
+import { A } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import {
   Card,
@@ -8,12 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import { loginAction } from "../../lib/auth/server.js";
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string>("");
-  const login = useAction(loginAction);
 
   const handleSubmit = async (event: Event) => {
     event.preventDefault();
@@ -22,16 +20,31 @@ export function LoginForm() {
 
     const form = event.currentTarget as HTMLFormElement;
     const formData = new FormData(form);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
     try {
-      await login(formData);
+      const response = await fetch("http://localhost:8787/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = (await response.json()) as {
+        error?: string;
+        success?: boolean;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed");
+      }
+
       // Full reload so server picks up HTTP-only session cookie
       window.location.href = "/dashboard";
     } catch (err) {
-      // Allow router redirects to propagate
-      if (err instanceof Response && err.status >= 300 && err.status < 400) {
-        throw err;
-      }
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);

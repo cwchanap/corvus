@@ -18,8 +18,80 @@ export function getD1(): D1Database {
     return db;
   }
 
-  // Fallback for development: throw error with clear instructions
-  throw new Error(
-    'D1 binding missing. Ensure wrangler.toml has [[d1_databases]] with binding="DB" and run the app with Cloudflare env available (e.g. `wrangler dev`, or appropriate SolidStart/adapter that injects cloudflare.env).',
+  // Fallback for development: create a mock D1 database
+  // This allows the app to run locally without Cloudflare environment
+  console.warn(
+    "D1 binding not found. Using mock database for local development.",
   );
+
+  // Create a simple mock D1Database that throws an error for all operations
+  // This allows the app to start but will show appropriate error messages
+  const mockDb = {
+    prepare: () => ({
+      bind: () => ({
+        run: () =>
+          Promise.reject(
+            new Error(
+              "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+            ),
+          ),
+        all: () =>
+          Promise.reject(
+            new Error(
+              "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+            ),
+          ),
+        first: () =>
+          Promise.reject(
+            new Error(
+              "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+            ),
+          ),
+        raw: () =>
+          Promise.reject(
+            new Error(
+              "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+            ),
+          ),
+      }),
+      run: () =>
+        Promise.reject(
+          new Error(
+            "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+          ),
+        ),
+      all: () =>
+        Promise.reject(
+          new Error(
+            "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+          ),
+        ),
+      first: () =>
+        Promise.reject(
+          new Error(
+            "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+          ),
+        ),
+      raw: () =>
+        Promise.reject(
+          new Error(
+            "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+          ),
+        ),
+    }),
+    batch: () =>
+      Promise.reject(
+        new Error(
+          "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+        ),
+      ),
+    exec: () =>
+      Promise.reject(
+        new Error(
+          "Mock database: Please run with Cloudflare environment (pnpm dev:split)",
+        ),
+      ),
+  } as unknown as D1Database;
+
+  return mockDb;
 }
