@@ -93,6 +93,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const [addOpen, setAddOpen] = createSignal(false);
   const [adding, setAdding] = createSignal(false);
 
+  // API base URL - in production this would come from environment variables
+  const API_BASE = "http://localhost:8787";
+
   // Fetch wishlist data
   const [wishlistData, { refetch }] = createResource<WishlistData>(async () => {
     if (typeof window === "undefined") {
@@ -100,7 +103,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       return { categories: [], items: [] } as WishlistData;
     }
 
-    const response = await fetch("/api/wishlist");
+    const response = await fetch(`${API_BASE}/api/wishlist`);
 
     if (!response.ok) {
       throw new Error("Failed to fetch wishlist data");
@@ -113,7 +116,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", {
+      await fetch("http://localhost:8787/api/auth/logout", {
         method: "GET",
         credentials: "include",
       });
@@ -190,7 +193,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
 
     if (!categoryId) return;
 
-    const response = await fetch("/api/wishlist/items", {
+    const response = await fetch(`${API_BASE}/api/wishlist/items`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -209,7 +212,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   };
 
   const deleteItem = async (itemId: string) => {
-    const response = await fetch(`/api/wishlist/items/${itemId}`, {
+    const response = await fetch(`${API_BASE}/api/wishlist/items/${itemId}`, {
       method: "DELETE",
     });
 
