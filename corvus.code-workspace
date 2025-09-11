@@ -13,6 +13,10 @@
             "path": "apps/extension"
         },
         {
+            "name": "API App",
+            "path": "apps/api"
+        },
+        {
             "name": "UI Components",
             "path": "packages/ui-components"
         },

@@ -1,0 +1,24 @@
+{
+  "name": "api",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "vite build",
+    "preview": "$npm_execpath run build && vite preview",
+    "deploy": "$npm_execpath run build && wrangler deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:local": "echo 'API database is managed by wrangler dev'",
+    "db:setup": "wrangler d1 execute corvus --file=schema.sql",
+    "db:migrate": "wrangler d1 execute corvus --file=schema.sql"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.0",
+    "hono": "^4.9.6"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.2.3",
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "vite": "^6.3.5",
+    "wrangler": "^4.17.0"
+  }
+}

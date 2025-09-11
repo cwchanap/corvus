@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run db:local dev:backend dev --filter=web --filter=extension",
+    "dev": "turbo run db:local dev --filter=api --filter=web --filter=extension",
     "dev:web": "turbo run dev --filter=web",
     "dev:web:split": "pnpm -C apps/web dev:split",
     "dev:web:cf": "turbo run build db:local dev:backend dev:ui --filter=web",
