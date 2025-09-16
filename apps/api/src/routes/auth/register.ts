@@ -6,24 +6,20 @@ import { getD1 } from "../../lib/cloudflare.js";
 
 const app = new Hono();
 
-app.post("/login", async (c) => {
+app.post("/register", async (c) => {
   try {
-    const { email, password } = await c.req.json();
+    const { email, password, name } = await c.req.json();
 
-    if (!email || !password) {
+    if (!email || !password || !name) {
       return c.json(
-        { error: "Email and password are required" },
+        { error: "Email, password, and name are required" },
         { status: 400 },
       );
     }
 
     const db = createDatabase(getD1(c));
     const authService = new AuthService(db);
-    const user = await authService.login(email, password);
-
-    if (!user) {
-      return c.json({ error: "Invalid email or password" }, { status: 401 });
-    }
+    const user = await authService.register(email, password, name);
 
     // Create session and set cookie
     const sessionId = await authService.createSession(user.id);
@@ -34,7 +30,10 @@ app.post("/login", async (c) => {
       user: { id: user.id, name: user.name, email: user.email },
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Register error:", error);
+    if (error instanceof Error && error.message === "User already exists") {
+      return c.json({ error: "User already exists" }, { status: 409 });
+    }
     return c.json({ error: "Internal server error" }, { status: 500 });
   }
 });

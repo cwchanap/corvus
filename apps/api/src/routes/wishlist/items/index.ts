@@ -50,3 +50,8 @@ app.post("/", async (c) => {
 });
 
 export default app;
+
+// Enable HMR
+if (import.meta.hot) {
+  import.meta.hot.accept();
+}
