@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { A, useAction } from "@solidjs/router";
+import { A } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import {
   Card,
@@ -8,47 +8,48 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import { registerAction } from "../../lib/auth/server.js";
 
 export function RegisterForm() {
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string>("");
-  let formRef: HTMLFormElement | undefined;
-  const register = useAction(registerAction);
-
-  const submitForm = async () => {
-    if (!formRef) return;
-    setIsLoading(true);
-    setError("");
-
-    const formData = new FormData(formRef);
-
-    try {
-      console.log("[RegisterForm] submitting action");
-      await register(formData);
-      console.log("[RegisterForm] action completed");
-      // Full reload so server picks up HTTP-only session cookie
-      window.location.href = "/dashboard";
-    } catch (err) {
-      // Allow router redirects to propagate
-      if (err instanceof Response && err.status >= 300 && err.status < 400) {
-        throw err;
-      }
-      if (err instanceof Error) {
-        console.error("[RegisterForm] submit error:", err);
-        setError(err.stack ?? err.message);
-      } else {
-        console.error("[RegisterForm] submit error (non-error):", err);
-        setError("An error occurred");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSubmit = async (event: Event) => {
     event.preventDefault();
-    await submitForm();
+    setIsLoading(true);
+    setError("");
+
+    const form = event.currentTarget as HTMLFormElement;
+    const formData = new FormData(form);
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = (await response.json()) as {
+        error?: string;
+        success?: boolean;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Registration failed");
+      }
+
+      // Full reload so server picks up HTTP-only session cookie
+      window.location.href = "/dashboard";
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -60,7 +61,7 @@ export function RegisterForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} onSubmit={handleSubmit} class="space-y-4">
+        <form onSubmit={handleSubmit} class="space-y-4">
           <div class="space-y-2">
             <label for="name" class="text-sm font-medium">
               Full Name

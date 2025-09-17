@@ -175,7 +175,6 @@ npx wrangler d1 info corvus
 ### Server Actions
 
 - `loginAction(formData)` - Authenticate user
-- `registerAction(formData)` - Create new user account
 - `logoutAction()` - Clear user session
 
 ### Auth Context

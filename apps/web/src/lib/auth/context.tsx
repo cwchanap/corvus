@@ -1,9 +1,6 @@
 import { createContext, useContext, ParentComponent } from "solid-js";
 import { createAsync } from "@solidjs/router";
-import { createDatabase } from "../db.js";
-import { AuthService } from "./service.js";
-import { getSessionCookie } from "./session.js";
-import { getD1 } from "../cloudflare.js";
+import { isServer } from "solid-js/web";
 import type { PublicUser } from "../db/types.js";
 
 interface AuthContextValue {
@@ -16,17 +13,10 @@ const AuthContext = createContext<AuthContextValue>();
 
 async function getCurrentUser(): Promise<PublicUser | null> {
   "use server";
-
-  const sessionId = getSessionCookie();
-
-  if (!sessionId) {
-    return null;
-  }
-
-  const db = createDatabase(getD1());
-  const authService = new AuthService(db);
-
-  return await authService.validateSession(sessionId);
+  const url = isServer ? "http://localhost:8787/api/auth/me" : "/api/auth/me";
+  const response = await fetch(url);
+  const data = (await response.json()) as { user: PublicUser | null };
+  return data.user;
 }
 
 export const AuthProvider: ParentComponent = (props) => {

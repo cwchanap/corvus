@@ -20,7 +20,7 @@ export function getSessionCookie(c?: Context): string | undefined {
 export function setSessionCookie(c: Context, sessionId: string): void {
   c.header(
     "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=${sessionId}; HttpOnly; ${process.env.NODE_ENV === "production" ? "Secure;" : ""} SameSite=Lax; Max-Age=${SESSION_MAX_AGE}; Path=/`,
+    `${SESSION_COOKIE_NAME}=${sessionId}; HttpOnly; Secure; SameSite=None; Max-Age=${SESSION_MAX_AGE}; Path=/`,
   );
 }
 
@@ -28,7 +28,7 @@ export function clearSessionCookie(c: Context): void {
   // Must match the same attributes (at least path) used when setting the cookie
   c.header(
     "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=; HttpOnly; ${process.env.NODE_ENV === "production" ? "Secure;" : ""} SameSite=Lax; Max-Age=0; Path=/`,
+    `${SESSION_COOKIE_NAME}=; HttpOnly; Secure; SameSite=None; Max-Age=0; Path=/`,
   );
 }
 
