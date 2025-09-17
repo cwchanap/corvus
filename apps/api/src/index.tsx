@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import authLoginRoutes from "./routes/auth/login";
 import authLogoutRoutes from "./routes/auth/logout";
 import authRegisterRoutes from "./routes/auth/register";
+import authMeRoutes from "./routes/auth/me";
 import wishlistRoutes from "./routes/wishlist/index";
 import wishlistItemsRoutes from "./routes/wishlist/items/index";
 import wishlistItemRoutes from "./routes/wishlist/items/[id]";
@@ -31,6 +32,7 @@ app.use(
 app.route("/api/auth", authLoginRoutes);
 app.route("/api/auth", authLogoutRoutes);
 app.route("/api/auth", authRegisterRoutes);
+app.route("/api/auth", authMeRoutes);
 app.route("/api/wishlist", wishlistRoutes);
 app.route("/api/wishlist/items", wishlistItemsRoutes);
 app.route("/api/wishlist/items", wishlistItemRoutes);

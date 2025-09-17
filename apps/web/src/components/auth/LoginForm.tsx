@@ -9,6 +9,9 @@ import {
   CardTitle,
 } from "@repo/ui-components/card";
 
+const API_BASE = "http://localhost:8787";
+const getApiUrl = (path: string) => `${API_BASE}${path}`;
+
 export function LoginForm() {
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string>("");
@@ -24,7 +27,7 @@ export function LoginForm() {
     const password = formData.get("password") as string;
 
     try {
-      const response = await fetch("http://localhost:8787/api/auth/login", {
+      const response = await fetch(getApiUrl("/api/auth/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,10 +36,22 @@ export function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = (await response.json()) as {
-        error?: string;
-        success?: boolean;
-      };
+      let data: { error?: string; success?: boolean } = {};
+
+      try {
+        data = (await response.json()) as {
+          error?: string;
+          success?: boolean;
+        };
+      } catch (parseError) {
+        // If response is not valid JSON (e.g., HTML error page), provide a generic error
+        if (!response.ok) {
+          throw new Error(
+            `Server error (${response.status}): API server may not be running`,
+          );
+        }
+        throw new Error("Invalid response from server");
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Login failed");

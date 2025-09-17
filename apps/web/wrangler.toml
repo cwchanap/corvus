@@ -4,9 +4,3 @@ compatibility_flags = ["nodejs_compat"]
 
 [build]
 command = "pnpm build"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "corvus"
-database_id = "21169276-f379-475f-99d3-54fd1dbb2d20"
-preview_database_id = "DB"
