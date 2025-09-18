@@ -7,9 +7,8 @@
     "preview": "$npm_execpath run build && vite preview",
     "deploy": "$npm_execpath run build && wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "db:local": "echo 'API database is managed by wrangler dev'",
-    "db:setup": "wrangler d1 execute corvus --file=schema.sql",
-    "db:migrate": "wrangler d1 execute corvus --file=schema.sql"
+    "db:gen": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",
@@ -18,6 +17,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.13.0",
     "@cloudflare/workers-types": "^4.20241218.0",
+    "drizzle-kit": "^0.31.4",
     "vite": "^6.3.5",
     "wrangler": "^4.36.0"
   }
