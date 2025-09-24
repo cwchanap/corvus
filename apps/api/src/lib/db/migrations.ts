@@ -1,7 +1,7 @@
 import type { DB } from "../db.js";
 import { wishlistCategories } from "./schema.js";
 
-// Note: We rely on `schema.sql` and Wrangler scripts for DDL. This file keeps
+// Note: We rely on Drizzle schema migrations for DDL. This file keeps
 // Drizzle-powered data bootstrapping utilities only.
 
 export async function createDefaultCategories(db: DB, userId: number) {
