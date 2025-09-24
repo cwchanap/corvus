@@ -4,11 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a Turborepo monorepo built with SolidJS that includes a browser extension and web application for wishlist management. The project uses pnpm as the package manager and Turbo for build orchestration.
+This is a Turborepo monorepo built with SolidJS for wishlist management, featuring a web application, API backend, and browser extension. The project uses pnpm as the package manager and Turbo for build orchestration.
 
 ## Key Applications
 
-- **`apps/web`**: SolidStart web application with authentication system and Cloudflare D1 database integration
+- **`apps/web`**: SolidStart web application (port 5000) with authentication system and API proxy
+- **`apps/api`**: Hono-based Cloudflare Workers API (port 8787) with Drizzle ORM for D1 database operations
 - **`apps/extension`**: WXT-based browser extension for adding items to wishlists
 
 ## Shared Packages
@@ -26,8 +27,20 @@ This is a Turborepo monorepo built with SolidJS that includes a browser extensio
 # Install dependencies
 pnpm install
 
-# Run all apps in development mode
+# Run API + web + extension in development mode
 pnpm dev
+
+# Run only web app development (with database setup)
+pnpm dev:web
+
+# Run web app with Cloudflare backend
+pnpm dev:web:cf
+
+# Run web app with split frontend/backend
+pnpm dev:web:split
+
+# Run extension development
+pnpm dev:extension
 
 # Build all apps and packages
 pnpm build
@@ -48,25 +61,35 @@ pnpm format
 ### App-Specific Development
 
 ```bash
-# Web app development (runs on port 3000)
+# Web app development (runs on port 5000)
 turbo dev --filter=web
+
+# API development (runs on port 8787)
+turbo dev --filter=api
 
 # Extension development
 turbo dev --filter=extension
 
 # Build specific app
 turbo build --filter=web
+turbo build --filter=api
 turbo build --filter=extension
 ```
 
-### Web App Database Commands
+### API Database Commands
 
 ```bash
-# Apply schema to local D1 database
-cd apps/web && npm run db:local
+# Generate migration files
+cd apps/api && pnpm db:gen
 
-# Apply schema to remote D1 database
-cd apps/web && npm run db:remote
+# Apply migrations to local D1 database
+cd apps/api && pnpm db:migrate
+
+# Generate Cloudflare types
+cd apps/api && pnpm cf-typegen
+
+# Deploy API to Cloudflare Workers
+cd apps/api && pnpm deploy
 ```
 
 ### Extension Commands
@@ -85,15 +108,32 @@ cd apps/extension && npm run build
 cd apps/extension && npm run zip
 ```
 
+### Testing Commands
+
+```bash
+# Run Playwright tests for web app
+cd apps/web && pnpm test
+
+# Run Playwright tests with UI
+cd apps/web && pnpm test:ui
+```
+
 ## Architecture Notes
+
+### API Backend
+
+- Built with Hono framework for Cloudflare Workers
+- Uses Drizzle ORM with Cloudflare D1 database
+- Runs on port 8787 in development
+- Database migrations managed through Drizzle Kit
 
 ### Web Application
 
 - Built with SolidStart and Vinxi
-- Uses Cloudflare D1 database with Drizzle ORM
-- Authentication system with session management
-- Drizzle ORM integration for D1
-- Falls back to mock database for local development when D1 is unavailable
+- Runs on port 5000 in development
+- Proxies `/api` requests to the API backend (port 8787)
+- Authentication system with Better Auth
+- Cloudflare Pages deployment target
 
 ### Browser Extension
 
@@ -118,6 +158,7 @@ cd apps/extension && npm run zip
 
 ## Build Outputs
 
-- Web app: `.vinxi/` and `.output/` directories
-- Extension: `.wxt/` and `dist/` directories
+- API: `dist/` directory (Cloudflare Workers bundle)
+- Web app: `.vinxi/` and `.output/` directories (SolidStart build)
+- Extension: `.wxt/` and `dist/` directories (WXT build)
 - Turbo cache: `.turbo/` directory
