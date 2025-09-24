@@ -22,8 +22,9 @@ This is the backend API server for the Corvus wishlist application, built with H
 2. **Set up the database:**
 
    ```bash
-   # Apply database schema
-   pnpm run db:setup
+   # Generate and apply database migrations
+   pnpm run db:gen
+   pnpm run db:migrate
    ```
 
 3. **Start the development server:**
@@ -59,10 +60,10 @@ The API uses Cloudflare D1 database with the following schema:
 ### Database Commands
 
 ```bash
-# Apply schema to local database
-pnpm run db:setup
+# Generate migration files from schema
+pnpm run db:gen
 
-# Apply migrations
+# Apply migrations to local database
 pnpm run db:migrate
 
 # List databases
@@ -131,7 +132,8 @@ apps/api/
 │   └── routes/               # API route handlers
 │       ├── auth/
 │       └── wishlist/
-├── schema.sql                # Database schema
+├── drizzle.config.ts         # Drizzle configuration
+├── drizzle/                  # Generated migrations
 ├── wrangler.jsonc           # Cloudflare configuration
 └── package.json
 ```
