@@ -9,9 +9,6 @@ import {
   CardTitle,
 } from "@repo/ui-components/card";
 
-const API_BASE = "http://localhost:8787";
-const getApiUrl = (path: string) => `${API_BASE}${path}`;
-
 export function LoginForm() {
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string>("");
@@ -27,7 +24,7 @@ export function LoginForm() {
     const password = formData.get("password") as string;
 
     try {
-      const response = await fetch(getApiUrl("/api/auth/login"), {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

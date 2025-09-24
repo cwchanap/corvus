@@ -10,26 +10,50 @@ const SESSION_COOKIE_NAME = "corvus-session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export function getSessionCookie(c?: Context): string | undefined {
-  return c?.req
-    .header("cookie")
-    ?.split(";")
-    .find((c) => c.trim().startsWith(`${SESSION_COOKIE_NAME}=`))
-    ?.split("=")[1];
+  const cookieHeader = c?.req.header("cookie");
+  if (!cookieHeader) return undefined;
+
+  const cookies = cookieHeader.split(";").map((c) => c.trim());
+  for (const cookie of cookies) {
+    if (cookie.startsWith(`${SESSION_COOKIE_NAME}=`)) {
+      return cookie.substring(SESSION_COOKIE_NAME.length + 1);
+    }
+  }
+  return undefined;
 }
 
 export function setSessionCookie(c: Context, sessionId: string): void {
+  const isDev = c.env.DEV;
+  const cookieOptions = [
+    `HttpOnly`,
+    isDev ? `SameSite=Lax` : `SameSite=None`,
+    isDev ? "" : `Secure`,
+    `Max-Age=${SESSION_MAX_AGE}`,
+    `Path=/`,
+  ]
+    .filter(Boolean)
+    .join("; ");
+
   c.header(
     "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=${sessionId}; HttpOnly; Secure; SameSite=None; Max-Age=${SESSION_MAX_AGE}; Path=/`,
+    `${SESSION_COOKIE_NAME}=${sessionId}; ${cookieOptions}`,
   );
 }
 
 export function clearSessionCookie(c: Context): void {
+  const isDev = c.env.DEV;
+  const cookieOptions = [
+    `HttpOnly`,
+    isDev ? `SameSite=Lax` : `SameSite=None`,
+    isDev ? "" : `Secure`,
+    `Max-Age=0`,
+    `Path=/`,
+  ]
+    .filter(Boolean)
+    .join("; ");
+
   // Must match the same attributes (at least path) used when setting the cookie
-  c.header(
-    "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=; HttpOnly; Secure; SameSite=None; Max-Age=0; Path=/`,
-  );
+  c.header("Set-Cookie", `${SESSION_COOKIE_NAME}=; ${cookieOptions}`);
 }
 
 export function requireAuth(user: PublicUser | null): PublicUser {

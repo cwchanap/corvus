@@ -5,7 +5,7 @@ export default defineConfig({
   schema: "./src/lib/db/schema.ts",
   out: "./drizzle",
   dialect: "sqlite",
-  driver: "d1",
+  driver: "d1-http",
   dbCredentials: {
     wranglerConfigPath: "wrangler.jsonc",
     dbName: "corvus",
