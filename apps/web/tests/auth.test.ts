@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 const TEST_USER = {
   name: "Test User",
   email: "test@example.com",
-  password: "password123",
+  password: "password",
 };
 
 test.describe("Authentication Flow", () => {
