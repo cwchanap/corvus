@@ -41,34 +41,36 @@ function SortableWishlistItem(props: {
 
   return (
     <div style={style}>
-      <Card class={"transition-all"}>
-        <CardContent class="p-4">
+      <Card class="transition-all duration-200 hover:shadow-lg shadow-md border-0 bg-card/80 backdrop-blur-sm">
+        <CardContent class="p-6">
           <div class="flex items-start justify-between">
             <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                {/* Drag handle removed for now */}
-                <h3 class="font-medium text-foreground">{props.item.title}</h3>
+              <div class="flex items-center gap-2 mb-2">
+                <h3 class="font-semibold text-card-foreground text-lg">
+                  {props.item.title}
+                </h3>
               </div>
               <a
                 href={props.item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-sm text-primary hover:text-primary/80 break-all block ml-6"
+                class="text-sm text-primary hover:text-primary/80 break-all block transition-colors duration-200 font-medium"
               >
                 {props.item.url}
               </a>
               <Show when={props.item.description}>
-                <p class="text-sm text-muted-foreground mt-2 ml-6">
+                <p class="text-sm text-muted-foreground mt-3 leading-relaxed">
                   {props.item.description}
                 </p>
               </Show>
-              <div class="text-xs text-muted-foreground mt-2 ml-6">
+              <div class="text-xs text-muted-foreground mt-3 flex items-center">
+                <span class="w-2 h-2 bg-primary rounded-full mr-2" />
                 Added {createdAtLabel()}
               </div>
             </div>
             <button
               onClick={() => props.onDelete(props.item.id)}
-              class="text-destructive hover:text-destructive/80 ml-2 p-1"
+              class="text-destructive hover:text-destructive/80 hover:bg-destructive/10 ml-4 p-2 rounded-lg transition-all duration-200 font-bold text-lg"
               title="Delete item"
             >
               ×
@@ -121,7 +123,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       // ignore
     } finally {
       // Force full reload to refresh server-authenticated state
-      window.location.href = "/";
+      window.location.href = "/login";
     }
   };
 
@@ -221,29 +223,38 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   };
 
   return (
-    <div class="min-h-screen bg-background">
+    <div class="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
       {/* Header */}
-      <header class="bg-card shadow-sm border-b border-border">
+      <header class="bg-card/80 backdrop-blur-sm shadow-lg border-b border-border">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-center py-4">
+          <div class="flex justify-between items-center py-6">
             <div>
-              <h1 class="text-2xl font-bold text-foreground">
+              <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Corvus Wishlist
               </h1>
-              <p class="text-sm text-muted-foreground">
+              <p class="text-sm text-muted-foreground mt-1">
                 Welcome back, {props.user.name}!
               </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
               <ThemeToggle
                 theme={theme.theme}
                 setTheme={theme.setTheme}
                 resolvedTheme={theme.resolvedTheme}
               />
               <A href="/profile">
-                <Button variant="ghost">Profile</Button>
+                <Button
+                  variant="ghost"
+                  class="text-foreground hover:text-primary hover:bg-accent transition-colors duration-200"
+                >
+                  Profile
+                </Button>
               </A>
-              <Button variant="outline" onClick={handleLogout}>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                class="border-border text-foreground hover:bg-accent transition-colors duration-200"
+              >
                 Sign Out
               </Button>
             </div>
@@ -267,22 +278,26 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         </Show>
 
         <Show when={wishlistData()}>
-          <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Categories Sidebar */}
             <div class="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Categories</CardTitle>
-                  <CardDescription>Organize your wishlist</CardDescription>
+              <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+                <CardHeader class="pb-4">
+                  <CardTitle class="text-xl text-card-foreground">
+                    Categories
+                  </CardTitle>
+                  <CardDescription class="text-muted-foreground">
+                    Organize your wishlist
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent class="px-6 pb-6">
                   <div class="space-y-2">
                     <button
                       onClick={() => setSelectedCategory(null)}
-                      class={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      class={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                         selectedCategory() === null
-                          ? "bg-primary text-primary-foreground"
-                          : "text-foreground hover:bg-accent"
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                          : "text-foreground hover:bg-accent hover:text-accent-foreground"
                       }`}
                     >
                       All Items ({items().length || 0})
@@ -291,21 +306,27 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                       {(category: WishlistCategory) => (
                         <button
                           onClick={() => setSelectedCategory(category.id)}
-                          class={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          class={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                             selectedCategory() === category.id
-                              ? "bg-primary text-primary-foreground"
-                              : "text-foreground hover:bg-accent"
+                              ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                              : "text-foreground hover:bg-accent hover:text-accent-foreground"
                           }`}
                         >
-                          <div class="flex items-center space-x-2">
+                          <div class="flex items-center space-x-3">
                             <div
                               class="w-3 h-3 rounded-full"
                               style={{
                                 "background-color": category.color || "#6366f1",
                               }}
                             />
-                            <span>{category.name}</span>
-                            <span class="text-xs text-muted-foreground">
+                            <span class="flex-1">{category.name}</span>
+                            <span
+                              class={`text-xs ${
+                                selectedCategory() === category.id
+                                  ? "text-white/70"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
                               (
                               {items().filter(
                                 (item: WishlistItem) =>
@@ -325,9 +346,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
             {/* Items Grid */}
             <div class="lg:col-span-3">
               {/* Search and Filter Controls */}
-              <div class="mb-6 space-y-4">
+              <div class="mb-8 space-y-6">
                 <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                  <h2 class="text-xl font-semibold text-foreground">
+                  <h2 class="text-2xl font-bold text-foreground">
                     {selectedCategory()
                       ? wishlistData()?.categories?.find(
                           (c: WishlistCategory) => c.id === selectedCategory(),
@@ -338,6 +359,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                     onClick={() => {
                       setAddOpen(true);
                     }}
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-500 dark:to-pink-500 dark:hover:from-purple-600 dark:hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     Add Item
                   </Button>
@@ -371,9 +393,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
               </div>
 
               <Show when={filteredAndSortedItems().length === 0}>
-                <Card>
-                  <CardContent class="text-center py-12">
-                    <div class="text-muted-foreground">
+                <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+                  <CardContent class="text-center py-16">
+                    <div class="text-muted-foreground text-lg">
                       {searchQuery()
                         ? `No items found matching "${searchQuery()}"`
                         : "No items in this category yet. Add your first item!"}
