@@ -65,36 +65,37 @@ export function AddItemDialog(props: AddItemDialogProps) {
               role="dialog"
               aria-modal="true"
               aria-labelledby="add-item-title"
-              class="w-full max-w-lg rounded-lg border border-border bg-card shadow-xl"
+              class="w-full max-w-lg rounded-2xl border-0 bg-white/95 backdrop-blur-sm shadow-2xl"
             >
               <form onSubmit={handleSubmit}>
-                <div class="px-6 pt-5 pb-2 border-b border-border">
+                <div class="px-8 pt-6 pb-4 border-b border-purple-100">
                   <h2
                     id="add-item-title"
-                    class="text-lg font-semibold text-foreground"
+                    class="text-2xl font-bold text-gray-800"
                   >
                     Add Wishlist Item
                   </h2>
-                  <p class="mt-1 text-sm text-muted-foreground">
+                  <p class="mt-2 text-sm text-gray-600">
                     Provide details for the item you'd like to add.
                   </p>
                 </div>
 
-                <div class="px-6 py-4 space-y-4">
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">
+                <div class="px-8 py-6 space-y-6">
+                  <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700">
                       Title
                     </label>
                     <Input
                       value={title()}
                       onInput={(e) => setTitle(e.currentTarget.value)}
                       placeholder="Item title"
+                      class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 hover:bg-white"
                       required
                     />
                   </div>
 
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">
+                  <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700">
                       URL
                     </label>
                     <Input
@@ -102,16 +103,17 @@ export function AddItemDialog(props: AddItemDialogProps) {
                       value={url()}
                       onInput={(e) => setUrl(e.currentTarget.value)}
                       placeholder="https://example.com/product"
+                      class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 hover:bg-white"
                       required
                     />
                   </div>
 
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">
+                  <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700">
                       Description (optional)
                     </label>
                     <textarea
-                      class="w-full min-h-24 resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      class="w-full min-h-24 resize-y rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                       value={description()}
                       onInput={(e) => setDescription(e.currentTarget.value)}
                       placeholder="Notes, size, color, etc."
@@ -119,13 +121,14 @@ export function AddItemDialog(props: AddItemDialogProps) {
                   </div>
 
                   <Show when={props.categories?.length > 0}>
-                    <div class="space-y-2">
-                      <label class="text-sm font-medium text-foreground">
+                    <div class="space-y-3">
+                      <label class="block text-sm font-medium text-gray-700">
                         Category
                       </label>
                       <Select
                         value={categoryId()}
                         onChange={(e) => setCategoryId(e.currentTarget.value)}
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 hover:bg-white"
                       >
                         <For each={props.categories}>
                           {(c) => <option value={c.id}>{c.name}</option>}
@@ -135,15 +138,20 @@ export function AddItemDialog(props: AddItemDialogProps) {
                   </Show>
                 </div>
 
-                <div class="px-6 pb-5 pt-3 flex items-center justify-end gap-2 border-t border-border">
+                <div class="px-8 pb-6 pt-4 flex items-center justify-end gap-3 border-t border-purple-100">
                   <Button
                     type="button"
                     variant="ghost"
                     onClick={() => props.onOpenChange(false)}
+                    class="text-gray-600 hover:text-gray-800 hover:bg-gray-100 px-6 py-2 rounded-xl font-medium transition-all duration-200"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={props.submitting}>
+                  <Button
+                    type="submit"
+                    disabled={props.submitting}
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                  >
                     {props.submitting ? "Adding..." : "Add Item"}
                   </Button>
                 </div>

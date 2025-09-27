@@ -64,31 +64,36 @@ export function LoginForm() {
   };
 
   return (
-    <Card class="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Sign In</CardTitle>
-        <CardDescription>
-          Enter your email and password to access your account
-        </CardDescription>
+    <Card class="w-full shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+      <CardHeader class="text-center pb-4">
+        <CardTitle class="text-2xl text-card-foreground">
+          Welcome Back
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} class="space-y-4">
-          <div class="space-y-2">
-            <label for="email" class="text-sm font-medium">
-              Email
+      <CardContent class="px-8 pb-8">
+        <form onSubmit={handleSubmit} class="space-y-6">
+          <div class="space-y-3">
+            <label
+              for="email"
+              class="block text-sm font-medium text-foreground"
+            >
+              Email Address
             </label>
             <input
               id="email"
               name="email"
               type="email"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your email"
+              class="w-full px-4 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 bg-background hover:bg-accent"
+              placeholder="your@email.com"
             />
           </div>
 
-          <div class="space-y-2">
-            <label for="password" class="text-sm font-medium">
+          <div class="space-y-3">
+            <label
+              for="password"
+              class="block text-sm font-medium text-foreground"
+            >
               Password
             </label>
             <input
@@ -96,22 +101,35 @@ export function LoginForm() {
               name="password"
               type="password"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your password"
+              class="w-full px-4 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 bg-background hover:bg-accent"
+              placeholder="••••••••"
             />
           </div>
 
-          {error() && <div class="text-red-600 text-sm">{error()}</div>}
+          {error() && (
+            <div class="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-destructive text-sm">
+              {error()}
+            </div>
+          )}
 
-          <Button type="submit" disabled={isLoading()} class="w-full">
+          <Button
+            type="submit"
+            disabled={isLoading()}
+            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+          >
             {isLoading() ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 
-        <div class="mt-4 text-center text-sm">
-          Don't have an account?{" "}
-          <A href="/register" class="text-blue-600 hover:underline">
-            Sign up
+        <div class="mt-6 text-center">
+          <span class="text-muted-foreground text-sm">
+            Don't have an account?{" "}
+          </span>
+          <A
+            href="/register"
+            class="text-primary hover:text-primary/80 font-medium text-sm transition-colors duration-200"
+          >
+            Create Account
           </A>
         </div>
       </CardContent>
