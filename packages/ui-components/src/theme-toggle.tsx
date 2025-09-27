@@ -8,11 +8,9 @@ interface ThemeToggleProps {
 
 export function ThemeToggle(props: ThemeToggleProps) {
   const cycleTheme = () => {
-    const current = props.theme();
-    if (current === "light") {
+    const resolved = props.resolvedTheme();
+    if (resolved === "light") {
       props.setTheme("dark");
-    } else if (current === "dark") {
-      props.setTheme("system");
     } else {
       props.setTheme("light");
     }
@@ -20,18 +18,12 @@ export function ThemeToggle(props: ThemeToggleProps) {
 
   const getIcon = () => {
     const resolved = props.resolvedTheme();
-    const current = props.theme();
-
-    if (current === "system") {
-      return resolved === "dark" ? "🌙" : "☀️";
-    }
     return resolved === "dark" ? "🌙" : "☀️";
   };
 
   const getLabel = () => {
-    const current = props.theme();
-    if (current === "system") return "System";
-    return current === "dark" ? "Dark" : "Light";
+    const resolved = props.resolvedTheme();
+    return resolved === "dark" ? "Dark" : "Light";
   };
 
   return (
