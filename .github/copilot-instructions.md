@@ -4,7 +4,7 @@
 
 **Corvus** is a Turborepo monorepo for wishlist management with three main applications:
 
-- **`apps/api`**: Hono + Cloudflare Workers API (port 8787) with Drizzle ORM + D1 database
+- **`apps/api`**: Hono + Cloudflare Workers API (port 5002) with Drizzle ORM + D1 database
 - **`apps/web`**: SolidStart web app (port 5000) with Better Auth, proxies `/api` to backend
 - **`apps/extension`**: WXT-based browser extension with SolidJS popup interface
 
@@ -27,7 +27,7 @@
 
 - Better Auth integration with session-based auth
 - `AuthProvider` context wraps app, handles SSR skip: `if (isServer) return null`
-- API proxy at `/api` routes requests from web app (port 5000) to API (port 8787)
+- API proxy at `/api` routes requests from web app (port 5000) to API (port 5002)
 - Use `credentials: "include"` for all authenticated requests
 
 ### Extension Development
@@ -96,7 +96,7 @@ cd apps/web && pnpm test        # Playwright tests
 
 ### API ↔ Web Communication
 
-- Web app proxies `/api/*` requests to `localhost:8787` via Vite proxy
+- Web app proxies `/api/*` requests to `localhost:5002` via Vite proxy
 - CORS configured for `http://localhost:*` origins with credentials
 - Database sessions managed via cookies with cascade deletion
 

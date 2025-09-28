@@ -7,6 +7,7 @@ import authMeRoutes from "./routes/auth/me";
 import wishlistRoutes from "./routes/wishlist/index";
 import wishlistItemsRoutes from "./routes/wishlist/items/index";
 import wishlistItemRoutes from "./routes/wishlist/items/[id]";
+import wishlistItemLinksRoutes from "./routes/wishlist/items/links";
 
 const app = new Hono();
 
@@ -36,6 +37,7 @@ app.route("/api/auth", authMeRoutes);
 app.route("/api/wishlist", wishlistRoutes);
 app.route("/api/wishlist/items", wishlistItemsRoutes);
 app.route("/api/wishlist/items", wishlistItemRoutes);
+app.route("/api/wishlist/items", wishlistItemLinksRoutes);
 
 export default app;
 

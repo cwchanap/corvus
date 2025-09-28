@@ -26,9 +26,9 @@ app.post("/", async (c) => {
 
     const { title, url, description, category_id } = await c.req.json();
 
-    if (!title || !url || !category_id) {
+    if (!title || !category_id) {
       return c.json(
-        { error: "Title, URL, and category are required" },
+        { error: "Title and category are required" },
         { status: 400 },
       );
     }
@@ -38,9 +38,17 @@ app.post("/", async (c) => {
       user_id: user.id,
       category_id,
       title,
-      url,
       description,
     });
+
+    // If URL is provided, create a primary link
+    if (url) {
+      await wishlistService.createItemLink({
+        item_id: item.id,
+        url,
+        is_primary: true,
+      });
+    }
 
     return c.json(item);
   } catch (error) {

@@ -14,6 +14,9 @@ export function WishlistView(props: WishlistViewProps) {
   const [selectedCategoryId, setSelectedCategoryId] = createSignal<
     string | null
   >(null);
+  const [expandedItems, setExpandedItems] = createSignal<Set<string>>(
+    new Set(),
+  );
 
   const [wishlistData, { refetch }] = createResource(
     WishlistStorage.getWishlistData,
@@ -29,6 +32,28 @@ export function WishlistView(props: WishlistViewProps) {
     return data.items.filter((item) => item.categoryId === categoryId);
   };
 
+  const toggleItemExpanded = (itemId: string) => {
+    setExpandedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const getPrimaryLink = (item: any) => {
+    if (!item.links || item.links.length === 0) return null;
+    return item.links.find((link: any) => link.isPrimary) || item.links[0];
+  };
+
+  const getSecondaryLinks = (item: any) => {
+    if (!item.links || item.links.length <= 1) return [];
+    return item.links.filter((link: any) => !link.isPrimary);
+  };
+
   const getCategoryById = (
     categoryId: string,
   ): WishlistCategory | undefined => {
@@ -42,6 +67,16 @@ export function WishlistView(props: WishlistViewProps) {
     } catch (error) {
       console.error("Error removing item:", error);
     }
+  };
+
+  const deleteLink = async (itemId: string, linkId: string) => {
+    await WishlistStorage.removeItemLink(itemId, linkId);
+    refetch();
+  };
+
+  const setPrimary = async (itemId: string, linkId: string) => {
+    await WishlistStorage.setPrimaryLink(itemId, linkId);
+    refetch();
   };
 
   const handleOpenItem = (url: string) => {
@@ -84,17 +119,30 @@ export function WishlistView(props: WishlistViewProps) {
                     (item) => item.categoryId === category.id,
                   ).length;
                   return (
-                    <Button
-                      variant={
-                        selectedCategoryId() === category.id
-                          ? "default"
-                          : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setSelectedCategoryId(category.id)}
-                    >
-                      {category.name} ({itemCount})
-                    </Button>
+                    <div class="flex items-center gap-1">
+                      <Button
+                        variant={
+                          selectedCategoryId() === category.id
+                            ? "default"
+                            : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setSelectedCategoryId(category.id)}
+                      >
+                        {category.name} ({itemCount})
+                      </Button>
+                      <Show when={selectedCategoryId() === category.id}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={props.onAddNew}
+                          class="w-6 h-6 p-0 rounded-full"
+                          title="Add new item to this category"
+                        >
+                          +
+                        </Button>
+                      </Show>
+                    </div>
                   );
                 }}
               </For>
@@ -121,6 +169,10 @@ export function WishlistView(props: WishlistViewProps) {
                 <For each={filteredItems()}>
                   {(item) => {
                     const category = getCategoryById(item.categoryId);
+                    const primaryLink = getPrimaryLink(item);
+                    const secondaryLinks = getSecondaryLinks(item);
+                    const isExpanded = expandedItems().has(item.id);
+
                     return (
                       <Card class="p-3">
                         <div class="flex items-start gap-3">
@@ -141,12 +193,18 @@ export function WishlistView(props: WishlistViewProps) {
                                 >
                                   {item.title}
                                 </h3>
-                                <div
-                                  class="text-xs text-muted-foreground truncate"
-                                  title={item.url}
-                                >
-                                  {item.url}
-                                </div>
+
+                                {/* Primary Link Display */}
+                                <Show when={primaryLink}>
+                                  {(link) => (
+                                    <div class="text-xs text-muted-foreground truncate">
+                                      <span title={link().url}>
+                                        {link().description || link().url}
+                                      </span>
+                                    </div>
+                                  )}
+                                </Show>
+
                                 <Show when={item.description}>
                                   <p class="text-xs text-muted-foreground mt-1 line-clamp-2">
                                     {item.description}
@@ -155,14 +213,29 @@ export function WishlistView(props: WishlistViewProps) {
                               </div>
 
                               <div class="flex items-center gap-1 flex-shrink-0">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleOpenItem(item.url)}
-                                  class="h-6 px-2 text-xs"
-                                >
-                                  Open
-                                </Button>
+                                <Show when={secondaryLinks.length > 0}>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => toggleItemExpanded(item.id)}
+                                    class="h-6 px-2 text-xs"
+                                  >
+                                    {isExpanded ? "−" : "+"}{" "}
+                                    {secondaryLinks.length}
+                                  </Button>
+                                </Show>
+                                <Show when={primaryLink}>
+                                  {(link) => (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleOpenItem(link().url)}
+                                      class="h-6 px-2 text-xs"
+                                    >
+                                      Open
+                                    </Button>
+                                  )}
+                                </Show>
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -173,6 +246,55 @@ export function WishlistView(props: WishlistViewProps) {
                                 </Button>
                               </div>
                             </div>
+
+                            {/* Secondary Links (Expandable) */}
+                            <Show
+                              when={isExpanded && secondaryLinks.length > 0}
+                            >
+                              <div class="space-y-1 mt-2 pl-2 border-l-2 border-gray-200">
+                                <For each={secondaryLinks}>
+                                  {(link) => (
+                                    <div class="flex items-center gap-2 text-xs">
+                                      <a
+                                        href={link.url}
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          handleOpenItem(link.url);
+                                        }}
+                                        class="text-blue-600 hover:text-blue-800 underline truncate flex-1"
+                                        title={link.url}
+                                      >
+                                        {link.description || link.url}
+                                      </a>
+                                      <div class="flex gap-1">
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() =>
+                                            setPrimary(item.id, link.id)
+                                          }
+                                          class="h-4 px-1 text-xs text-gray-500"
+                                          title="Make primary"
+                                        >
+                                          ↑
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() =>
+                                            deleteLink(item.id, link.id)
+                                          }
+                                          class="h-4 px-1 text-xs text-red-600"
+                                          title="Delete link"
+                                        >
+                                          ×
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </For>
+                              </div>
+                            </Show>
 
                             <div class="flex items-center justify-between mt-2">
                               <Show when={category}>
@@ -188,7 +310,8 @@ export function WishlistView(props: WishlistViewProps) {
                                 </Badge>
                               </Show>
                               <div class="text-xs text-muted-foreground">
-                                {new Date(item.createdAt).toLocaleDateString()}
+                                {item.links?.length || 0} link
+                                {(item.links?.length || 0) !== 1 ? "s" : ""}
                               </div>
                             </div>
                           </div>

@@ -2,6 +2,7 @@ import type {
   WishlistData,
   WishlistCategory,
   WishlistItem,
+  WishlistItemLink,
 } from "../types/wishlist.js";
 
 export interface StorageAdapter {
@@ -58,11 +59,49 @@ export class BaseWishlistStorage {
         ...cat,
         createdAt: new Date(cat.createdAt),
       }));
-      data.items = data.items.map((item) => ({
-        ...item,
-        createdAt: new Date(item.createdAt),
-        updatedAt: new Date(item.updatedAt),
-      }));
+
+      // Handle backward compatibility and ensure links are properly structured
+      data.items = data.items.map((item) => {
+        const baseItem = {
+          ...item,
+          createdAt: new Date(item.createdAt),
+          updatedAt: new Date(item.updatedAt),
+        };
+
+        // Migration: if item has old 'url' property, convert it to a link
+        if ("url" in item && item.url && typeof item.url === "string") {
+          const legacyItem = item as WishlistItem & { url: string };
+          if (!baseItem.links) {
+            baseItem.links = [];
+          }
+          // Only add the link if it doesn't already exist
+          const hasExistingLink = baseItem.links.some(
+            (link) => link.url === legacyItem.url,
+          );
+          if (!hasExistingLink) {
+            baseItem.links.push({
+              id: crypto.randomUUID(),
+              itemId: baseItem.id,
+              url: legacyItem.url,
+              description: undefined,
+              isPrimary: true,
+              createdAt: new Date(baseItem.createdAt),
+              updatedAt: new Date(baseItem.updatedAt),
+            });
+          }
+        }
+
+        // Ensure links have proper date objects
+        if (baseItem.links) {
+          baseItem.links = baseItem.links.map((link) => ({
+            ...link,
+            createdAt: new Date(link.createdAt),
+            updatedAt: new Date(link.updatedAt),
+          }));
+        }
+
+        return baseItem;
+      });
 
       return data;
     } catch (error) {
@@ -98,6 +137,39 @@ export class BaseWishlistStorage {
     return newItem;
   }
 
+  async addItemWithLink(
+    item: Omit<WishlistItem, "id" | "createdAt" | "updatedAt">,
+    url: string,
+    linkDescription?: string,
+  ): Promise<{ item: WishlistItem; link: WishlistItemLink }> {
+    const data = await this.getWishlistData();
+    const newItem: WishlistItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const newLink: WishlistItemLink = {
+      id: crypto.randomUUID(),
+      itemId: newItem.id,
+      url,
+      description: linkDescription,
+      isPrimary: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    data.items.push(newItem);
+
+    // Store links in a separate property or alongside the item
+    // For browser storage, we'll add them to the item directly
+    newItem.links = [newLink];
+
+    await this.saveWishlistData(data);
+    return { item: newItem, link: newLink };
+  }
+
   async removeItem(itemId: string): Promise<void> {
     const data = await this.getWishlistData();
     data.items = data.items.filter((item) => item.id !== itemId);
@@ -119,17 +191,110 @@ export class BaseWishlistStorage {
       };
 
       if (updates.title !== undefined) updated.title = updates.title;
-      if (updates.url !== undefined) updated.url = updates.url;
       if (updates.description !== undefined)
         updated.description = updates.description;
       if (updates.categoryId !== undefined)
         updated.categoryId = updates.categoryId;
       if (updates.favicon !== undefined) updated.favicon = updates.favicon;
       if (updates.userId !== undefined) updated.userId = updates.userId;
+      if (updates.links !== undefined) updated.links = updates.links;
 
       data.items[itemIndex] = updated;
       await this.saveWishlistData(data);
     }
+  }
+
+  // Link management methods
+  async addItemLink(
+    itemId: string,
+    url: string,
+    description?: string,
+    isPrimary: boolean = false,
+  ): Promise<WishlistItemLink> {
+    const data = await this.getWishlistData();
+    const item = data.items.find((item) => item.id === itemId);
+
+    if (!item) {
+      throw new Error("Item not found");
+    }
+
+    const newLink: WishlistItemLink = {
+      id: crypto.randomUUID(),
+      itemId,
+      url,
+      description,
+      isPrimary,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    if (!item.links) {
+      item.links = [];
+    }
+
+    // If this is set as primary, unset others
+    if (isPrimary) {
+      item.links.forEach((link) => (link.isPrimary = false));
+    }
+
+    item.links.push(newLink);
+    item.updatedAt = new Date();
+
+    await this.saveWishlistData(data);
+    return newLink;
+  }
+
+  async updateItemLink(
+    itemId: string,
+    linkId: string,
+    updates: Partial<Omit<WishlistItemLink, "id" | "itemId" | "createdAt">>,
+  ): Promise<void> {
+    const data = await this.getWishlistData();
+    const item = data.items.find((item) => item.id === itemId);
+
+    if (!item?.links) {
+      return;
+    }
+
+    const linkIndex = item.links.findIndex((link) => link.id === linkId);
+    if (linkIndex !== -1) {
+      const current = item.links[linkIndex]!;
+      const updated: WishlistItemLink = {
+        ...current,
+        ...updates,
+        updatedAt: new Date(),
+      };
+
+      // If setting as primary, unset others
+      if (updates.isPrimary === true) {
+        item.links.forEach((link) => {
+          if (link.id !== linkId) {
+            link.isPrimary = false;
+          }
+        });
+      }
+
+      item.links[linkIndex] = updated;
+      item.updatedAt = new Date();
+      await this.saveWishlistData(data);
+    }
+  }
+
+  async removeItemLink(itemId: string, linkId: string): Promise<void> {
+    const data = await this.getWishlistData();
+    const item = data.items.find((item) => item.id === itemId);
+
+    if (!item?.links) {
+      return;
+    }
+
+    item.links = item.links.filter((link) => link.id !== linkId);
+    item.updatedAt = new Date();
+    await this.saveWishlistData(data);
+  }
+
+  async setPrimaryLink(itemId: string, linkId: string): Promise<void> {
+    await this.updateItemLink(itemId, linkId, { isPrimary: true });
   }
 
   async addCategory(
