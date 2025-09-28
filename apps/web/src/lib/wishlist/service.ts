@@ -6,8 +6,15 @@ import type {
   WishlistItem,
   NewWishlistItem,
   WishlistItemUpdate,
+  WishlistItemLink,
+  NewWishlistItemLink,
+  WishlistItemLinkUpdate,
 } from "../db/types.js";
-import { wishlistCategories, wishlistItems } from "../db/schema.js";
+import {
+  wishlistCategories,
+  wishlistItems,
+  wishlistItemLinks,
+} from "../db/schema.js";
 import { and, asc, desc, eq } from "drizzle-orm";
 
 export class WishlistService {
@@ -142,6 +149,65 @@ export class WishlistService {
       .where(
         and(eq(wishlistItems.id, itemId), eq(wishlistItems.user_id, userId)),
       )
+      .run();
+  }
+
+  // Item link operations
+  async getItemLinks(itemId: string): Promise<WishlistItemLink[]> {
+    return await this.db
+      .select()
+      .from(wishlistItemLinks)
+      .where(eq(wishlistItemLinks.item_id, itemId))
+      .orderBy(
+        desc(wishlistItemLinks.is_primary),
+        asc(wishlistItemLinks.created_at),
+      )
+      .all();
+  }
+
+  async createItemLink(
+    linkData: Omit<NewWishlistItemLink, "id" | "created_at" | "updated_at">,
+  ): Promise<WishlistItemLink> {
+    return await this.db
+      .insert(wishlistItemLinks)
+      .values({ id: crypto.randomUUID(), ...linkData })
+      .returning()
+      .get();
+  }
+
+  async updateItemLink(
+    linkId: string,
+    updates: WishlistItemLinkUpdate,
+  ): Promise<WishlistItemLink | null> {
+    const row = await this.db
+      .update(wishlistItemLinks)
+      .set({ ...updates, updated_at: new Date().toISOString() })
+      .where(eq(wishlistItemLinks.id, linkId))
+      .returning()
+      .get();
+    return row || null;
+  }
+
+  async deleteItemLink(linkId: string): Promise<void> {
+    await this.db
+      .delete(wishlistItemLinks)
+      .where(eq(wishlistItemLinks.id, linkId))
+      .run();
+  }
+
+  async setPrimaryLink(itemId: string, linkId: string): Promise<void> {
+    // First, unset all primary flags for this item
+    await this.db
+      .update(wishlistItemLinks)
+      .set({ is_primary: false, updated_at: new Date().toISOString() })
+      .where(eq(wishlistItemLinks.item_id, itemId))
+      .run();
+
+    // Then set the specific link as primary
+    await this.db
+      .update(wishlistItemLinks)
+      .set({ is_primary: true, updated_at: new Date().toISOString() })
+      .where(eq(wishlistItemLinks.id, linkId))
       .run();
   }
 

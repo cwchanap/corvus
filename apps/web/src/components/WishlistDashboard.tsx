@@ -33,11 +33,33 @@ function SortableWishlistItem(props: {
   item: WishlistItem;
   onDelete: (id: string) => void;
 }) {
+  const [expandedLinks, setExpandedLinks] = createSignal(false);
+
   const style = {} as const;
   const createdAtLabel = () => {
     const d = new Date(props.item.created_at as unknown as string);
     return isNaN(d.getTime()) ? "just now" : d.toLocaleDateString();
   };
+
+  // Mock links data - in real implementation, this would come from the item
+  const mockLinks = () => [
+    {
+      id: "1",
+      url: "https://example.com",
+      description: "Main product page",
+      isPrimary: true,
+    },
+    {
+      id: "2",
+      url: "https://example.com/reviews",
+      description: "Reviews",
+      isPrimary: false,
+    },
+  ];
+
+  const primaryLink = () =>
+    mockLinks().find((link) => link.isPrimary) || mockLinks()[0];
+  const secondaryLinks = () => mockLinks().filter((link) => !link.isPrimary);
 
   return (
     <div style={style}>
@@ -50,22 +72,63 @@ function SortableWishlistItem(props: {
                   {props.item.title}
                 </h3>
               </div>
-              <a
-                href={props.item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-sm text-primary hover:text-primary/80 break-all block transition-colors duration-200 font-medium"
-              >
-                {props.item.url}
-              </a>
+
+              {/* Primary Link */}
+              <Show when={primaryLink()}>
+                {(link) => (
+                  <a
+                    href={link().url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-sm text-primary hover:text-primary/80 break-all block transition-colors duration-200 font-medium"
+                  >
+                    {link().description || link().url}
+                  </a>
+                )}
+              </Show>
+
+              {/* Secondary Links Toggle */}
+              <Show when={secondaryLinks().length > 0}>
+                <button
+                  onClick={() => setExpandedLinks(!expandedLinks())}
+                  class="text-xs text-muted-foreground mt-1 hover:text-foreground transition-colors"
+                >
+                  {expandedLinks() ? "Hide" : "Show"} {secondaryLinks().length}{" "}
+                  more link{secondaryLinks().length !== 1 ? "s" : ""}
+                </button>
+              </Show>
+
+              {/* Expandable Secondary Links */}
+              <Show when={expandedLinks() && secondaryLinks().length > 0}>
+                <div class="mt-2 pl-4 border-l-2 border-muted space-y-1">
+                  <For each={secondaryLinks()}>
+                    {(link) => (
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-sm text-muted-foreground hover:text-primary break-all block transition-colors duration-200"
+                      >
+                        {link.description || link.url}
+                      </a>
+                    )}
+                  </For>
+                </div>
+              </Show>
+
               <Show when={props.item.description}>
                 <p class="text-sm text-muted-foreground mt-3 leading-relaxed">
                   {props.item.description}
                 </p>
               </Show>
-              <div class="text-xs text-muted-foreground mt-3 flex items-center">
-                <span class="w-2 h-2 bg-primary rounded-full mr-2" />
-                Added {createdAtLabel()}
+              <div class="text-xs text-muted-foreground mt-3 flex items-center justify-between">
+                <div class="flex items-center">
+                  <span class="w-2 h-2 bg-primary rounded-full mr-2" />
+                  Added {createdAtLabel()}
+                </div>
+                <div class="text-xs">
+                  {mockLinks().length} link{mockLinks().length !== 1 ? "s" : ""}
+                </div>
               </div>
             </div>
             <button
@@ -127,21 +190,55 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     }
   };
 
-  const handleAddSubmit = (payload: {
+  const handleAddSubmit = async (payload: {
     title: string;
-    url: string;
     description?: string;
     category_id?: string;
+    links: Array<{
+      url: string;
+      description?: string;
+      isPrimary?: boolean;
+    }>;
   }) => {
     setAdding(true);
-    addItem(
-      payload.title,
-      payload.url,
-      payload.description,
-      payload.category_id,
-    )
-      .then(() => setAddOpen(false))
-      .finally(() => setAdding(false));
+    try {
+      // Create the item
+      const response = await fetch("/api/wishlist/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: payload.title,
+          description: payload.description,
+          category_id: payload.category_id,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to create item");
+
+      const newItem = (await response.json()) as WishlistItem;
+
+      // Add links to the item
+      for (const link of payload.links) {
+        await fetch(`/api/wishlist/items/${newItem.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            url: link.url,
+            description: link.description,
+            is_primary: link.isPrimary || false,
+          }),
+        });
+      }
+
+      await refetch();
+      setAddOpen(false);
+    } catch (error) {
+      console.error("Failed to add item:", error);
+    } finally {
+      setAdding(false);
+    }
   };
 
   // Enhanced filtering and sorting
@@ -159,8 +256,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       result = result.filter(
         (item) =>
           item.title.toLowerCase().includes(query) ||
-          item.description?.toLowerCase().includes(query) ||
-          item.url.toLowerCase().includes(query),
+          item.description?.toLowerCase().includes(query),
       );
     }
 
@@ -178,37 +274,6 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
 
     return result;
   });
-
-  const addItem = async (
-    title: string,
-    url: string,
-    description?: string,
-    categoryIdOverride?: string,
-  ) => {
-    const categoryId =
-      categoryIdOverride ||
-      selectedCategory() ||
-      wishlistData()?.categories[0]?.id;
-
-    if (!categoryId) return;
-
-    const response = await fetch(`/api/wishlist/items`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        title,
-        url,
-        description,
-        category_id: categoryId,
-      }),
-    });
-
-    if (response.ok) {
-      refetch();
-    }
-  };
 
   const deleteItem = async (itemId: string) => {
     const response = await fetch(`/api/wishlist/items/${itemId}`, {

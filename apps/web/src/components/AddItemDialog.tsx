@@ -7,9 +7,13 @@ import type { WishlistCategory } from "../lib/db/types.js";
 
 export interface AddItemPayload {
   title: string;
-  url: string;
   description?: string;
   category_id?: string;
+  links: Array<{
+    url: string;
+    description?: string;
+    isPrimary?: boolean;
+  }>;
 }
 
 interface AddItemDialogProps {
@@ -23,29 +27,81 @@ interface AddItemDialogProps {
 
 export function AddItemDialog(props: AddItemDialogProps) {
   const [title, setTitle] = createSignal("");
-  const [url, setUrl] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [categoryId, setCategoryId] = createSignal<string | "">("");
+  const [links, setLinks] = createSignal<
+    Array<{ url: string; description: string; isPrimary: boolean }>
+  >([{ url: "", description: "", isPrimary: true }]);
 
   // Reset fields when the dialog opens
   createEffect(() => {
     if (props.open) {
       setTitle("");
-      setUrl("");
       setDescription("");
+      setLinks([{ url: "", description: "", isPrimary: true }]);
       const initial = props.initialCategoryId ?? props.categories[0]?.id ?? "";
       setCategoryId(initial || "");
     }
   });
 
+  const addLink = () => {
+    setLinks((prev) => [
+      ...prev,
+      { url: "", description: "", isPrimary: false },
+    ]);
+  };
+
+  const removeLink = (index: number) => {
+    setLinks((prev) => {
+      const newLinks = prev.filter((_, i) => i !== index);
+      // Ensure at least one link remains
+      if (newLinks.length === 0) {
+        return [{ url: "", description: "", isPrimary: true }];
+      }
+      // If we removed the primary link, make the first one primary
+      if (prev[index]?.isPrimary && newLinks.length > 0) {
+        newLinks[0]!.isPrimary = true;
+      }
+      return newLinks;
+    });
+  };
+
+  const updateLink = (
+    index: number,
+    field: "url" | "description" | "isPrimary",
+    value: string | boolean,
+  ) => {
+    setLinks((prev) =>
+      prev.map((link, i) => {
+        if (i === index) {
+          // If setting as primary, unset others
+          if (field === "isPrimary" && value === true) {
+            return { ...link, [field]: value };
+          }
+          return { ...link, [field]: value };
+        } else if (field === "isPrimary" && value === true) {
+          // Unset primary for other links
+          return { ...link, isPrimary: false };
+        }
+        return link;
+      }),
+    );
+  };
+
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
-    if (!title().trim() || !url().trim()) return;
+    const validLinks = links().filter((link) => link.url.trim());
+    if (!title().trim() || validLinks.length === 0) return;
+
     await props.onSubmit({
       title: title().trim(),
-      url: url().trim(),
       description: description().trim() || undefined,
       category_id: categoryId() || undefined,
+      links: validLinks.map((link) => ({
+        url: link.url.trim(),
+        description: link.description.trim() || undefined,
+        isPrimary: link.isPrimary,
+      })),
     });
   };
 
@@ -96,20 +152,6 @@ export function AddItemDialog(props: AddItemDialogProps) {
 
                   <div class="space-y-3">
                     <label class="block text-sm font-medium text-gray-700">
-                      URL
-                    </label>
-                    <Input
-                      type="url"
-                      value={url()}
-                      onInput={(e) => setUrl(e.currentTarget.value)}
-                      placeholder="https://example.com/product"
-                      class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 hover:bg-white"
-                      required
-                    />
-                  </div>
-
-                  <div class="space-y-3">
-                    <label class="block text-sm font-medium text-gray-700">
                       Description (optional)
                     </label>
                     <textarea
@@ -136,6 +178,89 @@ export function AddItemDialog(props: AddItemDialogProps) {
                       </Select>
                     </div>
                   </Show>
+
+                  {/* Links Section */}
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <label class="block text-sm font-medium text-gray-700">
+                        Links
+                      </label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addLink}
+                        class="text-sm px-3 py-1"
+                      >
+                        + Add Link
+                      </Button>
+                    </div>
+
+                    <div class="space-y-3">
+                      <For each={links()}>
+                        {(link, index) => (
+                          <div class="border border-gray-200 rounded-lg p-4 space-y-3">
+                            <div class="flex items-center justify-between">
+                              <div class="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={link.isPrimary}
+                                  onChange={(e) =>
+                                    updateLink(
+                                      index(),
+                                      "isPrimary",
+                                      e.currentTarget.checked,
+                                    )
+                                  }
+                                  class="rounded"
+                                />
+                                <label class="text-sm font-medium text-gray-600">
+                                  Primary Link
+                                </label>
+                              </div>
+                              <Show when={links().length > 1}>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  onClick={() => removeLink(index())}
+                                  class="text-red-600 hover:text-red-700 text-xs p-1"
+                                >
+                                  Remove
+                                </Button>
+                              </Show>
+                            </div>
+
+                            <Input
+                              type="url"
+                              value={link.url}
+                              onInput={(e) =>
+                                updateLink(
+                                  index(),
+                                  "url",
+                                  e.currentTarget.value,
+                                )
+                              }
+                              placeholder="https://example.com/product"
+                              class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              required
+                            />
+
+                            <Input
+                              value={link.description}
+                              onInput={(e) =>
+                                updateLink(
+                                  index(),
+                                  "description",
+                                  e.currentTarget.value,
+                                )
+                              }
+                              placeholder="Link description (optional)"
+                              class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            />
+                          </div>
+                        )}
+                      </For>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="px-8 pb-6 pt-4 flex items-center justify-end gap-3 border-t border-purple-100">
