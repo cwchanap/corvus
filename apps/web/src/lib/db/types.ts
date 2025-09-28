@@ -3,6 +3,7 @@ import {
   sessions,
   wishlistCategories,
   wishlistItems,
+  wishlistItemLinks,
 } from "./schema.js";
 
 export type User = typeof users.$inferSelect;
@@ -33,5 +34,14 @@ export type WishlistItemUpdate = Partial<
   Omit<
     typeof wishlistItems.$inferInsert,
     "id" | "user_id" | "created_at" | "updated_at"
+  >
+>;
+
+export type WishlistItemLink = typeof wishlistItemLinks.$inferSelect;
+export type NewWishlistItemLink = typeof wishlistItemLinks.$inferInsert;
+export type WishlistItemLinkUpdate = Partial<
+  Omit<
+    typeof wishlistItemLinks.$inferInsert,
+    "id" | "created_at" | "updated_at"
   >
 >;
