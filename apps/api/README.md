@@ -31,7 +31,7 @@ This is the backend API server for the Corvus wishlist application, built with H
    ```bash
    pnpm run dev
    ```
-   The API will be available at `http://localhost:8787`
+   The API will be available at `http://localhost:5002`
 
 ## 📋 API Endpoints
 
@@ -111,7 +111,7 @@ The API automatically uses the D1 database binding configured in `wrangler.jsonc
 pnpm run dev
 
 # Test endpoints with curl
-curl http://localhost:8787/api/wishlist
+curl http://localhost:5002/api/wishlist
 ```
 
 ### Integration Testing
@@ -151,7 +151,7 @@ The API server is designed to work with the SolidJS web application:
 In the web app, API calls use the `API_BASE` environment variable:
 
 ```typescript
-const API_BASE = typeof window === "undefined" ? "http://localhost:8787" : "";
+const API_BASE = typeof window === "undefined" ? "http://localhost:5002" : "";
 const response = await fetch(`${API_BASE}/api/wishlist`);
 ```
 
