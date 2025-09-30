@@ -218,6 +218,14 @@ export class WishlistService {
       this.getUserItems(userId),
     ]);
 
-    return { categories, items };
+    // Fetch links for each item
+    const itemsWithLinks = await Promise.all(
+      items.map(async (item) => {
+        const links = await this.getItemLinks(item.id);
+        return { ...item, links };
+      }),
+    );
+
+    return { categories, items: itemsWithLinks };
   }
 }
