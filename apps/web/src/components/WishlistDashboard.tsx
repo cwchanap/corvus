@@ -12,17 +12,17 @@ import {
   CardTitle,
 } from "@repo/ui-components/card";
 import type {
-  WishlistCategory,
-  WishlistItemWithLinks as WishlistItem,
-} from "../lib/db/types.js";
+  WishlistCategoryRecord,
+  WishlistDataRecord,
+  WishlistItemRecord,
+} from "@repo/common/types/wishlist-record";
 import { useTheme } from "../lib/theme/context.jsx";
 import { AddItemDialog } from "./AddItemDialog.jsx";
 import { EditItemDialog } from "./EditItemDialog.jsx";
 
-type WishlistData = {
-  categories: WishlistCategory[];
-  items: WishlistItem[];
-};
+type WishlistCategory = WishlistCategoryRecord;
+type WishlistItem = WishlistItemRecord;
+type WishlistData = WishlistDataRecord;
 
 interface WishlistDashboardProps {
   user: {

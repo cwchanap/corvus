@@ -4,7 +4,6 @@ import { config as base } from "@repo/eslint-config/base";
 const overrides = [
   {
     ignores: [
-      ".wrangler/**", // Wrangler Pages/Workers temp output
       ".turbo/**", // Turbo cache
     ],
   },

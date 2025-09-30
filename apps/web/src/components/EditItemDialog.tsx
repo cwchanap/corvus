@@ -3,9 +3,9 @@ import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
 import type {
-  WishlistCategory,
-  WishlistItemWithLinks,
-} from "../lib/db/types.js";
+  WishlistCategoryRecord,
+  WishlistItemRecord,
+} from "@repo/common/types/wishlist-record";
 import { LinkManager } from "./LinkManager.jsx";
 import { useLinkManager, type LinkItem } from "./useLinkManager.js";
 
@@ -26,8 +26,8 @@ interface EditItemDialogProps {
       isDeleted?: boolean;
     }>;
   }) => void;
-  categories: WishlistCategory[];
-  item: WishlistItemWithLinks | null;
+  categories: WishlistCategoryRecord[];
+  item: WishlistItemRecord | null;
   submitting?: boolean;
 }
 

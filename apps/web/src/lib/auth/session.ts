@@ -1,6 +1,6 @@
 import { getCookie, setCookie, deleteCookie } from "vinxi/http";
 import { redirect } from "@solidjs/router";
-import type { PublicUser } from "../db/types.js";
+import type { PublicUser } from "@repo/common/types/auth";
 
 export interface SessionData {
   userId: number;

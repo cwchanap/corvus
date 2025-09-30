@@ -6,7 +6,7 @@ import {
   onMount,
 } from "solid-js";
 import { isServer } from "solid-js/web";
-import type { PublicUser } from "../db/types.js";
+import type { PublicUser } from "@repo/common/types/auth";
 
 interface AuthContextValue {
   user: () => PublicUser | undefined;
