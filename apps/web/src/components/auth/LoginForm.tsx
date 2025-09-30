@@ -4,7 +4,6 @@ import { Button } from "@repo/ui-components/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
@@ -40,7 +39,7 @@ export function LoginForm() {
           error?: string;
           success?: boolean;
         };
-      } catch (parseError) {
+      } catch {
         // If response is not valid JSON (e.g., HTML error page), provide a generic error
         if (!response.ok) {
           throw new Error(

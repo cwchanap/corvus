@@ -4,7 +4,6 @@ import { Button } from "@repo/ui-components/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";

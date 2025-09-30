@@ -2,7 +2,7 @@ import { For, Show, createEffect, createSignal } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
-import type { WishlistCategory } from "../lib/db/types.js";
+import type { WishlistCategoryRecord } from "@repo/common/types/wishlist-record";
 import { LinkManager } from "./LinkManager.jsx";
 import { useLinkManager, type LinkItem } from "./useLinkManager.js";
 
@@ -21,7 +21,7 @@ interface AddItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: AddItemPayload) => Promise<void> | void;
-  categories: WishlistCategory[];
+  categories: WishlistCategoryRecord[];
   initialCategoryId?: string | null;
   submitting?: boolean;
 }
