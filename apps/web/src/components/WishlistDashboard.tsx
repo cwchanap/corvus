@@ -38,8 +38,6 @@ function SortableWishlistItem(props: {
   onDelete: (id: string) => void;
   onEdit: (item: WishlistItem) => void;
 }) {
-  const [expandedLinks, setExpandedLinks] = createSignal(false);
-
   const style = {} as const;
   const createdAtLabel = () => {
     const d = new Date(props.item.created_at as unknown as string);
@@ -48,10 +46,6 @@ function SortableWishlistItem(props: {
 
   // Get item links from database
   const itemLinks = () => props.item.links || [];
-
-  const primaryLink = () =>
-    itemLinks().find((link) => link.is_primary) || itemLinks()[0];
-  const secondaryLinks = () => itemLinks().filter((link) => !link.is_primary);
 
   return (
     <div style={style}>
@@ -65,41 +59,16 @@ function SortableWishlistItem(props: {
                 </h3>
               </div>
 
-              {/* Primary Link */}
-              <Show when={primaryLink()}>
-                {(link) => (
-                  <a
-                    href={link().url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-sm text-primary hover:text-primary/80 break-all block transition-colors duration-200 font-medium"
-                  >
-                    {link().description || link().url}
-                  </a>
-                )}
-              </Show>
-
-              {/* Secondary Links Toggle */}
-              <Show when={secondaryLinks().length > 0}>
-                <button
-                  onClick={() => setExpandedLinks(!expandedLinks())}
-                  class="text-xs text-muted-foreground mt-1 hover:text-foreground transition-colors"
-                >
-                  {expandedLinks() ? "Hide" : "Show"} {secondaryLinks().length}{" "}
-                  more link{secondaryLinks().length !== 1 ? "s" : ""}
-                </button>
-              </Show>
-
-              {/* Expandable Secondary Links */}
-              <Show when={expandedLinks() && secondaryLinks().length > 0}>
-                <div class="mt-2 pl-4 border-l-2 border-muted space-y-1">
-                  <For each={secondaryLinks()}>
+              {/* All Links */}
+              <Show when={itemLinks().length > 0}>
+                <div class="space-y-1 mt-2">
+                  <For each={itemLinks()}>
                     {(link) => (
                       <a
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="text-sm text-muted-foreground hover:text-primary break-all block transition-colors duration-200"
+                        class="text-sm text-primary hover:text-primary/80 break-all block transition-colors duration-200"
                       >
                         {link.description || link.url}
                       </a>
