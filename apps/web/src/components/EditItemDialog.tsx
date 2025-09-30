@@ -6,6 +6,8 @@ import type {
   WishlistCategory,
   WishlistItemWithLinks,
 } from "../lib/db/types.js";
+import { LinkManager } from "./LinkManager.jsx";
+import { useLinkManager, type LinkItem } from "./useLinkManager.js";
 
 interface EditItemDialogProps {
   open: boolean;
@@ -33,16 +35,8 @@ export function EditItemDialog(props: EditItemDialogProps) {
   const [title, setTitle] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [categoryId, setCategoryId] = createSignal("");
-  const [links, setLinks] = createSignal<
-    Array<{
-      id?: string;
-      url: string;
-      description?: string;
-      isPrimary: boolean;
-      isNew?: boolean;
-      isDeleted?: boolean;
-    }>
-  >([]);
+
+  const linkManager = useLinkManager();
 
   // Reset form when dialog opens/closes or item changes
   createEffect(() => {
@@ -52,97 +46,42 @@ export function EditItemDialog(props: EditItemDialogProps) {
       setCategoryId(props.item.category_id);
 
       // Convert existing links
-      const existingLinks = (props.item.links || []).map((link) => ({
-        id: link.id,
-        url: link.url,
-        description: link.description || "",
-        isPrimary: link.is_primary,
-        isNew: false,
-        isDeleted: false,
-      }));
+      const existingLinks: LinkItem[] = (props.item.links || []).map(
+        (link) => ({
+          id: link.id,
+          url: link.url,
+          description: link.description || "",
+          isPrimary: link.is_primary,
+          isNew: false,
+          isDeleted: false,
+        }),
+      );
 
-      setLinks(existingLinks);
+      linkManager.resetLinks(existingLinks);
     } else if (!props.open) {
       // Reset form
       setTitle("");
       setDescription("");
       setCategoryId("");
-      setLinks([]);
+      linkManager.resetLinks([]);
     }
   });
-
-  const addLink = () => {
-    setLinks((prev) => [
-      ...prev,
-      {
-        url: "",
-        description: "",
-        isPrimary: prev.length === 0,
-        isNew: true,
-        isDeleted: false,
-      },
-    ]);
-  };
-
-  const updateLink = (
-    index: number,
-    updates: Partial<{
-      url: string;
-      description: string;
-      isPrimary: boolean;
-    }>,
-  ) => {
-    setLinks((prev) =>
-      prev.map((link, i) => (i === index ? { ...link, ...updates } : link)),
-    );
-  };
-
-  const removeLink = (index: number) => {
-    setLinks((prev) => {
-      const link = prev[index];
-      if (link?.isNew) {
-        // Remove new links entirely
-        return prev.filter((_, i) => i !== index);
-      } else {
-        // Mark existing links as deleted
-        return prev.map((l, i) =>
-          i === index ? { ...l, isDeleted: true } : l,
-        );
-      }
-    });
-  };
-
-  const removeAllLinks = () => {
-    setLinks(
-      (prev) =>
-        prev
-          .map((link) => (link.isNew ? null : { ...link, isDeleted: true }))
-          .filter(Boolean) as typeof prev,
-    );
-  };
-
-  const setPrimary = (index: number) => {
-    setLinks((prev) =>
-      prev.map((link, i) => ({
-        ...link,
-        isPrimary: i === index,
-      })),
-    );
-  };
 
   const handleSubmit = (e: Event) => {
     e.preventDefault();
 
     if (!props.item) return;
 
-    const activeLinks = links().filter((link) => !link.isDeleted);
+    const activeLinks = linkManager
+      .links()
+      .filter((link: LinkItem) => !link.isDeleted);
 
     props.onSubmit({
       id: props.item.id,
       title: title().trim(),
       description: description().trim() || undefined,
       category_id: categoryId(),
-      links: activeLinks.map((link) => ({
+      links: activeLinks.map((link: LinkItem) => ({
         id: link.id,
         url: link.url.trim(),
         description: link.description?.trim() || undefined,
@@ -152,9 +91,6 @@ export function EditItemDialog(props: EditItemDialogProps) {
       })),
     });
   };
-
-  const visibleLinks = () => links().filter((link) => !link.isDeleted);
-  const hasVisibleLinks = () => visibleLinks().length > 0;
 
   return (
     <Show when={props.open}>
@@ -221,103 +157,15 @@ export function EditItemDialog(props: EditItemDialogProps) {
               </div>
 
               {/* Links Section */}
-              <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                  <label class="text-sm font-medium text-foreground">
-                    Links (optional)
-                  </label>
-                  <div class="flex gap-2">
-                    <Show when={hasVisibleLinks()}>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={removeAllLinks}
-                        class="text-xs"
-                      >
-                        Remove All
-                      </Button>
-                    </Show>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addLink}
-                      class="text-xs"
-                    >
-                      + Add Link
-                    </Button>
-                  </div>
-                </div>
-
-                <Show
-                  when={hasVisibleLinks()}
-                  fallback={
-                    <div class="text-center py-6 text-muted-foreground space-y-2">
-                      <p class="text-sm">No links added yet</p>
-                      <p class="text-xs">
-                        You can add links now or later after updating the item
-                      </p>
-                    </div>
-                  }
-                >
-                  <div class="space-y-3">
-                    <For each={visibleLinks()}>
-                      {(link, index) => (
-                        <div class="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
-                          <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={link.isPrimary}
-                                onChange={() => setPrimary(index())}
-                                class="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary focus:ring-2"
-                              />
-                              <span class="text-sm font-medium">
-                                Primary Link
-                              </span>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeLink(index())}
-                              class="text-destructive hover:text-destructive text-xs"
-                            >
-                              Remove
-                            </Button>
-                          </div>
-
-                          <Input
-                            type="url"
-                            placeholder="Enter website URL"
-                            value={link.url}
-                            onInput={(e) =>
-                              updateLink(index(), {
-                                url: e.currentTarget.value,
-                              })
-                            }
-                            required
-                            class="w-full"
-                          />
-
-                          <Input
-                            type="text"
-                            placeholder="Link description (optional)"
-                            value={link.description || ""}
-                            onInput={(e) =>
-                              updateLink(index(), {
-                                description: e.currentTarget.value,
-                              })
-                            }
-                            class="w-full"
-                          />
-                        </div>
-                      )}
-                    </For>
-                  </div>
-                </Show>
-              </div>
+              <LinkManager
+                links={linkManager.links()}
+                onAddLink={linkManager.addLink}
+                onUpdateLink={linkManager.updateLink}
+                onRemoveLink={linkManager.removeLink}
+                onRemoveAllLinks={linkManager.removeAllLinks}
+                emptyMessage="No links added yet"
+                emptySubMessage="You can add links now or later after updating the item"
+              />
 
               {/* Submit Actions */}
               <div class="flex gap-3 pt-4">
