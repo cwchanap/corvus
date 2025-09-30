@@ -45,3 +45,7 @@ export type WishlistItemLinkUpdate = Partial<
     "id" | "created_at" | "updated_at"
   >
 >;
+
+export type WishlistItemWithLinks = WishlistItem & {
+  links?: WishlistItemLink[];
+};

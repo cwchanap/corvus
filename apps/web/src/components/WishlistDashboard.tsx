@@ -11,9 +11,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import type { WishlistCategory, WishlistItem } from "../lib/db/types.js";
+import type {
+  WishlistCategory,
+  WishlistItemWithLinks as WishlistItem,
+} from "../lib/db/types.js";
 import { useTheme } from "../lib/theme/context.jsx";
 import { AddItemDialog } from "./AddItemDialog.jsx";
+import { EditItemDialog } from "./EditItemDialog.jsx";
 
 type WishlistData = {
   categories: WishlistCategory[];
@@ -32,6 +36,7 @@ interface WishlistDashboardProps {
 function SortableWishlistItem(props: {
   item: WishlistItem;
   onDelete: (id: string) => void;
+  onEdit: (item: WishlistItem) => void;
 }) {
   const [expandedLinks, setExpandedLinks] = createSignal(false);
 
@@ -41,25 +46,12 @@ function SortableWishlistItem(props: {
     return isNaN(d.getTime()) ? "just now" : d.toLocaleDateString();
   };
 
-  // Mock links data - in real implementation, this would come from the item
-  const mockLinks = () => [
-    {
-      id: "1",
-      url: "https://example.com",
-      description: "Main product page",
-      isPrimary: true,
-    },
-    {
-      id: "2",
-      url: "https://example.com/reviews",
-      description: "Reviews",
-      isPrimary: false,
-    },
-  ];
+  // Get item links from database
+  const itemLinks = () => props.item.links || [];
 
   const primaryLink = () =>
-    mockLinks().find((link) => link.isPrimary) || mockLinks()[0];
-  const secondaryLinks = () => mockLinks().filter((link) => !link.isPrimary);
+    itemLinks().find((link) => link.is_primary) || itemLinks()[0];
+  const secondaryLinks = () => itemLinks().filter((link) => !link.is_primary);
 
   return (
     <div style={style}>
@@ -127,17 +119,26 @@ function SortableWishlistItem(props: {
                   Added {createdAtLabel()}
                 </div>
                 <div class="text-xs">
-                  {mockLinks().length} link{mockLinks().length !== 1 ? "s" : ""}
+                  {itemLinks().length} link{itemLinks().length !== 1 ? "s" : ""}
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => props.onDelete(props.item.id)}
-              class="text-destructive hover:text-destructive/80 hover:bg-destructive/10 ml-4 p-2 rounded-lg transition-all duration-200 font-bold text-lg"
-              title="Delete item"
-            >
-              ×
-            </button>
+            <div class="flex gap-2">
+              <button
+                onClick={() => props.onEdit(props.item)}
+                class="text-muted-foreground hover:text-primary hover:bg-accent ml-2 p-2 rounded-lg transition-all duration-200"
+                title="Edit item"
+              >
+                ✏️
+              </button>
+              <button
+                onClick={() => props.onDelete(props.item.id)}
+                class="text-destructive hover:text-destructive/80 hover:bg-destructive/10 p-2 rounded-lg transition-all duration-200 font-bold text-lg"
+                title="Delete item"
+              >
+                ×
+              </button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -157,6 +158,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const [items, setItems] = createSignal<WishlistItem[]>([]);
   const [addOpen, setAddOpen] = createSignal(false);
   const [adding, setAdding] = createSignal(false);
+  const [editOpen, setEditOpen] = createSignal(false);
+  const [editingItem, setEditingItem] = createSignal<WishlistItem | null>(null);
+  const [editing, setEditing] = createSignal(false);
 
   // Fetch wishlist data
   const [wishlistData, { refetch }] = createResource<WishlistData>(async () => {
@@ -284,6 +288,86 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       // Update local state immediately
       setItems((prev) => prev.filter((item) => item.id !== itemId));
       refetch();
+    }
+  };
+
+  const openEditDialog = (item: WishlistItem) => {
+    setEditingItem(item);
+    setEditOpen(true);
+  };
+
+  const handleEditSubmit = async (payload: {
+    id: string;
+    title: string;
+    description?: string;
+    category_id: string;
+    links: Array<{
+      id?: string;
+      url: string;
+      description?: string;
+      isPrimary?: boolean;
+      isNew?: boolean;
+      isDeleted?: boolean;
+    }>;
+  }) => {
+    setEditing(true);
+    try {
+      // Update the item
+      const response = await fetch(`/api/wishlist/items/${payload.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: payload.title,
+          description: payload.description,
+          category_id: payload.category_id,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update item");
+
+      // Handle link updates
+      for (const link of payload.links) {
+        if (link.isDeleted && link.id) {
+          // Delete existing link
+          await fetch(`/api/wishlist/items/${payload.id}/links/${link.id}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
+        } else if (link.isNew) {
+          // Create new link
+          await fetch(`/api/wishlist/items/${payload.id}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              url: link.url,
+              description: link.description,
+              is_primary: link.isPrimary || false,
+            }),
+          });
+        } else if (link.id) {
+          // Update existing link
+          await fetch(`/api/wishlist/items/${payload.id}/links/${link.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              url: link.url,
+              description: link.description,
+              is_primary: link.isPrimary || false,
+            }),
+          });
+        }
+      }
+
+      await refetch();
+      setEditOpen(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error("Failed to update item:", error);
+    } finally {
+      setEditing(false);
     }
   };
 
@@ -473,7 +557,11 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                 <div class="space-y-4">
                   <For each={filteredAndSortedItems()}>
                     {(item: WishlistItem) => (
-                      <SortableWishlistItem item={item} onDelete={deleteItem} />
+                      <SortableWishlistItem
+                        item={item}
+                        onDelete={deleteItem}
+                        onEdit={openEditDialog}
+                      />
                     )}
                   </For>
                 </div>
@@ -489,6 +577,14 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         categories={wishlistData()?.categories || []}
         initialCategoryId={selectedCategory()}
         submitting={adding()}
+      />
+      <EditItemDialog
+        open={editOpen()}
+        onOpenChange={setEditOpen}
+        onSubmit={handleEditSubmit}
+        categories={wishlistData()?.categories || []}
+        item={editingItem()}
+        submitting={editing()}
       />
     </div>
   );
