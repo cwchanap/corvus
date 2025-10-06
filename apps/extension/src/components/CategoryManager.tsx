@@ -118,10 +118,10 @@ export function CategoryManager(props: CategoryManagerProps) {
                         </div>
                         <Show when={data().categories.length > 1}>
                           <Button
-                            variant="ghost"
+                            variant="destructive"
                             size="sm"
                             onClick={() => handleRemoveCategory(category.id)}
-                            class="text-destructive hover:text-destructive h-6 px-2"
+                            class="h-6 px-2"
                           >
                             Remove
                           </Button>

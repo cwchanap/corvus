@@ -1,15 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="bg-background">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Extension Popup</title>
-    
+
     <!-- Configure manifest options -->
     <meta name="manifest.browser_style" content="false" />
   </head>
-  <body>
+  <body class="bg-background text-foreground min-h-screen">
     <div id="app"></div>
+    <style>
+      html,
+      body {
+        background-color: hsl(var(--background)) !important;
+      }
+    </style>
     <script type="module" src="./main.tsx"></script>
   </body>
 </html>

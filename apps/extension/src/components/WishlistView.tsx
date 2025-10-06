@@ -2,6 +2,8 @@ import { createSignal, createResource, For, Show } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Card } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
+import { ThemeToggle } from "@repo/ui-components/theme-toggle";
+import { useTheme } from "../lib/theme/context.js";
 import { WishlistStorage } from "../utils/storage.js";
 import type { WishlistCategory } from "../types/wishlist";
 
@@ -11,6 +13,7 @@ interface WishlistViewProps {
 }
 
 export function WishlistView(props: WishlistViewProps) {
+  const theme = useTheme();
   const [selectedCategoryId, setSelectedCategoryId] = createSignal<
     string | null
   >(null);
@@ -58,6 +61,11 @@ export function WishlistView(props: WishlistViewProps) {
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold">My Wishlist</h2>
         <div class="flex gap-2">
+          <ThemeToggle
+            theme={theme.theme}
+            setTheme={theme.setTheme}
+            resolvedTheme={theme.resolvedTheme}
+          />
           <Button
             size="sm"
             variant="outline"
@@ -65,7 +73,7 @@ export function WishlistView(props: WishlistViewProps) {
           >
             Categories
           </Button>
-          <Button size="sm" onClick={props.onAddNew}>
+          <Button size="sm" variant="outline" onClick={props.onAddNew}>
             Add Page
           </Button>
         </div>
@@ -77,8 +85,12 @@ export function WishlistView(props: WishlistViewProps) {
             {/* Category Filter */}
             <div class="flex flex-wrap gap-2">
               <Button
-                variant={selectedCategoryId() === null ? "default" : "outline"}
+                variant="outline"
                 size="sm"
+                classList={{
+                  "border-primary-foreground text-primary-foreground":
+                    selectedCategoryId() === null,
+                }}
                 onClick={() => setSelectedCategoryId(null)}
               >
                 All ({data().items.length})
@@ -91,12 +103,12 @@ export function WishlistView(props: WishlistViewProps) {
                   return (
                     <div class="flex items-center gap-1">
                       <Button
-                        variant={
-                          selectedCategoryId() === category.id
-                            ? "default"
-                            : "outline"
-                        }
+                        variant="outline"
                         size="sm"
+                        classList={{
+                          "border-primary-foreground text-primary-foreground":
+                            selectedCategoryId() === category.id,
+                        }}
                         onClick={() => setSelectedCategoryId(category.id)}
                       >
                         {category.name} ({itemCount})
@@ -106,7 +118,7 @@ export function WishlistView(props: WishlistViewProps) {
                           size="sm"
                           variant="ghost"
                           onClick={props.onAddNew}
-                          class="w-6 h-6 p-0 rounded-full"
+                          class="w-6 h-6 p-0"
                           title="Add new item to this category"
                         >
                           +
@@ -181,11 +193,11 @@ export function WishlistView(props: WishlistViewProps) {
                                           </a>
                                           <Button
                                             size="sm"
-                                            variant="ghost"
+                                            variant="destructive"
                                             onClick={() =>
                                               deleteLink(item.id, link.id)
                                             }
-                                            class="h-4 px-1 text-xs text-red-600"
+                                            class="h-4 px-1 text-xs"
                                             title="Delete link"
                                           >
                                             ×
@@ -206,9 +218,9 @@ export function WishlistView(props: WishlistViewProps) {
                               <div class="flex items-center gap-1 flex-shrink-0">
                                 <Button
                                   size="sm"
-                                  variant="ghost"
+                                  variant="destructive"
                                   onClick={() => handleRemoveItem(item.id)}
-                                  class="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                                  class="h-6 px-2 text-xs"
                                 >
                                   Remove
                                 </Button>
