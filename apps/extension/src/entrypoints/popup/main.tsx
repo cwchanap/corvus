@@ -1,6 +1,7 @@
 import { render } from "solid-js/web";
 import { createSignal, Show } from "solid-js";
 import "@repo/ui-components/styles";
+import { ThemeProvider } from "../../lib/theme/context.js";
 import { AddToWishlist } from "../../components/AddToWishlist.js";
 import { WishlistView } from "../../components/WishlistView.js";
 import { CategoryManager } from "../../components/CategoryManager.js";
@@ -15,7 +16,7 @@ function Popup() {
   };
 
   return (
-    <div class="w-96 max-h-[600px] overflow-hidden">
+    <div class="w-96 max-h-[600px] overflow-hidden bg-background">
       <Show
         when={currentView() === "add"}
         fallback={
@@ -50,5 +51,12 @@ function Popup() {
 // Mount the app when the script loads
 const root = document.getElementById("app");
 if (root) {
-  render(() => <Popup />, root);
+  render(
+    () => (
+      <ThemeProvider>
+        <Popup />
+      </ThemeProvider>
+    ),
+    root,
+  );
 }

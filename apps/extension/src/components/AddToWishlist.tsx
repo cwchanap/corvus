@@ -6,6 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
+import { Input } from "@repo/ui-components/input";
+import { Select } from "@repo/ui-components/select";
 import { WishlistStorage } from "../utils/storage.js";
 import { getCurrentPageInfo } from "../utils/page-info.js";
 
@@ -144,14 +146,22 @@ export function AddToWishlist(props: AddToWishlistProps) {
                 <div class="flex gap-2">
                   <Button
                     size="sm"
-                    variant={mode() === "new-item" ? "default" : "outline"}
+                    variant="outline"
+                    classList={{
+                      "border-primary-foreground text-primary-foreground":
+                        mode() === "new-item",
+                    }}
                     onClick={() => setMode("new-item")}
                   >
                     New Item
                   </Button>
                   <Button
                     size="sm"
-                    variant={mode() === "existing-item" ? "default" : "outline"}
+                    variant="outline"
+                    classList={{
+                      "border-primary-foreground text-primary-foreground":
+                        mode() === "existing-item",
+                    }}
                     onClick={() => setMode("existing-item")}
                   >
                     Add to Existing
@@ -166,12 +176,11 @@ export function AddToWishlist(props: AddToWishlistProps) {
                     <label class="text-sm font-medium">Category</label>
                     <Show when={wishlistData()}>
                       {(data) => (
-                        <select
+                        <Select
                           value={selectedCategoryId()}
                           onChange={(e) =>
                             setSelectedCategoryId(e.currentTarget.value)
                           }
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                         >
                           <For each={data().categories}>
                             {(category) => (
@@ -180,7 +189,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
                               </option>
                             )}
                           </For>
-                        </select>
+                        </Select>
                       )}
                     </Show>
                   </div>
@@ -189,12 +198,11 @@ export function AddToWishlist(props: AddToWishlistProps) {
                     <label class="text-sm font-medium">
                       Title (optional - uses page title)
                     </label>
-                    <input
+                    <Input
                       type="text"
                       placeholder={page().title}
                       value={customTitle()}
                       onInput={(e) => setCustomTitle(e.currentTarget.value)}
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     />
                   </div>
 
@@ -208,7 +216,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
                       onInput={(e) =>
                         setCustomDescription(e.currentTarget.value)
                       }
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none"
+                      class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                       rows="2"
                     />
                   </div>
@@ -217,12 +225,11 @@ export function AddToWishlist(props: AddToWishlistProps) {
                     <label class="text-sm font-medium">
                       Link Description (optional)
                     </label>
-                    <input
+                    <Input
                       type="text"
                       placeholder="e.g., 'Official site', 'Product page'..."
                       value={linkDescription()}
                       onInput={(e) => setLinkDescription(e.currentTarget.value)}
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     />
                   </div>
                 </div>
@@ -235,12 +242,11 @@ export function AddToWishlist(props: AddToWishlistProps) {
                     <label class="text-sm font-medium">Category Filter</label>
                     <Show when={wishlistData()}>
                       {(data) => (
-                        <select
+                        <Select
                           value={selectedCategoryId()}
                           onChange={(e) =>
                             setSelectedCategoryId(e.currentTarget.value)
                           }
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                         >
                           <option value="all">All Categories</option>
                           <For each={data().categories}>
@@ -250,17 +256,16 @@ export function AddToWishlist(props: AddToWishlistProps) {
                               </option>
                             )}
                           </For>
-                        </select>
+                        </Select>
                       )}
                     </Show>
                   </div>
 
                   <div class="space-y-2">
                     <label class="text-sm font-medium">Select Item</label>
-                    <select
+                    <Select
                       value={selectedItemId()}
                       onChange={(e) => setSelectedItemId(e.currentTarget.value)}
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     >
                       <option value="">Choose an item...</option>
                       <For each={filteredItems()}>
@@ -270,19 +275,18 @@ export function AddToWishlist(props: AddToWishlistProps) {
                           </option>
                         )}
                       </For>
-                    </select>
+                    </Select>
                   </div>
 
                   <div class="space-y-2">
                     <label class="text-sm font-medium">
                       Link Description (optional)
                     </label>
-                    <input
+                    <Input
                       type="text"
                       placeholder="e.g., 'Alternative link', 'Updated version'..."
                       value={linkDescription()}
                       onInput={(e) => setLinkDescription(e.currentTarget.value)}
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     />
                   </div>
                 </div>
@@ -290,6 +294,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
 
               <div class="flex gap-2 pt-2">
                 <Button
+                  size="sm"
                   onClick={handleSubmit}
                   disabled={
                     isLoading() ||
@@ -305,6 +310,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
                 </Button>
                 <Show when={props.onCancel}>
                   <Button
+                    size="sm"
                     variant="outline"
                     onClick={props.onCancel}
                     disabled={isLoading()}
