@@ -16,7 +16,7 @@ function Popup() {
   };
 
   return (
-    <div class="w-96 max-h-[600px] overflow-hidden bg-background">
+    <div class="w-96 h-[600px] bg-background overflow-hidden">
       <Show
         when={currentView() === "add"}
         fallback={

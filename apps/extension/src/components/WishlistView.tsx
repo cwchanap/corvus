@@ -3,6 +3,7 @@ import { Button } from "@repo/ui-components/button";
 import { Card } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
 import { ThemeToggle } from "@repo/ui-components/theme-toggle";
+import { Select } from "@repo/ui-components/select";
 import { useTheme } from "../lib/theme/context.js";
 import { WishlistStorage } from "../utils/storage.js";
 import type { WishlistCategory } from "../types/wishlist";
@@ -57,7 +58,7 @@ export function WishlistView(props: WishlistViewProps) {
   };
 
   return (
-    <div class="w-full space-y-4">
+    <div class="flex h-full w-full flex-col space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold">My Wishlist</h2>
         <div class="flex gap-2">
@@ -83,55 +84,36 @@ export function WishlistView(props: WishlistViewProps) {
         {(data) => (
           <>
             {/* Category Filter */}
-            <div class="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                classList={{
-                  "border-primary-foreground text-primary-foreground":
-                    selectedCategoryId() === null,
-                }}
-                onClick={() => setSelectedCategoryId(null)}
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Filter by Category</label>
+              <Select
+                value={selectedCategoryId() ?? "all"}
+                onChange={(event) =>
+                  setSelectedCategoryId(
+                    event.currentTarget.value === "all"
+                      ? null
+                      : event.currentTarget.value,
+                  )
+                }
               >
-                All ({data().items.length})
-              </Button>
-              <For each={data().categories}>
-                {(category) => {
-                  const itemCount = data().items.filter(
-                    (item) => item.categoryId === category.id,
-                  ).length;
-                  return (
-                    <div class="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        classList={{
-                          "border-primary-foreground text-primary-foreground":
-                            selectedCategoryId() === category.id,
-                        }}
-                        onClick={() => setSelectedCategoryId(category.id)}
-                      >
+                <option value="all">All ({data().items.length})</option>
+                <For each={data().categories}>
+                  {(category) => {
+                    const itemCount = data().items.filter(
+                      (item) => item.categoryId === category.id,
+                    ).length;
+                    return (
+                      <option value={category.id}>
                         {category.name} ({itemCount})
-                      </Button>
-                      <Show when={selectedCategoryId() === category.id}>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={props.onAddNew}
-                          class="w-6 h-6 p-0"
-                          title="Add new item to this category"
-                        >
-                          +
-                        </Button>
-                      </Show>
-                    </div>
-                  );
-                }}
-              </For>
+                      </option>
+                    );
+                  }}
+                </For>
+              </Select>
             </div>
 
             {/* Items List */}
-            <div class="space-y-2 max-h-96 overflow-y-auto">
+            <div class="space-y-2 flex-1 overflow-y-auto">
               <Show
                 when={filteredItems().length > 0}
                 fallback={
