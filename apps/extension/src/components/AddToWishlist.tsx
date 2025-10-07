@@ -16,28 +16,73 @@ interface AddToWishlistProps {
   onCancel?: () => void;
 }
 
-type AddMode = "new-item" | "existing-item" | "new-category";
+const NEW_ITEM_OPTION_VALUE = "__create_new_item__";
+const DEFAULT_CATEGORY_ID = "general";
 
 export function AddToWishlist(props: AddToWishlistProps) {
-  const [mode, setMode] = createSignal<AddMode>("new-item");
-  const [selectedCategoryId, setSelectedCategoryId] = createSignal("general");
+  const [selectedCategoryId, setSelectedCategoryId] = createSignal("all");
   const [selectedItemId, setSelectedItemId] = createSignal<string>("");
+  const [linkDescription, setLinkDescription] = createSignal("");
+  const [isAddingLink, setIsAddingLink] = createSignal(false);
+
+  const [isNewItemModalOpen, setIsNewItemModalOpen] = createSignal(false);
+  const [newItemCategoryId, setNewItemCategoryId] =
+    createSignal(DEFAULT_CATEGORY_ID);
   const [customTitle, setCustomTitle] = createSignal("");
   const [customDescription, setCustomDescription] = createSignal("");
-  const [linkDescription, setLinkDescription] = createSignal("");
-  const [isLoading, setIsLoading] = createSignal(false);
+  const [isCreatingNewItem, setIsCreatingNewItem] = createSignal(false);
 
   const [pageInfo] = createResource(getCurrentPageInfo);
-  const [wishlistData] = createResource(WishlistStorage.getWishlistData);
+  const [wishlistData] = createResource(() =>
+    WishlistStorage.getWishlistData(),
+  );
 
   const filteredItems = () => {
     const data = wishlistData();
     if (!data) return [];
 
-    const selectedCat = selectedCategoryId();
-    if (!selectedCat || selectedCat === "all") return data.items;
+    const categoryId = selectedCategoryId();
+    if (!categoryId || categoryId === "all") return data.items;
 
-    return data.items.filter((item) => item.categoryId === selectedCat);
+    return data.items.filter((item) => item.categoryId === categoryId);
+  };
+
+  const resetNewItemForm = () => {
+    const page = pageInfo();
+    setCustomTitle(page?.title ?? "");
+    setCustomDescription("");
+  };
+
+  const closeNewItemModal = () => {
+    setIsNewItemModalOpen(false);
+    resetNewItemForm();
+  };
+
+  const openNewItemModal = () => {
+    const data = wishlistData();
+    if (data?.categories.length) {
+      const currentSelection = selectedCategoryId();
+      const fallbackCategory =
+        currentSelection && currentSelection !== "all"
+          ? currentSelection
+          : data.categories[0]!.id;
+      setNewItemCategoryId(fallbackCategory);
+    } else {
+      setNewItemCategoryId(DEFAULT_CATEGORY_ID);
+    }
+
+    resetNewItemForm();
+    setIsNewItemModalOpen(true);
+  };
+
+  const handleItemSelection = (value: string) => {
+    if (value === NEW_ITEM_OPTION_VALUE) {
+      setSelectedItemId("");
+      openNewItemModal();
+      return;
+    }
+
+    setSelectedItemId(value);
   };
 
   const handleAddToExistingItem = async () => {
@@ -45,19 +90,20 @@ export function AddToWishlist(props: AddToWishlistProps) {
     const itemId = selectedItemId();
     if (!page || !itemId) return;
 
-    setIsLoading(true);
+    setIsAddingLink(true);
     try {
       await WishlistStorage.addItemLink(
         itemId,
         page.url,
         linkDescription() || undefined,
-        false, // Not primary by default when adding to existing item
+        false,
       );
+      setLinkDescription("");
       props.onSuccess?.();
     } catch (error) {
       console.error("Error adding link to existing item:", error);
     } finally {
-      setIsLoading(false);
+      setIsAddingLink(false);
     }
   };
 
@@ -65,7 +111,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
     const page = pageInfo();
     if (!page) return;
 
-    setIsLoading(true);
+    setIsCreatingNewItem(true);
     try {
       const title = customTitle() || page.title;
       const description = customDescription() || undefined;
@@ -74,255 +120,283 @@ export function AddToWishlist(props: AddToWishlistProps) {
         {
           title,
           description,
-          categoryId: selectedCategoryId(),
+          categoryId: newItemCategoryId(),
           favicon: page.favicon,
         },
         page.url,
         linkDescription() || undefined,
       );
 
+      setLinkDescription("");
+      setIsNewItemModalOpen(false);
       props.onSuccess?.();
     } catch (error) {
       console.error("Error creating new item:", error);
     } finally {
-      setIsLoading(false);
+      setIsCreatingNewItem(false);
+      resetNewItemForm();
     }
   };
 
-  const handleSubmit = async () => {
-    if (mode() === "existing-item") {
-      await handleAddToExistingItem();
-    } else {
-      await handleCreateNewItem();
-    }
-  };
+  const renderCategoryFilter = () => (
+    <div class="space-y-2">
+      <label class="text-sm font-medium">Category</label>
+      <Show
+        when={wishlistData()}
+        fallback={<div class="text-sm text-muted-foreground">Loading…</div>}
+      >
+        {(data) => (
+          <Select
+            value={selectedCategoryId()}
+            onChange={(e) => setSelectedCategoryId(e.currentTarget.value)}
+          >
+            <option value="all">All Categories</option>
+            <For each={data().categories}>
+              {(category) => (
+                <option value={category.id}>{category.name}</option>
+              )}
+            </For>
+          </Select>
+        )}
+      </Show>
+    </div>
+  );
 
-  return (
-    <Card class="w-full">
-      <CardHeader>
-        <CardTitle class="text-base">Add to Wishlist</CardTitle>
-      </CardHeader>
-      <CardContent class="space-y-4">
-        <Show
-          when={pageInfo()}
-          fallback={
-            <div class="text-sm text-muted-foreground">
-              Loading page info...
-            </div>
-          }
-        >
-          {(page) => (
-            <>
-              {/* Page Info Display */}
-              <div class="space-y-2">
-                <div class="flex items-start gap-2">
-                  <Show when={page().favicon}>
-                    <img
-                      src={page().favicon}
-                      alt=""
-                      class="w-4 h-4 mt-0.5 flex-shrink-0"
-                    />
-                  </Show>
-                  <div class="min-w-0 flex-1">
-                    <div
-                      class="font-medium text-sm truncate"
-                      title={page().title}
-                    >
-                      {page().title}
-                    </div>
-                    <div
-                      class="text-xs text-muted-foreground truncate"
-                      title={page().url}
-                    >
-                      {page().url}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mode Selection */}
-              <div class="space-y-2">
-                <label class="text-sm font-medium">Action</label>
-                <div class="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    classList={{
-                      "border-primary-foreground text-primary-foreground":
-                        mode() === "new-item",
-                    }}
-                    onClick={() => setMode("new-item")}
-                  >
-                    New Item
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    classList={{
-                      "border-primary-foreground text-primary-foreground":
-                        mode() === "existing-item",
-                    }}
-                    onClick={() => setMode("existing-item")}
-                  >
-                    Add to Existing
-                  </Button>
-                </div>
-              </div>
-
-              <Show when={mode() === "new-item"}>
-                {/* New Item Form */}
-                <div class="space-y-3">
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium">Category</label>
-                    <Show when={wishlistData()}>
-                      {(data) => (
-                        <Select
-                          value={selectedCategoryId()}
-                          onChange={(e) =>
-                            setSelectedCategoryId(e.currentTarget.value)
-                          }
-                        >
-                          <For each={data().categories}>
-                            {(category) => (
-                              <option value={category.id}>
-                                {category.name}
-                              </option>
-                            )}
-                          </For>
-                        </Select>
-                      )}
-                    </Show>
-                  </div>
-
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium">
-                      Title (optional - uses page title)
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder={page().title}
-                      value={customTitle()}
-                      onInput={(e) => setCustomTitle(e.currentTarget.value)}
-                    />
-                  </div>
-
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium">
-                      Description (optional)
-                    </label>
-                    <textarea
-                      placeholder="Add a note about this item..."
-                      value={customDescription()}
-                      onInput={(e) =>
-                        setCustomDescription(e.currentTarget.value)
-                      }
-                      class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                      rows="2"
-                    />
-                  </div>
-
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium">
-                      Link Description (optional)
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., 'Official site', 'Product page'..."
-                      value={linkDescription()}
-                      onInput={(e) => setLinkDescription(e.currentTarget.value)}
-                    />
-                  </div>
-                </div>
-              </Show>
-
-              <Show when={mode() === "existing-item"}>
-                {/* Add to Existing Item Form */}
-                <div class="space-y-3">
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium">Category Filter</label>
-                    <Show when={wishlistData()}>
-                      {(data) => (
-                        <Select
-                          value={selectedCategoryId()}
-                          onChange={(e) =>
-                            setSelectedCategoryId(e.currentTarget.value)
-                          }
-                        >
-                          <option value="all">All Categories</option>
-                          <For each={data().categories}>
-                            {(category) => (
-                              <option value={category.id}>
-                                {category.name}
-                              </option>
-                            )}
-                          </For>
-                        </Select>
-                      )}
-                    </Show>
-                  </div>
-
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium">Select Item</label>
-                    <Select
-                      value={selectedItemId()}
-                      onChange={(e) => setSelectedItemId(e.currentTarget.value)}
-                    >
-                      <option value="">Choose an item...</option>
-                      <For each={filteredItems()}>
-                        {(item) => (
-                          <option value={item.id}>
-                            {item.title} ({item.links?.length || 0} links)
-                          </option>
-                        )}
-                      </For>
-                    </Select>
-                  </div>
-
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium">
-                      Link Description (optional)
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., 'Alternative link', 'Updated version'..."
-                      value={linkDescription()}
-                      onInput={(e) => setLinkDescription(e.currentTarget.value)}
-                    />
-                  </div>
-                </div>
-              </Show>
-
-              <div class="flex gap-2 pt-2">
+  const renderItemSelection = () => (
+    <div class="space-y-2">
+      <label class="text-sm font-medium">Select Item</label>
+      <Show
+        when={wishlistData()}
+        fallback={<div class="text-sm text-muted-foreground">Loading…</div>}
+      >
+        {(data) => (
+          <>
+            <Select
+              value={selectedItemId()}
+              onChange={(e) => handleItemSelection(e.currentTarget.value)}
+            >
+              <option value="">Choose an item…</option>
+              <For each={filteredItems()}>
+                {(item) => (
+                  <option value={item.id}>
+                    {item.title} ({item.links?.length || 0} links)
+                  </option>
+                )}
+              </For>
+              <option value={NEW_ITEM_OPTION_VALUE}>+ Create new item</option>
+            </Select>
+            <Show when={filteredItems().length === 0}>
+              <div class="flex items-center justify-between rounded border border-dashed border-input bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                <span>No items found in this category.</span>
                 <Button
                   size="sm"
-                  onClick={handleSubmit}
-                  disabled={
-                    isLoading() ||
-                    (mode() === "existing-item" && !selectedItemId())
-                  }
-                  class="flex-1"
+                  variant="link"
+                  class="p-0 text-xs"
+                  onClick={openNewItemModal}
                 >
-                  {isLoading()
-                    ? "Adding..."
-                    : mode() === "existing-item"
-                      ? "Add Link"
-                      : "Create Item"}
+                  Create one
                 </Button>
-                <Show when={props.onCancel}>
+              </div>
+            </Show>
+          </>
+        )}
+      </Show>
+    </div>
+  );
+
+  const renderLinkDescriptionInput = () => (
+    <div class="space-y-2">
+      <label class="text-sm font-medium">Link Description (optional)</label>
+      <Input
+        type="text"
+        placeholder="e.g., 'Official site', 'Product page'…"
+        value={linkDescription()}
+        onInput={(e) => setLinkDescription(e.currentTarget.value)}
+      />
+    </div>
+  );
+
+  return (
+    <>
+      <Card class="w-full">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <CardTitle class="text-base">Add to Wishlist</CardTitle>
+            <Show when={props.onCancel}>
+              <Button variant="ghost" size="sm" onClick={props.onCancel}>
+                Back
+              </Button>
+            </Show>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <Show
+            when={pageInfo()}
+            fallback={
+              <div class="text-sm text-muted-foreground">
+                Loading page info...
+              </div>
+            }
+          >
+            {(page) => (
+              <>
+                <div class="space-y-2">
+                  <div class="flex items-start gap-2">
+                    <Show when={page().favicon}>
+                      <img
+                        src={page().favicon}
+                        alt=""
+                        class="h-4 w-4 flex-shrink-0"
+                      />
+                    </Show>
+                    <div class="min-w-0 flex-1">
+                      <div
+                        class="text-sm font-medium truncate"
+                        title={page().title}
+                      >
+                        {page().title}
+                      </div>
+                      <div
+                        class="text-xs text-muted-foreground truncate"
+                        title={page().url}
+                      >
+                        {page().url}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-3">
+                  {renderCategoryFilter()}
+                  {renderItemSelection()}
+                  {renderLinkDescriptionInput()}
+                </div>
+
+                <div class="flex gap-2 pt-2">
                   <Button
                     size="sm"
+                    onClick={handleAddToExistingItem}
+                    disabled={
+                      isAddingLink() ||
+                      !selectedItemId() ||
+                      filteredItems().length === 0
+                    }
+                    class="flex-1"
+                  >
+                    {isAddingLink() ? "Adding..." : "Add Link"}
+                  </Button>
+                  <Show when={props.onCancel}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={props.onCancel}
+                      disabled={isAddingLink()}
+                    >
+                      Cancel
+                    </Button>
+                  </Show>
+                </div>
+              </>
+            )}
+          </Show>
+        </CardContent>
+      </Card>
+
+      <Show when={isNewItemModalOpen()}>
+        <div
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={() => {
+            if (!isCreatingNewItem()) {
+              closeNewItemModal();
+            }
+          }}
+        >
+          <div
+            class="w-full max-w-md"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Card>
+              <CardHeader>
+                <div class="flex items-center justify-between">
+                  <CardTitle class="text-base">Create New Item</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={closeNewItemModal}
+                    disabled={isCreatingNewItem()}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent class="space-y-3">
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">Category</label>
+                  <Show when={wishlistData()}>
+                    {(data) => (
+                      <Select
+                        value={newItemCategoryId()}
+                        onChange={(e) =>
+                          setNewItemCategoryId(e.currentTarget.value)
+                        }
+                      >
+                        <For each={data().categories}>
+                          {(category) => (
+                            <option value={category.id}>{category.name}</option>
+                          )}
+                        </For>
+                      </Select>
+                    )}
+                  </Show>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">
+                    Title (optional - uses page title)
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder={pageInfo()?.title}
+                    value={customTitle()}
+                    onInput={(e) => setCustomTitle(e.currentTarget.value)}
+                  />
+                </div>
+
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">
+                    Description (optional)
+                  </label>
+                  <textarea
+                    placeholder="Add a note about this item..."
+                    value={customDescription()}
+                    onInput={(e) => setCustomDescription(e.currentTarget.value)}
+                    class="flex min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    rows="2"
+                  />
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                  <Button
                     variant="outline"
-                    onClick={props.onCancel}
-                    disabled={isLoading()}
+                    size="sm"
+                    onClick={closeNewItemModal}
+                    disabled={isCreatingNewItem()}
                   >
                     Cancel
                   </Button>
-                </Show>
-              </div>
-            </>
-          )}
-        </Show>
-      </CardContent>
-    </Card>
+                  <Button
+                    size="sm"
+                    onClick={handleCreateNewItem}
+                    disabled={isCreatingNewItem()}
+                  >
+                    {isCreatingNewItem() ? "Creating..." : "Create Item"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </Show>
+    </>
   );
 }
