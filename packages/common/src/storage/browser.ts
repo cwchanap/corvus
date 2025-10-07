@@ -15,55 +15,114 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
-// Minimal Chrome-like types we use (no dependency on @types/chrome required)
-type ChromeStorageLocal = {
+type ExtensionStorage = {
   get(key: string): Promise<Record<string, string | undefined>>;
   set(items: Record<string, string>): Promise<void>;
   remove(key: string): Promise<void>;
 };
 
-type ChromeLike = {
-  storage?: { local: ChromeStorageLocal };
+type BrowserLike = {
+  storage?: { local?: ExtensionStorage };
 };
+
+type ChromeStorageLocalCallbacks = {
+  get(
+    keys: string | string[] | Record<string, unknown>,
+    callback: (items: Record<string, string | undefined>) => void,
+  ): void;
+  set(items: Record<string, string>, callback?: () => void): void;
+  remove(keys: string | string[], callback?: () => void): void;
+};
+
+type ChromeLike = {
+  storage?: { local?: ChromeStorageLocalCallbacks };
+  runtime?: { lastError?: unknown };
+};
+
+const cachedExtensionStorage = (() => {
+  let storage: ExtensionStorage | null | undefined;
+
+  return () => {
+    if (storage !== undefined) {
+      return storage;
+    }
+
+    const globalObj = globalThis as {
+      browser?: BrowserLike;
+      chrome?: ChromeLike;
+    };
+
+    const browserStorage = globalObj.browser?.storage?.local;
+    if (browserStorage) {
+      storage = browserStorage;
+      return storage;
+    }
+
+    const chromeStorage = globalObj.chrome?.storage?.local;
+    if (chromeStorage) {
+      const promisify = <T>(
+        method: (...args: any[]) => void,
+        ...args: any[]
+      ): Promise<T> => {
+        return new Promise<T>((resolve, reject) => {
+          try {
+            method.call(chromeStorage, ...args, (result: T) => {
+              const error = globalObj.chrome?.runtime?.lastError;
+              if (error) {
+                reject(error);
+              } else {
+                resolve(result);
+              }
+            });
+          } catch (error) {
+            reject(error);
+          }
+        });
+      };
+
+      storage = {
+        get: (key: string) =>
+          promisify<Record<string, string | undefined>>(chromeStorage.get, key),
+        set: (items: Record<string, string>) =>
+          promisify<void>(chromeStorage.set, items),
+        remove: (key: string) => promisify<void>(chromeStorage.remove, key),
+      };
+
+      return storage;
+    }
+
+    storage = null;
+    return storage;
+  };
+})();
+
+function resolveExtensionStorage(): ExtensionStorage | null {
+  return cachedExtensionStorage();
+}
 
 // Extension storage adapter
 export class ExtensionStorageAdapter implements StorageAdapter {
+  constructor(private readonly storage: ExtensionStorage) {}
+
   async getItem(key: string): Promise<string | null> {
-    const chromeObj = (globalThis as { chrome?: ChromeLike }).chrome;
-    if (chromeObj?.storage) {
-      const result = await chromeObj.storage.local.get(key);
-      return result[key] || null;
-    }
-    // Fallback to localStorage
-    return localStorage.getItem(key);
+    const result = await this.storage.get(key);
+    return result[key] ?? null;
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    const chromeObj = (globalThis as { chrome?: ChromeLike }).chrome;
-    if (chromeObj?.storage) {
-      await chromeObj.storage.local.set({ [key]: value });
-    } else {
-      // Fallback to localStorage
-      localStorage.setItem(key, value);
-    }
+    await this.storage.set({ [key]: value });
   }
 
   async removeItem(key: string): Promise<void> {
-    const chromeObj = (globalThis as { chrome?: ChromeLike }).chrome;
-    if (chromeObj?.storage) {
-      await chromeObj.storage.local.remove(key);
-    } else {
-      // Fallback to localStorage
-      localStorage.removeItem(key);
-    }
+    await this.storage.remove(key);
   }
 }
 
 // Factory function for creating storage instances
 export function createWishlistStorage(storageKey = "corvus_wishlist") {
-  const chromeObj = (globalThis as { chrome?: ChromeLike }).chrome;
-  const adapter = chromeObj?.storage
-    ? new ExtensionStorageAdapter()
+  const extensionStorage = resolveExtensionStorage();
+  const adapter = extensionStorage
+    ? new ExtensionStorageAdapter(extensionStorage)
     : new LocalStorageAdapter();
 
   return new BaseWishlistStorage(storageKey, adapter);

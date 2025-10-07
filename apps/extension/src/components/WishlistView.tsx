@@ -18,8 +18,8 @@ export function WishlistView(props: WishlistViewProps) {
     string | null
   >(null);
 
-  const [wishlistData, { refetch }] = createResource(
-    WishlistStorage.getWishlistData,
+  const [wishlistData, { refetch }] = createResource(() =>
+    WishlistStorage.getWishlistData(),
   );
 
   const filteredItems = () => {

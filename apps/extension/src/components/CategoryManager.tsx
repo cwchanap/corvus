@@ -18,8 +18,8 @@ export function CategoryManager(props: CategoryManagerProps) {
   const [newCategoryName, setNewCategoryName] = createSignal("");
   const [isAdding, setIsAdding] = createSignal(false);
 
-  const [wishlistData, { refetch }] = createResource(
-    WishlistStorage.getWishlistData,
+  const [wishlistData, { refetch }] = createResource(() =>
+    WishlistStorage.getWishlistData(),
   );
 
   const handleAddCategory = async () => {
