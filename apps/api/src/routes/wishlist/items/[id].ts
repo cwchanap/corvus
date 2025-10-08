@@ -56,7 +56,7 @@ app.put("/:id", async (c) => {
     const id = c.req.param("id");
     const updates = (await c.req.json()) as WishlistItemUpdate;
     const wishlistService = new WishlistService(db);
-    const item = await wishlistService.updateItem(id, updates);
+    const item = await wishlistService.updateItem(id, user.id, updates);
 
     if (!item) {
       return c.json({ error: "Item not found" }, { status: 404 });

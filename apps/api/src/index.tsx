@@ -8,6 +8,7 @@ import wishlistRoutes from "./routes/wishlist/index";
 import wishlistItemsRoutes from "./routes/wishlist/items/index";
 import wishlistItemRoutes from "./routes/wishlist/items/[id]";
 import wishlistItemLinksRoutes from "./routes/wishlist/items/links";
+import wishlistCategoriesRoutes from "./routes/wishlist/categories/index";
 
 const app = new Hono();
 
@@ -16,10 +17,24 @@ app.use(
   "*",
   cors({
     origin: (origin) => {
-      // Allow requests from localhost on common development ports
-      if (!origin || origin.startsWith("http://localhost:")) {
-        return origin || "*";
+      if (!origin) {
+        return "*";
       }
+
+      if (
+        origin.startsWith("http://localhost:") ||
+        origin.startsWith("https://localhost:")
+      ) {
+        return origin;
+      }
+
+      if (
+        origin.startsWith("chrome-extension://") ||
+        origin.startsWith("moz-extension://")
+      ) {
+        return origin;
+      }
+
       return null;
     },
     allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -35,6 +50,7 @@ app.route("/api/auth", authLogoutRoutes);
 app.route("/api/auth", authRegisterRoutes);
 app.route("/api/auth", authMeRoutes);
 app.route("/api/wishlist", wishlistRoutes);
+app.route("/api/wishlist/categories", wishlistCategoriesRoutes);
 app.route("/api/wishlist/items", wishlistItemsRoutes);
 app.route("/api/wishlist/items", wishlistItemRoutes);
 app.route("/api/wishlist/items", wishlistItemLinksRoutes);

@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./api/wishlist-client": "./src/api/wishlist-client.ts",
     "./utils": "./src/utils.ts",
     "./types": "./src/types.ts",
     "./types/auth": "./src/types/auth.ts",

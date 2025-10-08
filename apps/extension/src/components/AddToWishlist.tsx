@@ -8,8 +8,10 @@ import {
 } from "@repo/ui-components/card";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
-import { WishlistStorage } from "../utils/storage.js";
 import { getCurrentPageInfo } from "../utils/page-info.js";
+import { WishlistApiError } from "@repo/common/api/wishlist-client";
+import { useWishlistData } from "../lib/wishlist/context.js";
+import type { WishlistItem } from "../types/wishlist";
 
 interface AddToWishlistProps {
   onSuccess?: () => void;
@@ -17,8 +19,6 @@ interface AddToWishlistProps {
 }
 
 const NEW_ITEM_OPTION_VALUE = "__create_new_item__";
-const DEFAULT_CATEGORY_ID = "general";
-
 export function AddToWishlist(props: AddToWishlistProps) {
   const [selectedCategoryId, setSelectedCategoryId] = createSignal("all");
   const [selectedItemId, setSelectedItemId] = createSignal<string>("");
@@ -26,19 +26,32 @@ export function AddToWishlist(props: AddToWishlistProps) {
   const [isAddingLink, setIsAddingLink] = createSignal(false);
 
   const [isNewItemModalOpen, setIsNewItemModalOpen] = createSignal(false);
-  const [newItemCategoryId, setNewItemCategoryId] =
-    createSignal(DEFAULT_CATEGORY_ID);
+  const [newItemCategoryId, setNewItemCategoryId] = createSignal("");
   const [customTitle, setCustomTitle] = createSignal("");
   const [customDescription, setCustomDescription] = createSignal("");
   const [isCreatingNewItem, setIsCreatingNewItem] = createSignal(false);
 
   const [pageInfo] = createResource(getCurrentPageInfo);
-  const [wishlistData] = createResource(() =>
-    WishlistStorage.getWishlistData(),
-  );
+  const {
+    value: wishlistValue,
+    state: wishlistState,
+    error: wishlistError,
+    refetch: refetchWishlist,
+    api: wishlistApi,
+  } = useWishlistData();
 
-  const filteredItems = () => {
-    const data = wishlistData();
+  const isWishlistErrored = () => wishlistState() === "errored";
+  const resolvedWishlist = () => wishlistValue();
+  const wishlistErrorMessage = () => {
+    const error = wishlistError();
+    if (error instanceof WishlistApiError) return error.message;
+    if (error instanceof Error) return error.message;
+    return "Unable to load wishlist data. Please sign in.";
+  };
+  const hasCategories = () => Boolean(resolvedWishlist()?.categories.length);
+
+  const filteredItems = (): WishlistItem[] => {
+    const data = resolvedWishlist();
     if (!data) return [];
 
     const categoryId = selectedCategoryId();
@@ -55,11 +68,12 @@ export function AddToWishlist(props: AddToWishlistProps) {
 
   const closeNewItemModal = () => {
     setIsNewItemModalOpen(false);
+    setNewItemCategoryId("");
     resetNewItemForm();
   };
 
   const openNewItemModal = () => {
-    const data = wishlistData();
+    const data = resolvedWishlist();
     if (data?.categories.length) {
       const currentSelection = selectedCategoryId();
       const fallbackCategory =
@@ -68,7 +82,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
           : data.categories[0]!.id;
       setNewItemCategoryId(fallbackCategory);
     } else {
-      setNewItemCategoryId(DEFAULT_CATEGORY_ID);
+      setNewItemCategoryId("");
     }
 
     resetNewItemForm();
@@ -92,16 +106,17 @@ export function AddToWishlist(props: AddToWishlistProps) {
 
     setIsAddingLink(true);
     try {
-      await WishlistStorage.addItemLink(
-        itemId,
-        page.url,
-        linkDescription() || undefined,
-        false,
-      );
+      await wishlistApi.addItemLink(itemId, {
+        url: page.url,
+        description: linkDescription() || undefined,
+        isPrimary: false,
+      });
+      await refetchWishlist();
       setLinkDescription("");
       props.onSuccess?.();
     } catch (error) {
       console.error("Error adding link to existing item:", error);
+      alert("Failed to add link to item. Please try again.");
     } finally {
       setIsAddingLink(false);
     }
@@ -111,27 +126,34 @@ export function AddToWishlist(props: AddToWishlistProps) {
     const page = pageInfo();
     if (!page) return;
 
+    const categoryId = newItemCategoryId();
+    if (!categoryId) {
+      alert("Please choose a category before creating an item.");
+      return;
+    }
+
     setIsCreatingNewItem(true);
     try {
       const title = customTitle() || page.title;
       const description = customDescription() || undefined;
 
-      await WishlistStorage.addItemWithLink(
-        {
-          title,
-          description,
-          categoryId: newItemCategoryId(),
-          favicon: page.favicon,
-        },
-        page.url,
-        linkDescription() || undefined,
-      );
+      await wishlistApi.createItem({
+        title,
+        description,
+        categoryId,
+        favicon: page.favicon,
+        url: page.url,
+        linkDescription: linkDescription() || undefined,
+      });
 
+      await refetchWishlist();
+      setSelectedItemId("");
       setLinkDescription("");
       setIsNewItemModalOpen(false);
       props.onSuccess?.();
     } catch (error) {
       console.error("Error creating new item:", error);
+      alert("Failed to create item. Please try again.");
     } finally {
       setIsCreatingNewItem(false);
       resetNewItemForm();
@@ -142,8 +164,12 @@ export function AddToWishlist(props: AddToWishlistProps) {
     <div class="space-y-2">
       <label class="text-sm font-medium">Category</label>
       <Show
-        when={wishlistData()}
-        fallback={<div class="text-sm text-muted-foreground">Loading…</div>}
+        when={resolvedWishlist()}
+        fallback={
+          <div class="text-sm text-muted-foreground">
+            {isWishlistErrored() ? wishlistErrorMessage() : "Loading…"}
+          </div>
+        }
       >
         {(data) => (
           <Select
@@ -166,40 +192,43 @@ export function AddToWishlist(props: AddToWishlistProps) {
     <div class="space-y-2">
       <label class="text-sm font-medium">Select Item</label>
       <Show
-        when={wishlistData()}
-        fallback={<div class="text-sm text-muted-foreground">Loading…</div>}
+        when={resolvedWishlist()}
+        fallback={
+          <div class="text-sm text-muted-foreground">
+            {isWishlistErrored() ? wishlistErrorMessage() : "Loading…"}
+          </div>
+        }
       >
-        {(data) => (
-          <>
-            <Select
-              value={selectedItemId()}
-              onChange={(e) => handleItemSelection(e.currentTarget.value)}
-            >
-              <option value="">Choose an item…</option>
-              <For each={filteredItems()}>
-                {(item) => (
-                  <option value={item.id}>
-                    {item.title} ({item.links?.length || 0} links)
-                  </option>
-                )}
-              </For>
-              <option value={NEW_ITEM_OPTION_VALUE}>+ Create new item</option>
-            </Select>
-            <Show when={filteredItems().length === 0}>
-              <div class="flex items-center justify-between rounded border border-dashed border-input bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                <span>No items found in this category.</span>
-                <Button
-                  size="sm"
-                  variant="link"
-                  class="p-0 text-xs"
-                  onClick={openNewItemModal}
-                >
-                  Create one
-                </Button>
-              </div>
-            </Show>
-          </>
-        )}
+        <>
+          <Select
+            value={selectedItemId()}
+            onChange={(e) => handleItemSelection(e.currentTarget.value)}
+          >
+            <option value="">Choose an item…</option>
+            <For each={filteredItems()}>
+              {(item) => (
+                <option value={item.id}>
+                  {item.title} ({item.links?.length || 0} links)
+                </option>
+              )}
+            </For>
+            <option value={NEW_ITEM_OPTION_VALUE}>+ Create new item</option>
+          </Select>
+          <Show when={filteredItems().length === 0}>
+            <div class="flex items-center justify-between rounded border border-dashed border-input bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <span>No items found in this category.</span>
+              <Button
+                size="sm"
+                variant="link"
+                class="p-0 text-xs"
+                onClick={openNewItemModal}
+                disabled={isWishlistErrored()}
+              >
+                Create one
+              </Button>
+            </div>
+          </Show>
+        </>
       </Show>
     </div>
   );
@@ -332,7 +361,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
               <CardContent class="space-y-3">
                 <div class="space-y-2">
                   <label class="text-sm font-medium">Category</label>
-                  <Show when={wishlistData()}>
+                  <Show when={resolvedWishlist()}>
                     {(data) => (
                       <Select
                         value={newItemCategoryId()}
@@ -387,7 +416,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
                   <Button
                     size="sm"
                     onClick={handleCreateNewItem}
-                    disabled={isCreatingNewItem()}
+                    disabled={isCreatingNewItem() || !hasCategories()}
                   >
                     {isCreatingNewItem() ? "Creating..." : "Create Item"}
                   </Button>

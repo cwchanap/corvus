@@ -24,7 +24,15 @@ app.post("/", async (c) => {
       return c.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    const { title, url, description, category_id } = await c.req.json();
+    const { title, url, description, category_id, link_description, favicon } =
+      await c.req.json<{
+        title?: string;
+        url?: string;
+        description?: string;
+        category_id?: string;
+        link_description?: string;
+        favicon?: string;
+      }>();
 
     if (!title || !category_id) {
       return c.json(
@@ -39,18 +47,24 @@ app.post("/", async (c) => {
       category_id,
       title,
       description,
+      favicon,
     });
 
+    let primaryLink = null;
     // If URL is provided, create a primary link
     if (url) {
-      await wishlistService.createItemLink({
+      primaryLink = await wishlistService.createItemLink({
         item_id: item.id,
         url,
+        description: link_description,
         is_primary: true,
       });
     }
 
-    return c.json(item);
+    return c.json({
+      ...item,
+      links: primaryLink ? [primaryLink] : [],
+    });
   } catch (error) {
     console.error("Create item error:", error);
     return c.json({ error: "Failed to create item" }, { status: 500 });
