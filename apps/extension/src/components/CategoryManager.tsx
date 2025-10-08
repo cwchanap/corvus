@@ -1,4 +1,4 @@
-import { createSignal, createResource, For, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import {
@@ -8,7 +8,8 @@ import {
   CardTitle,
 } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
-import { WishlistStorage } from "../utils/storage.js";
+import { WishlistApiError } from "@repo/common/api/wishlist-client";
+import { useWishlistData } from "../lib/wishlist/context.js";
 
 interface CategoryManagerProps {
   onClose?: () => void;
@@ -17,10 +18,22 @@ interface CategoryManagerProps {
 export function CategoryManager(props: CategoryManagerProps) {
   const [newCategoryName, setNewCategoryName] = createSignal("");
   const [isAdding, setIsAdding] = createSignal(false);
+  const {
+    value: wishlistValue,
+    state: wishlistState,
+    error: wishlistError,
+    refetch,
+    api: wishlistApi,
+  } = useWishlistData();
 
-  const [wishlistData, { refetch }] = createResource(() =>
-    WishlistStorage.getWishlistData(),
-  );
+  const isErrored = () => wishlistState() === "errored";
+  const resolvedWishlist = () => wishlistValue();
+  const errorMessage = () => {
+    const error = wishlistError();
+    if (error instanceof WishlistApiError) return error.message;
+    if (error instanceof Error) return error.message;
+    return "Unable to load categories. Please sign in.";
+  };
 
   const handleAddCategory = async () => {
     const name = newCategoryName().trim();
@@ -28,14 +41,21 @@ export function CategoryManager(props: CategoryManagerProps) {
 
     setIsAdding(true);
     try {
-      await WishlistStorage.addCategory({
+      await wishlistApi.createCategory({
         name,
         color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // Random color
       });
       setNewCategoryName("");
-      refetch();
+      await refetch();
     } catch (error) {
       console.error("Error adding category:", error);
+      if (error instanceof WishlistApiError) {
+        alert(error.message);
+      } else if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Failed to add category");
+      }
     } finally {
       setIsAdding(false);
     }
@@ -43,21 +63,24 @@ export function CategoryManager(props: CategoryManagerProps) {
 
   const handleRemoveCategory = async (categoryId: string) => {
     try {
-      await WishlistStorage.removeCategory(categoryId);
-      refetch();
+      await wishlistApi.deleteCategory(categoryId);
+      await refetch();
     } catch (error) {
       console.error("Error removing category:", error);
       alert(
-        error instanceof Error ? error.message : "Failed to remove category",
+        error instanceof WishlistApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Failed to remove category",
       );
     }
   };
 
   const getItemCount = (categoryId: string): number => {
-    return (
-      wishlistData()?.items.filter((item) => item.categoryId === categoryId)
-        .length || 0
-    );
+    const data = resolvedWishlist();
+    if (!data) return 0;
+    return data.items.filter((item) => item.categoryId === categoryId).length;
   };
 
   return (
@@ -85,7 +108,7 @@ export function CategoryManager(props: CategoryManagerProps) {
             />
             <Button
               onClick={handleAddCategory}
-              disabled={!newCategoryName().trim() || isAdding()}
+              disabled={!newCategoryName().trim() || isAdding() || isErrored()}
               size="sm"
             >
               {isAdding() ? "Adding..." : "Add"}
@@ -96,7 +119,14 @@ export function CategoryManager(props: CategoryManagerProps) {
         {/* Existing categories */}
         <div class="space-y-2">
           <label class="text-sm font-medium">Existing Categories</label>
-          <Show when={wishlistData()}>
+          <Show
+            when={resolvedWishlist()}
+            fallback={
+              <div class="text-sm text-muted-foreground">
+                {isErrored() ? errorMessage() : "Loading…"}
+              </div>
+            }
+          >
             {(data) => (
               <div class="space-y-2 max-h-48 overflow-y-auto">
                 <For each={data().categories}>

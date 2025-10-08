@@ -8,7 +8,9 @@
     "CHROME_PROFILE_NAME",
     "FIREFOX_PROFILE_DIR",
     "CI",
-    "NODE_ENV"
+    "NODE_ENV",
+    "MODE",
+    "VITE_API_BASE"
   ],
   "tasks": {
     "build": {

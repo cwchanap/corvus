@@ -1,12 +1,13 @@
-import { createSignal, createResource, For, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Card } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
 import { ThemeToggle } from "@repo/ui-components/theme-toggle";
 import { Select } from "@repo/ui-components/select";
 import { useTheme } from "../lib/theme/context.js";
-import { WishlistStorage } from "../utils/storage.js";
-import type { WishlistCategory } from "../types/wishlist";
+import { WishlistApiError } from "@repo/common/api/wishlist-client";
+import { useWishlistData } from "../lib/wishlist/context.js";
+import type { WishlistCategory, WishlistItem } from "../types/wishlist";
 
 interface WishlistViewProps {
   onAddNew?: () => void;
@@ -19,12 +20,25 @@ export function WishlistView(props: WishlistViewProps) {
     string | null
   >(null);
 
-  const [wishlistData, { refetch }] = createResource(() =>
-    WishlistStorage.getWishlistData(),
-  );
+  const {
+    value: wishlistValue,
+    state: wishlistState,
+    error: wishlistError,
+    refetch,
+    api: wishlistApi,
+  } = useWishlistData();
 
-  const filteredItems = () => {
-    const data = wishlistData();
+  const resolvedWishlist = () => wishlistValue();
+  const isErrored = () => wishlistState() === "errored";
+  const errorMessage = () => {
+    const error = wishlistError();
+    if (error instanceof WishlistApiError) return error.message;
+    if (error instanceof Error) return error.message;
+    return "Unable to load your wishlist. Please sign in.";
+  };
+
+  const filteredItems = (): WishlistItem[] => {
+    const data = resolvedWishlist();
     if (!data) return [];
 
     const categoryId = selectedCategoryId();
@@ -36,21 +50,41 @@ export function WishlistView(props: WishlistViewProps) {
   const getCategoryById = (
     categoryId: string,
   ): WishlistCategory | undefined => {
-    return wishlistData()?.categories.find((cat) => cat.id === categoryId);
+    const data = resolvedWishlist();
+    if (!data) return undefined;
+    return data.categories.find((cat) => cat.id === categoryId);
   };
 
   const handleRemoveItem = async (itemId: string) => {
     try {
-      await WishlistStorage.removeItem(itemId);
-      refetch();
+      await wishlistApi.deleteItem(itemId);
+      await refetch();
     } catch (error) {
       console.error("Error removing item:", error);
+      if (error instanceof WishlistApiError) {
+        alert(error.message);
+      } else if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Failed to remove item");
+      }
     }
   };
 
   const deleteLink = async (itemId: string, linkId: string) => {
-    await WishlistStorage.removeItemLink(itemId, linkId);
-    refetch();
+    try {
+      await wishlistApi.deleteItemLink(itemId, linkId);
+      await refetch();
+    } catch (error) {
+      console.error("Error removing link:", error);
+      if (error instanceof WishlistApiError) {
+        alert(error.message);
+      } else if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Failed to remove link");
+      }
+    }
   };
 
   const handleOpenItem = (url: string) => {
@@ -80,7 +114,14 @@ export function WishlistView(props: WishlistViewProps) {
         </div>
       </div>
 
-      <Show when={wishlistData()}>
+      <Show
+        when={resolvedWishlist()}
+        fallback={
+          <div class="flex-1 rounded border border-dashed border-input bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+            {isErrored() ? errorMessage() : "Loading wishlist…"}
+          </div>
+        }
+      >
         {(data) => (
           <>
             {/* Category Filter */}

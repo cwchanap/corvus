@@ -42,12 +42,18 @@ export class WishlistService {
 
   async updateCategory(
     categoryId: string,
+    userId: number,
     updates: WishlistCategoryUpdate,
   ): Promise<WishlistCategory | null> {
     const row = await this.db
       .update(wishlistCategories)
       .set({ ...updates, updated_at: new Date().toISOString() })
-      .where(eq(wishlistCategories.id, categoryId))
+      .where(
+        and(
+          eq(wishlistCategories.id, categoryId),
+          eq(wishlistCategories.user_id, userId),
+        ),
+      )
       .returning()
       .get();
     return row || null;
@@ -132,12 +138,15 @@ export class WishlistService {
 
   async updateItem(
     itemId: string,
+    userId: number,
     updates: WishlistItemUpdate,
   ): Promise<WishlistItem | null> {
     const row = await this.db
       .update(wishlistItems)
       .set({ ...updates, updated_at: new Date().toISOString() })
-      .where(eq(wishlistItems.id, itemId))
+      .where(
+        and(eq(wishlistItems.id, itemId), eq(wishlistItems.user_id, userId)),
+      )
       .returning()
       .get();
     return row || null;
