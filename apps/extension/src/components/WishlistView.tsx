@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, Show, createEffect } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Card } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
@@ -8,6 +8,7 @@ import { useTheme } from "../lib/theme/context.js";
 import { WishlistApiError } from "@repo/common/api/wishlist-client";
 import { useWishlistData } from "../lib/wishlist/context.js";
 import type { WishlistCategory, WishlistItem } from "../types/wishlist";
+import { ItemDetailsModal } from "./ItemDetailsModal.js";
 
 interface WishlistViewProps {
   onAddNew?: () => void;
@@ -27,6 +28,7 @@ export function WishlistView(props: WishlistViewProps) {
     refetch,
     api: wishlistApi,
   } = useWishlistData();
+  const [viewingItem, setViewingItem] = createSignal<WishlistItem | null>(null);
 
   const resolvedWishlist = () => wishlistValue();
   const isErrored = () => wishlistState() === "errored";
@@ -35,6 +37,14 @@ export function WishlistView(props: WishlistViewProps) {
     if (error instanceof WishlistApiError) return error.message;
     if (error instanceof Error) return error.message;
     return "Unable to load your wishlist. Please sign in.";
+  };
+
+  const openItemDetails = (item: WishlistItem) => {
+    setViewingItem(item);
+  };
+
+  const closeItemDetails = () => {
+    setViewingItem(null);
   };
 
   const filteredItems = (): WishlistItem[] => {
@@ -58,6 +68,9 @@ export function WishlistView(props: WishlistViewProps) {
   const handleRemoveItem = async (itemId: string) => {
     try {
       await wishlistApi.deleteItem(itemId);
+      if (viewingItem()?.id === itemId) {
+        closeItemDetails();
+      }
       await refetch();
     } catch (error) {
       console.error("Error removing item:", error);
@@ -71,25 +84,27 @@ export function WishlistView(props: WishlistViewProps) {
     }
   };
 
-  const deleteLink = async (itemId: string, linkId: string) => {
-    try {
-      await wishlistApi.deleteItemLink(itemId, linkId);
-      await refetch();
-    } catch (error) {
-      console.error("Error removing link:", error);
-      if (error instanceof WishlistApiError) {
-        alert(error.message);
-      } else if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert("Failed to remove link");
-      }
-    }
-  };
-
   const handleOpenItem = (url: string) => {
     chrome.tabs.create({ url });
   };
+
+  createEffect(() => {
+    const current = viewingItem();
+    if (!current) return;
+
+    const updated = resolvedWishlist()?.items.find(
+      (item) => item.id === current.id,
+    );
+
+    if (!updated) {
+      closeItemDetails();
+      return;
+    }
+
+    if (updated !== current) {
+      setViewingItem(updated);
+    }
+  });
 
   return (
     <div class="flex h-full w-full flex-col space-y-4">
@@ -189,54 +204,24 @@ export function WishlistView(props: WishlistViewProps) {
 
                           <div class="min-w-0 flex-1">
                             <div class="flex items-start justify-between gap-2">
-                              <div class="min-w-0 flex-1">
+                              <button
+                                type="button"
+                                onClick={() => openItemDetails(item)}
+                                class="min-w-0 flex-1 text-left bg-transparent border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+                              >
                                 <h3
-                                  class="font-medium text-sm truncate"
+                                  class="font-medium text-sm truncate hover:text-primary transition-colors"
                                   title={item.title}
                                 >
                                   {item.title}
                                 </h3>
-
-                                {/* All Links */}
-                                <Show when={itemLinks.length > 0}>
-                                  <div class="space-y-1 mt-1">
-                                    <For each={itemLinks}>
-                                      {(link) => (
-                                        <div class="flex items-center gap-2 text-xs">
-                                          <a
-                                            href={link.url}
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              handleOpenItem(link.url);
-                                            }}
-                                            class="text-blue-600 hover:text-blue-800 underline truncate flex-1"
-                                            title={link.url}
-                                          >
-                                            {link.description || link.url}
-                                          </a>
-                                          <Button
-                                            size="sm"
-                                            variant="destructive"
-                                            onClick={() =>
-                                              deleteLink(item.id, link.id)
-                                            }
-                                            class="h-4 px-1 text-xs"
-                                            title="Delete link"
-                                          >
-                                            ×
-                                          </Button>
-                                        </div>
-                                      )}
-                                    </For>
-                                  </div>
-                                </Show>
 
                                 <Show when={item.description}>
                                   <p class="text-xs text-muted-foreground mt-1 line-clamp-2">
                                     {item.description}
                                   </p>
                                 </Show>
-                              </div>
+                              </button>
 
                               <div class="flex items-center gap-1 flex-shrink-0">
                                 <Button
@@ -279,6 +264,14 @@ export function WishlistView(props: WishlistViewProps) {
           </>
         )}
       </Show>
+      <ItemDetailsModal
+        item={viewingItem() ?? undefined}
+        category={
+          viewingItem() ? getCategoryById(viewingItem()!.categoryId) : undefined
+        }
+        onClose={closeItemDetails}
+        onOpenLink={handleOpenItem}
+      />
     </div>
   );
 }
