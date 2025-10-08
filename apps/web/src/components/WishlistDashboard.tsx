@@ -1,4 +1,11 @@
-import { createSignal, createResource, For, Show, createMemo } from "solid-js";
+import {
+  createSignal,
+  createResource,
+  For,
+  Show,
+  createMemo,
+  createEffect,
+} from "solid-js";
 import { A } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
@@ -19,6 +26,7 @@ import type {
 import { useTheme } from "../lib/theme/context.jsx";
 import { AddItemDialog } from "./AddItemDialog.jsx";
 import { EditItemDialog } from "./EditItemDialog.jsx";
+import { ViewItemDialog } from "./ViewItemDialog.jsx";
 
 type WishlistCategory = WishlistCategoryRecord;
 type WishlistItem = WishlistItemRecord;
@@ -37,6 +45,7 @@ function SortableWishlistItem(props: {
   item: WishlistItem;
   onDelete: (id: string) => void;
   onEdit: (item: WishlistItem) => void;
+  onView: (item: WishlistItem) => void;
 }) {
   const style = {} as const;
   const createdAtLabel = () => {
@@ -44,54 +53,42 @@ function SortableWishlistItem(props: {
     return isNaN(d.getTime()) ? "just now" : d.toLocaleDateString();
   };
 
-  // Get item links from database
-  const itemLinks = () => props.item.links || [];
+  const itemLinksCount = () => props.item.links?.length ?? 0;
 
   return (
     <div style={style}>
       <Card class="transition-all duration-200 hover:shadow-lg shadow-md border-0 bg-card/80 backdrop-blur-sm">
         <CardContent class="p-6">
           <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-2">
-                <h3 class="font-semibold text-card-foreground text-lg">
-                  {props.item.title}
-                </h3>
-              </div>
-
-              {/* All Links */}
-              <Show when={itemLinks().length > 0}>
-                <div class="space-y-1 mt-2">
-                  <For each={itemLinks()}>
-                    {(link) => (
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="text-sm text-primary hover:text-primary/80 break-all block transition-colors duration-200"
-                      >
-                        {link.description || link.url}
-                      </a>
-                    )}
-                  </For>
+            <button
+              type="button"
+              onClick={() => props.onView(props.item)}
+              class="flex-1 text-left bg-transparent border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg transition-colors"
+            >
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold text-card-foreground text-lg hover:text-primary transition-colors">
+                    {props.item.title}
+                  </h3>
                 </div>
-              </Show>
 
-              <Show when={props.item.description}>
-                <p class="text-sm text-muted-foreground mt-3 leading-relaxed">
-                  {props.item.description}
-                </p>
-              </Show>
-              <div class="text-xs text-muted-foreground mt-3 flex items-center justify-between">
-                <div class="flex items-center">
-                  <span class="w-2 h-2 bg-primary rounded-full mr-2" />
-                  Added {createdAtLabel()}
-                </div>
-                <div class="text-xs">
-                  {itemLinks().length} link{itemLinks().length !== 1 ? "s" : ""}
+                <Show when={props.item.description}>
+                  <p class="text-sm text-muted-foreground leading-relaxed">
+                    {props.item.description}
+                  </p>
+                </Show>
+
+                <div class="text-xs text-muted-foreground flex items-center justify-between pt-2">
+                  <div class="flex items-center">
+                    <span class="w-2 h-2 bg-primary rounded-full mr-2" />
+                    Added {createdAtLabel()}
+                  </div>
+                  <div class="text-xs">
+                    {itemLinksCount()} link{itemLinksCount() !== 1 ? "s" : ""}
+                  </div>
                 </div>
               </div>
-            </div>
+            </button>
             <div class="flex gap-2">
               <button
                 onClick={() => props.onEdit(props.item)}
@@ -130,6 +127,8 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const [editOpen, setEditOpen] = createSignal(false);
   const [editingItem, setEditingItem] = createSignal<WishlistItem | null>(null);
   const [editing, setEditing] = createSignal(false);
+  const [viewOpen, setViewOpen] = createSignal(false);
+  const [viewingItem, setViewingItem] = createSignal<WishlistItem | null>(null);
 
   // Fetch wishlist data
   const [wishlistData, { refetch }] = createResource<WishlistData>(async () => {
@@ -256,11 +255,30 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     if (response.ok) {
       // Update local state immediately
       setItems((prev) => prev.filter((item) => item.id !== itemId));
+      if (viewingItem()?.id === itemId) {
+        setViewOpen(false);
+        setViewingItem(null);
+      }
       refetch();
     }
   };
 
+  const openViewDialog = (item: WishlistItem) => {
+    setViewingItem(item);
+    setViewOpen(true);
+  };
+
+  const handleViewOpenChange = (open: boolean) => {
+    setViewOpen(open);
+    if (!open) {
+      setViewingItem(null);
+    }
+  };
+
   const openEditDialog = (item: WishlistItem) => {
+    if (viewingItem()?.id === item.id) {
+      handleViewOpenChange(false);
+    }
     setEditingItem(item);
     setEditOpen(true);
   };
@@ -339,6 +357,21 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       setEditing(false);
     }
   };
+
+  createEffect(() => {
+    const current = viewingItem();
+    if (!current) return;
+
+    const updated = items().find((item) => item.id === current.id);
+    if (!updated) {
+      handleViewOpenChange(false);
+      return;
+    }
+
+    if (updated !== current) {
+      setViewingItem(updated);
+    }
+  });
 
   return (
     <div class="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
@@ -530,6 +563,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                         item={item}
                         onDelete={deleteItem}
                         onEdit={openEditDialog}
+                        onView={openViewDialog}
                       />
                     )}
                   </For>
@@ -554,6 +588,12 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         categories={wishlistData()?.categories || []}
         item={editingItem()}
         submitting={editing()}
+      />
+      <ViewItemDialog
+        open={viewOpen()}
+        onOpenChange={handleViewOpenChange}
+        categories={wishlistData()?.categories || []}
+        item={viewingItem()}
       />
     </div>
   );
