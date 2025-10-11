@@ -76,13 +76,16 @@ export function ItemDetailsModal(props: ItemDetailsModalProps) {
                   <div class="mt-2 space-y-2">
                     <For each={props.item?.links}>
                       {(link) => (
-                        <button
+                        <Button
                           type="button"
-                          class="w-full text-left text-sm text-primary hover:text-primary/80 underline break-all"
+                          variant="link"
+                          size="sm"
+                          class="h-auto justify-start p-0 text-left font-normal text-sm break-all"
                           onClick={() => props.onOpenLink(link.url)}
+                          title={link.url}
                         >
                           {link.description || link.url}
-                        </button>
+                        </Button>
                       )}
                     </For>
                   </div>
