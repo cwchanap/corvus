@@ -15,7 +15,15 @@ import {
   wishlistItems,
   wishlistItemLinks,
 } from "../db/schema.js";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+
+type ItemQueryOptions = {
+  limit?: number;
+  offset?: number;
+  categoryId?: string | null;
+  search?: string | null;
+};
 
 export class WishlistService {
   constructor(private db: DB) {}
@@ -100,13 +108,48 @@ export class WishlistService {
   }
 
   // Item operations
-  async getUserItems(userId: number): Promise<WishlistItem[]> {
-    return await this.db
+  private buildItemFilters(
+    userId: number,
+    options: ItemQueryOptions = {},
+  ): SQL {
+    const filters: SQL[] = [eq(wishlistItems.user_id, userId)];
+
+    if (options.categoryId) {
+      filters.push(eq(wishlistItems.category_id, options.categoryId));
+    }
+
+    if (options.search) {
+      const pattern = `%${options.search}%`;
+      filters.push(
+        sql`(${wishlistItems.title} LIKE ${pattern} COLLATE NOCASE OR coalesce(${wishlistItems.description}, '') LIKE ${pattern} COLLATE NOCASE)`,
+      );
+    }
+
+    return filters.length === 1 ? filters[0]! : and(...filters);
+  }
+
+  async getUserItems(
+    userId: number,
+    options: ItemQueryOptions = {},
+  ): Promise<WishlistItem[]> {
+    const { limit, offset } = options;
+    const filter = this.buildItemFilters(userId, options);
+
+    let query = this.db
       .select()
       .from(wishlistItems)
-      .where(eq(wishlistItems.user_id, userId))
-      .orderBy(desc(wishlistItems.created_at))
-      .all();
+      .where(filter)
+      .orderBy(desc(wishlistItems.created_at));
+
+    if (typeof limit === "number") {
+      query = query.limit(limit);
+    }
+
+    if (typeof offset === "number" && offset > 0) {
+      query = query.offset(offset);
+    }
+
+    return await query.all();
   }
 
   async getItemsByCategory(
@@ -124,6 +167,20 @@ export class WishlistService {
       )
       .orderBy(desc(wishlistItems.created_at))
       .all();
+  }
+
+  async getUserItemsCount(
+    userId: number,
+    options: ItemQueryOptions = {},
+  ): Promise<number> {
+    const filter = this.buildItemFilters(userId, options);
+    const result = await this.db
+      .select({ value: sql<number>`count(*)` })
+      .from(wishlistItems)
+      .where(filter)
+      .get();
+
+    return result?.value ?? 0;
   }
 
   async createItem(
@@ -221,20 +278,72 @@ export class WishlistService {
   }
 
   // Combined operations
-  async getUserWishlistData(userId: number) {
-    const [categories, items] = await Promise.all([
+  async getUserWishlistData(userId: number, options: ItemQueryOptions = {}) {
+    const { limit, offset = 0, categoryId, search } = options;
+
+    const [categories, items, totalItems] = await Promise.all([
       this.getUserCategories(userId),
-      this.getUserItems(userId),
+      this.getUserItems(userId, { limit, offset, categoryId, search }),
+      this.getUserItemsCount(userId, { categoryId, search }),
     ]);
 
-    // Fetch links for each item
-    const itemsWithLinks = await Promise.all(
-      items.map(async (item) => {
-        const links = await this.getItemLinks(item.id);
-        return { ...item, links };
-      }),
-    );
+    const itemIds = items.map((item) => item.id);
+    let linksByItemId: Record<string, WishlistItemLink[]> = {};
 
-    return { categories, items: itemsWithLinks };
+    if (itemIds.length > 0) {
+      const links = await this.db
+        .select()
+        .from(wishlistItemLinks)
+        .where(inArray(wishlistItemLinks.item_id, itemIds))
+        .orderBy(
+          desc(wishlistItemLinks.is_primary),
+          asc(wishlistItemLinks.created_at),
+        )
+        .all();
+
+      linksByItemId = links.reduce<Record<string, WishlistItemLink[]>>(
+        (acc, link) => {
+          const collection = acc[link.item_id] ?? [];
+          collection.push(link);
+          acc[link.item_id] = collection;
+          return acc;
+        },
+        {},
+      );
+    }
+
+    const itemsWithLinks = items.map((item) => ({
+      ...item,
+      links: linksByItemId[item.id] ?? [],
+    }));
+
+    const effectiveLimit =
+      typeof limit === "number" && limit > 0
+        ? limit
+        : items.length > 0
+          ? items.length
+          : totalItems > 0
+            ? totalItems
+            : 0;
+
+    const totalPages =
+      effectiveLimit > 0 ? Math.ceil(totalItems / effectiveLimit) : 0;
+    const currentPage =
+      effectiveLimit > 0 ? Math.floor(offset / effectiveLimit) + 1 : 1;
+    const normalizedPage =
+      totalPages === 0 ? currentPage : Math.min(currentPage, totalPages);
+
+    return {
+      categories,
+      items: itemsWithLinks,
+      pagination: {
+        total_items: totalItems,
+        page: normalizedPage,
+        page_size: effectiveLimit,
+        total_pages: totalPages,
+        has_next: normalizedPage < totalPages,
+        has_previous: normalizedPage > 1 && totalPages > 0,
+      },
+    };
   }
 }

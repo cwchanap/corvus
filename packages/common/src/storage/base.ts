@@ -3,6 +3,7 @@ import type {
   WishlistCategory,
   WishlistItem,
   WishlistItemLink,
+  WishlistPagination,
 } from "../types/wishlist.js";
 
 export interface StorageAdapter {
@@ -48,6 +49,7 @@ export class BaseWishlistStorage {
         const defaultData: WishlistData = {
           categories: DEFAULT_CATEGORIES,
           items: [],
+          pagination: buildPagination([]),
         };
         await this.saveWishlistData(defaultData);
         return defaultData;
@@ -103,12 +105,15 @@ export class BaseWishlistStorage {
         return baseItem;
       });
 
+      data.pagination = buildPagination(data.items);
+
       return data;
     } catch (error) {
       console.error("Error loading wishlist data:", error);
       return {
         categories: DEFAULT_CATEGORIES,
         items: [],
+        pagination: buildPagination([]),
       };
     }
   }
@@ -133,6 +138,7 @@ export class BaseWishlistStorage {
     };
 
     data.items.push(newItem);
+    data.pagination = buildPagination(data.items);
     await this.saveWishlistData(data);
     return newItem;
   }
@@ -161,6 +167,7 @@ export class BaseWishlistStorage {
     };
 
     data.items.push(newItem);
+    data.pagination = buildPagination(data.items);
 
     // Store links in a separate property or alongside the item
     // For browser storage, we'll add them to the item directly
@@ -173,6 +180,7 @@ export class BaseWishlistStorage {
   async removeItem(itemId: string): Promise<void> {
     const data = await this.getWishlistData();
     data.items = data.items.filter((item) => item.id !== itemId);
+    data.pagination = buildPagination(data.items);
     await this.saveWishlistData(data);
   }
 
@@ -200,6 +208,7 @@ export class BaseWishlistStorage {
       if (updates.links !== undefined) updated.links = updates.links;
 
       data.items[itemIndex] = updated;
+      data.pagination = buildPagination(data.items);
       await this.saveWishlistData(data);
     }
   }
@@ -337,4 +346,19 @@ export class BaseWishlistStorage {
     data.categories = remainingCategories;
     await this.saveWishlistData(data);
   }
+}
+
+function buildPagination(items: WishlistItem[]): WishlistPagination {
+  const totalItems = items.length;
+  const pageSize = totalItems;
+  const totalPages = totalItems === 0 ? 0 : 1;
+
+  return {
+    totalItems,
+    page: totalPages === 0 ? 1 : 1,
+    pageSize,
+    totalPages,
+    hasNext: false,
+    hasPrevious: false,
+  };
 }

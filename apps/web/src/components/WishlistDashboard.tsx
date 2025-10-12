@@ -22,6 +22,7 @@ import type {
   WishlistCategoryRecord,
   WishlistDataRecord,
   WishlistItemRecord,
+  WishlistPaginationRecord,
 } from "@repo/common/types/wishlist-record";
 import { useTheme } from "../lib/theme/context.jsx";
 import { AddItemDialog } from "./AddItemDialog.jsx";
@@ -31,6 +32,7 @@ import { ViewItemDialog } from "./ViewItemDialog.jsx";
 type WishlistCategory = WishlistCategoryRecord;
 type WishlistItem = WishlistItemRecord;
 type WishlistData = WishlistDataRecord;
+type WishlistPagination = WishlistPaginationRecord;
 
 interface WishlistDashboardProps {
   user: {
@@ -114,12 +116,17 @@ function SortableWishlistItem(props: {
 
 export function WishlistDashboard(props: WishlistDashboardProps) {
   const theme = useTheme();
+  const PAGE_SIZE = 10;
   const [selectedCategory, setSelectedCategory] = createSignal<string | null>(
     null,
   );
   const [searchQuery, setSearchQuery] = createSignal("");
   const [sortBy, setSortBy] = createSignal<"date" | "title" | "custom">(
     "custom",
+  );
+  const [page, setPage] = createSignal(1);
+  const [pagination, setPagination] = createSignal<WishlistPagination | null>(
+    null,
   );
   const [items, setItems] = createSignal<WishlistItem[]>([]);
   const [addOpen, setAddOpen] = createSignal(false);
@@ -131,21 +138,83 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const [viewingItem, setViewingItem] = createSignal<WishlistItem | null>(null);
 
   // Fetch wishlist data
-  const [wishlistData, { refetch }] = createResource<WishlistData>(async () => {
-    if (typeof window === "undefined") {
-      // Avoid relative fetch on server
-      return { categories: [], items: [] } as WishlistData;
+  const [wishlistData, { refetch }] = createResource<
+    WishlistData,
+    { page: number; categoryId: string | null; search: string }
+  >(
+    () => ({
+      page: page(),
+      categoryId: selectedCategory(),
+      search: searchQuery(),
+    }),
+    async ({ page: currentPage, categoryId, search }) => {
+      if (typeof window === "undefined") {
+        // Avoid relative fetch on server
+        return {
+          categories: [],
+          items: [],
+          pagination: {
+            total_items: 0,
+            page: 1,
+            page_size: PAGE_SIZE,
+            total_pages: 0,
+            has_next: false,
+            has_previous: false,
+          },
+        } as WishlistData;
+      }
+
+      const query = new URLSearchParams({
+        page: String(currentPage),
+        pageSize: String(PAGE_SIZE),
+      });
+
+      if (categoryId) {
+        query.set("categoryId", categoryId);
+      }
+
+      const trimmedSearch = search.trim();
+      if (trimmedSearch) {
+        query.set("search", trimmedSearch);
+      }
+
+      const response = await fetch(`/api/wishlist?${query.toString()}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch wishlist data");
+      }
+
+      const data = (await response.json()) as WishlistData;
+      const itemsList = Array.isArray(data.items) ? data.items : [];
+      setItems(itemsList);
+      setPagination(data.pagination);
+
+      const normalizedPage =
+        data.pagination.page && data.pagination.page > 0
+          ? data.pagination.page
+          : currentPage;
+      if (normalizedPage !== currentPage) {
+        queueMicrotask(() => {
+          setPage(normalizedPage);
+        });
+      }
+
+      return data;
+    },
+  );
+
+  createEffect(() => {
+    selectedCategory();
+    if (page() !== 1) {
+      setPage(1);
     }
+  });
 
-    const response = await fetch(`/api/wishlist`);
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch wishlist data");
+  createEffect(() => {
+    searchQuery();
+    if (page() !== 1) {
+      setPage(1);
     }
-
-    const data = (await response.json()) as WishlistData;
-    setItems(data.items || []);
-    return data;
   });
 
   const handleLogout = async () => {
@@ -204,7 +273,11 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         });
       }
 
-      await refetch();
+      if (page() === 1) {
+        await refetch();
+      } else {
+        setPage(1);
+      }
       setAddOpen(false);
     } catch (error) {
       console.error("Failed to add item:", error);
@@ -223,7 +296,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     }
 
     // Filter by search query
-    const query = searchQuery().toLowerCase();
+    const query = searchQuery().trim().toLowerCase();
     if (query) {
       result = result.filter(
         (item) =>
@@ -259,9 +332,38 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         setViewOpen(false);
         setViewingItem(null);
       }
-      refetch();
+      await refetch();
     }
   };
+
+  const totalItems = createMemo(() => pagination()?.total_items ?? 0);
+  const currentPage = createMemo(() => pagination()?.page ?? 1);
+  const totalPages = createMemo(() => pagination()?.total_pages ?? 0);
+  const canGoPrevious = createMemo(() => pagination()?.has_previous ?? false);
+  const canGoNext = createMemo(() => pagination()?.has_next ?? false);
+  const pageSizeDisplay = createMemo(() =>
+    pagination()?.page_size && pagination()!.page_size > 0
+      ? pagination()!.page_size
+      : PAGE_SIZE,
+  );
+  const displayPage = createMemo(() => Math.max(currentPage(), 1));
+  const displayTotalPages = createMemo(() => {
+    const total = totalPages();
+    if (total > 0) return total;
+    return currentPage() > 0 ? currentPage() : 1;
+  });
+  const pageRange = createMemo(() => {
+    const meta = pagination();
+    const currentItems = filteredAndSortedItems();
+
+    if (!meta || meta.total_items === 0 || currentItems.length === 0) {
+      return { start: 0, end: 0 };
+    }
+
+    const start = (meta.page - 1) * meta.page_size + 1;
+    const end = Math.min(start + currentItems.length - 1, meta.total_items);
+    return { start, end };
+  });
 
   const openViewDialog = (item: WishlistItem) => {
     setViewingItem(item);
@@ -451,7 +553,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                           : "text-foreground hover:bg-accent hover:text-accent-foreground"
                       }`}
                     >
-                      All Items ({items().length || 0})
+                      All Items ({totalItems()})
                     </button>
                     <For each={wishlistData()?.categories || []}>
                       {(category: WishlistCategory) => (
@@ -471,20 +573,6 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                               }}
                             />
                             <span class="flex-1">{category.name}</span>
-                            <span
-                              class={`text-xs ${
-                                selectedCategory() === category.id
-                                  ? "text-white/70"
-                                  : "text-muted-foreground"
-                              }`}
-                            >
-                              (
-                              {items().filter(
-                                (item: WishlistItem) =>
-                                  item.category_id === category.id,
-                              ).length || 0}
-                              )
-                            </span>
                           </div>
                         </button>
                       )}
@@ -567,6 +655,48 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                       />
                     )}
                   </For>
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                    <div class="text-sm text-muted-foreground">
+                      <Show
+                        when={totalItems() > 0 && pageRange().start > 0}
+                        fallback={<span>No items to display</span>}
+                      >
+                        {`Showing ${pageRange().start}–${pageRange().end} of ${totalItems()} items`}
+                      </Show>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (canGoPrevious()) {
+                            setPage(Math.max(1, currentPage() - 1));
+                          }
+                        }}
+                        disabled={!canGoPrevious()}
+                      >
+                        Previous
+                      </Button>
+                      <span class="text-sm font-medium text-muted-foreground">
+                        Page {displayPage()} of {displayTotalPages()}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (canGoNext()) {
+                            setPage(currentPage() + 1);
+                          }
+                        }}
+                        disabled={!canGoNext()}
+                      >
+                        Next
+                      </Button>
+                      <span class="text-xs text-muted-foreground">
+                        {pageSizeDisplay()} per page
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </Show>
             </div>

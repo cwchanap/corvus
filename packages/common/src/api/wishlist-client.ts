@@ -3,12 +3,16 @@ import type {
   WishlistData,
   WishlistItem,
   WishlistItemLink,
+  WishlistItemsPage,
+  WishlistPagination,
 } from "../types/wishlist.js";
 import type {
   WishlistCategoryRecord,
   WishlistDataRecord,
   WishlistItemLinkRecord,
   WishlistItemRecord,
+  WishlistItemsPageRecord,
+  WishlistPaginationRecord,
 } from "../types/wishlist-record.js";
 
 export interface WishlistApiClientOptions {
@@ -55,6 +59,13 @@ export interface UpdateWishlistItemLinkInput {
   isPrimary?: boolean;
 }
 
+export interface WishlistPaginationOptions {
+  page?: number;
+  pageSize?: number;
+  categoryId?: string | null;
+  search?: string | null;
+}
+
 export class WishlistApiError extends Error {
   status: number;
   body?: unknown;
@@ -78,11 +89,29 @@ export class WishlistApiClient {
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch.bind(globalThis);
   }
 
-  async getWishlist(): Promise<WishlistData> {
-    const record = await this.request<WishlistDataRecord>("/api/wishlist");
+  async getWishlist(
+    options: WishlistPaginationOptions = {},
+  ): Promise<WishlistData> {
+    const record = await this.request<WishlistDataRecord>(
+      this.buildPath("/api/wishlist", options),
+    );
     return {
       categories: record.categories.map(deserializeCategory),
       items: record.items.map(deserializeItem),
+      pagination: deserializePagination(record.pagination),
+    };
+  }
+
+  async getWishlistItems(
+    options: WishlistPaginationOptions = {},
+  ): Promise<WishlistItemsPage> {
+    const record = await this.request<WishlistItemsPageRecord>(
+      this.buildPath("/api/wishlist/items", options),
+    );
+
+    return {
+      items: record.items.map(deserializeItem),
+      pagination: deserializePagination(record.pagination),
     };
   }
 
@@ -315,6 +344,33 @@ export class WishlistApiClient {
 
     return JSON.parse(text) as T;
   }
+
+  private buildPath(
+    basePath: string,
+    options: WishlistPaginationOptions,
+  ): string {
+    const params = new URLSearchParams();
+
+    if (options.page !== undefined) {
+      params.set("page", String(options.page));
+    }
+
+    if (options.pageSize !== undefined) {
+      params.set("pageSize", String(options.pageSize));
+    }
+
+    if (options.categoryId) {
+      params.set("categoryId", options.categoryId);
+    }
+
+    const search = options.search?.trim();
+    if (search) {
+      params.set("search", search);
+    }
+
+    const query = params.toString();
+    return query ? `${basePath}?${query}` : basePath;
+  }
 }
 
 function deserializeCategory(record: WishlistCategoryRecord): WishlistCategory {
@@ -356,5 +412,18 @@ function deserializeLink(record: WishlistItemLinkRecord): WishlistItemLink {
     isPrimary: record.is_primary,
     createdAt: new Date(record.created_at),
     updatedAt: new Date(record.updated_at),
+  };
+}
+
+function deserializePagination(
+  record: WishlistPaginationRecord,
+): WishlistPagination {
+  return {
+    totalItems: record.total_items,
+    page: record.page,
+    pageSize: record.page_size,
+    totalPages: record.total_pages,
+    hasNext: record.has_next,
+    hasPrevious: record.has_previous,
   };
 }
