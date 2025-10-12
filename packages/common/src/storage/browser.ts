@@ -61,8 +61,8 @@ const cachedExtensionStorage = (() => {
     const chromeStorage = globalObj.chrome?.storage?.local;
     if (chromeStorage) {
       const promisify = <T>(
-        method: (...args: any[]) => void,
-        ...args: any[]
+        method: (...args: unknown[]) => void,
+        ...args: unknown[]
       ): Promise<T> => {
         return new Promise<T>((resolve, reject) => {
           try {

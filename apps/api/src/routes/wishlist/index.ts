@@ -24,8 +24,41 @@ app.get("/", async (c) => {
       return c.json({ error: "Invalid session" }, { status: 401 });
     }
 
+    const pageParam = c.req.query("page");
+    const pageSizeParam = c.req.query("pageSize");
+    const categoryIdParam = c.req.query("categoryId");
+    const searchParam = c.req.query("search");
+
+    const DEFAULT_PAGE_SIZE = 10;
+    const MAX_PAGE_SIZE = 50;
+
+    const parsedPage = Number.parseInt(pageParam ?? "", 10);
+    const parsedPageSize = Number.parseInt(pageSizeParam ?? "", 10);
+
+    const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const requestedPageSize =
+      Number.isFinite(parsedPageSize) && parsedPageSize > 0
+        ? parsedPageSize
+        : DEFAULT_PAGE_SIZE;
+    const pageSize = Math.min(requestedPageSize, MAX_PAGE_SIZE);
+    const offset = (page - 1) * pageSize;
+
+    const categoryId =
+      typeof categoryIdParam === "string" && categoryIdParam.length > 0
+        ? categoryIdParam
+        : undefined;
+    const trimmedSearch =
+      typeof searchParam === "string" ? searchParam.trim() : undefined;
+    const search =
+      trimmedSearch && trimmedSearch.length > 0 ? trimmedSearch : undefined;
+
     const wishlistService = new WishlistService(db);
-    const wishlistData = await wishlistService.getUserWishlistData(user.id);
+    const wishlistData = await wishlistService.getUserWishlistData(user.id, {
+      limit: pageSize,
+      offset,
+      categoryId,
+      search,
+    });
 
     return c.json(wishlistData);
   } catch (error) {

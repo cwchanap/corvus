@@ -28,9 +28,24 @@ export interface WishlistItem {
   links?: WishlistItemLink[]; // Links are loaded separately
 }
 
+export interface WishlistPagination {
+  totalItems: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
 export interface WishlistData {
   categories: WishlistCategory[];
   items: WishlistItem[];
+  pagination: WishlistPagination;
+}
+
+export interface WishlistItemsPage {
+  items: WishlistItem[];
+  pagination: WishlistPagination;
 }
 
 export interface PageInfo {

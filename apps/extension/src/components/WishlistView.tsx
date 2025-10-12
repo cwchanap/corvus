@@ -17,9 +17,6 @@ interface WishlistViewProps {
 
 export function WishlistView(props: WishlistViewProps) {
   const theme = useTheme();
-  const [selectedCategoryId, setSelectedCategoryId] = createSignal<
-    string | null
-  >(null);
 
   const {
     value: wishlistValue,
@@ -27,6 +24,11 @@ export function WishlistView(props: WishlistViewProps) {
     error: wishlistError,
     refetch,
     api: wishlistApi,
+    page,
+    setPage,
+    pageSize,
+    categoryId,
+    setCategoryId,
   } = useWishlistData();
   const [viewingItem, setViewingItem] = createSignal<WishlistItem | null>(null);
 
@@ -51,10 +53,10 @@ export function WishlistView(props: WishlistViewProps) {
     const data = resolvedWishlist();
     if (!data) return [];
 
-    const categoryId = selectedCategoryId();
-    if (!categoryId) return data.items;
+    const currentCategory = categoryId();
+    if (!currentCategory) return data.items;
 
-    return data.items.filter((item) => item.categoryId === categoryId);
+    return data.items.filter((item) => item.categoryId === currentCategory);
   };
 
   const getCategoryById = (
@@ -63,6 +65,30 @@ export function WishlistView(props: WishlistViewProps) {
     const data = resolvedWishlist();
     if (!data) return undefined;
     return data.categories.find((cat) => cat.id === categoryId);
+  };
+
+  const pagination = () => resolvedWishlist()?.pagination;
+  const totalItems = () => pagination()?.totalItems ?? 0;
+  const currentPage = () => pagination()?.page ?? page();
+  const totalPages = () => pagination()?.totalPages ?? 0;
+  const displayPage = () => Math.max(currentPage(), 1);
+  const displayTotalPages = () => {
+    const total = totalPages();
+    if (total > 0) return total;
+    return currentPage() > 0 ? currentPage() : 1;
+  };
+  const canGoPrevious = () => pagination()?.hasPrevious ?? false;
+  const canGoNext = () => pagination()?.hasNext ?? false;
+  const pageSizeFromApi = () => pagination()?.pageSize ?? pageSize;
+  const pageRange = () => {
+    const meta = pagination();
+    const items = filteredItems();
+    if (!meta || meta.totalItems === 0 || items.length === 0) {
+      return { start: 0, end: 0 };
+    }
+    const start = (meta.page - 1) * meta.pageSize + 1;
+    const end = Math.min(start + items.length - 1, meta.totalItems);
+    return { start, end };
   };
 
   const handleRemoveItem = async (itemId: string) => {
@@ -143,27 +169,22 @@ export function WishlistView(props: WishlistViewProps) {
             <div class="space-y-2">
               <label class="text-sm font-medium">Filter by Category</label>
               <Select
-                value={selectedCategoryId() ?? "all"}
+                value={categoryId() ?? "all"}
                 onChange={(event) =>
-                  setSelectedCategoryId(
+                  setCategoryId(
                     event.currentTarget.value === "all"
                       ? null
                       : event.currentTarget.value,
                   )
                 }
               >
-                <option value="all">All ({data().items.length})</option>
+                <option value="all">
+                  All ({data().pagination.totalItems})
+                </option>
                 <For each={data().categories}>
-                  {(category) => {
-                    const itemCount = data().items.filter(
-                      (item) => item.categoryId === category.id,
-                    ).length;
-                    return (
-                      <option value={category.id}>
-                        {category.name} ({itemCount})
-                      </option>
-                    );
-                  }}
+                  {(category) => (
+                    <option value={category.id}>{category.name}</option>
+                  )}
                 </For>
               </Select>
             </div>
@@ -259,6 +280,50 @@ export function WishlistView(props: WishlistViewProps) {
                     );
                   }}
                 </For>
+                <div class="flex items-center justify-between gap-2 pt-2">
+                  <div class="text-xs text-muted-foreground">
+                    <Show
+                      when={totalItems() > 0 && pageRange().start > 0}
+                      fallback={<span>No items to display</span>}
+                    >
+                      {`Showing ${pageRange().start}–${pageRange().end} of ${totalItems()}`}
+                    </Show>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="h-7 px-2 text-xs"
+                      disabled={!canGoPrevious()}
+                      onClick={() => {
+                        if (canGoPrevious()) {
+                          setPage(Math.max(1, currentPage() - 1));
+                        }
+                      }}
+                    >
+                      Prev
+                    </Button>
+                    <span class="text-xs font-medium text-muted-foreground">
+                      Page {displayPage()} / {displayTotalPages()}
+                    </span>
+                    <span class="text-[10px] text-muted-foreground">
+                      {pageSizeFromApi()} per page
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="h-7 px-2 text-xs"
+                      disabled={!canGoNext()}
+                      onClick={() => {
+                        if (canGoNext()) {
+                          setPage(currentPage() + 1);
+                        }
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
               </Show>
             </div>
           </>
