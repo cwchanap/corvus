@@ -7,6 +7,8 @@
     "dev": "vinxi dev --port 5000",
     "dev:ui": "vinxi dev --port 5000",
     "build": "vinxi build",
+    "build:web": "vinxi build",
+    "postbuild": "node ./scripts/generate-index.mjs",
     "start": "vinxi start",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
