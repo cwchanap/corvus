@@ -1,3 +1,4 @@
+import type { D1Database, Fetcher } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import authLoginRoutes from "./routes/auth/login";
@@ -10,7 +11,13 @@ import wishlistItemRoutes from "./routes/wishlist/items/[id]";
 import wishlistItemLinksRoutes from "./routes/wishlist/items/links";
 import wishlistCategoriesRoutes from "./routes/wishlist/categories/index";
 
-const app = new Hono();
+type AppBindings = {
+  DB: D1Database;
+  ASSETS: Fetcher;
+  DEV?: string;
+};
+
+const app = new Hono<{ Bindings: AppBindings }>();
 
 // Enable CORS for all routes
 app.use(
@@ -54,6 +61,29 @@ app.route("/api/wishlist/categories", wishlistCategoriesRoutes);
 app.route("/api/wishlist/items", wishlistItemsRoutes);
 app.route("/api/wishlist/items", wishlistItemRoutes);
 app.route("/api/wishlist/items", wishlistItemLinksRoutes);
+app.get("*", async (c) => {
+  const assetResponse = await c.env.ASSETS.fetch(c.req.raw);
+
+  if (assetResponse.status === 404) {
+    const acceptHeader = c.req.header("accept") ?? "";
+
+    if (acceptHeader.includes("text/html")) {
+      const fallbackUrl = new URL("/index.html", c.req.url);
+      const fallbackRequest = new Request(fallbackUrl, {
+        method: "GET",
+        headers: c.req.raw.headers,
+      });
+
+      const fallbackResponse = await c.env.ASSETS.fetch(fallbackRequest);
+
+      if (fallbackResponse.status !== 404) {
+        return fallbackResponse;
+      }
+    }
+  }
+
+  return assetResponse;
+});
 
 export default app;
 

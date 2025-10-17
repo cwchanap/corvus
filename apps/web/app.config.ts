@@ -1,8 +1,9 @@
 import { defineConfig } from "@solidjs/start/config";
 
 export default defineConfig({
+  ssr: false, // Build as SPA
   server: {
-    preset: "cloudflare-pages",
+    preset: "static",
   },
   vite: {
     css: {

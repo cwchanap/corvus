@@ -1,6 +1,6 @@
-# SolidJS Turborepo
+# Corvus - Wishlist Management Platform
 
-A modern monorepo setup with SolidJS, WXT browser extension framework, and SolidStart.
+A modern monorepo setup with SolidJS, WXT browser extension framework, SolidStart web app, and Cloudflare Workers API.
 
 ## What's inside?
 
@@ -8,14 +8,47 @@ This Turborepo includes the following packages/apps:
 
 ### Apps and Packages
 
-- `extension`: a browser extension built with [WXT](https://wxt.dev/) and [SolidJS](https://solidjs.com/)
+- `api`: a Hono API deployed on [Cloudflare Workers](https://workers.cloudflare.com/) with D1 database
 - `web`: a web application built with [SolidStart](https://start.solidjs.com/)
+- `extension`: a browser extension built with [WXT](https://wxt.dev/) and [SolidJS](https://solidjs.com/)
 - `@repo/ui-components`: a SolidJS component library with [Shadcn](https://ui.shadcn.com/) and [Tailwind CSS](https://tailwindcss.com/)
 - `@repo/common`: shared utilities and types
 - `@repo/eslint-config`: ESLint configurations for SolidJS
 - `@repo/typescript-config`: TypeScript configurations used throughout the monorepo
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/) and [SolidJS](https://solidjs.com/).
+
+## Quick Start
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run all apps in development
+pnpm dev
+
+# Run specific apps
+pnpm dev:web        # Web app only
+pnpm dev:extension  # Extension only
+
+# Build for production
+pnpm build
+
+# Deploy to Cloudflare
+pnpm deploy
+```
+
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+The app is deployed to Cloudflare Workers with:
+
+- Static web assets served from the worker
+- API endpoints at `/api/*`
+- D1 database for data persistence
+
+**Live URL**: https://corvus.cwchanap.workers.dev
 
 ### Utilities
 

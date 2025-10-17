@@ -18,6 +18,24 @@
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".wxt/**", ".vinxi/**", ".output/**", "dist/**"]
     },
+    "build:web": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".output/**", ".vinxi/**"]
+    },
+    "copy-assets": {
+      "dependsOn": ["web#build:web"],
+      "cache": false
+    },
+    "build:api": {
+      "dependsOn": ["copy-assets"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**"]
+    },
+    "deploy": {
+      "dependsOn": ["build:api"],
+      "cache": false,
+      "inputs": ["dist/**"]
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
