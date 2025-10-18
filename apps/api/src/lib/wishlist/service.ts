@@ -68,23 +68,11 @@ export class WishlistService {
   }
 
   async deleteCategory(categoryId: string, userId: number): Promise<void> {
-    // Get user's categories to find fallback
-    const categories = await this.getUserCategories(userId);
-
-    if (categories.length <= 1) {
-      throw new Error("Cannot delete the last category");
-    }
-
-    const fallbackCategory = categories.find((cat) => cat.id !== categoryId);
-    if (!fallbackCategory) {
-      throw new Error("No fallback category found");
-    }
-
-    // Move items to fallback category
+    // Set category_id to null for all items in this category
     await this.db
       .update(wishlistItems)
       .set({
-        category_id: fallbackCategory.id,
+        category_id: null,
         updated_at: new Date().toISOString(),
       })
       .where(
@@ -111,7 +99,7 @@ export class WishlistService {
   private buildItemFilters(
     userId: number,
     options: ItemQueryOptions = {},
-  ): SQL {
+  ): SQL | undefined {
     const filters: SQL[] = [eq(wishlistItems.user_id, userId)];
 
     if (options.categoryId) {
@@ -125,7 +113,7 @@ export class WishlistService {
       );
     }
 
-    return filters.length === 1 ? filters[0]! : and(...filters);
+    return filters.length === 1 ? filters[0] : and(...filters);
   }
 
   async getUserItems(
@@ -135,21 +123,25 @@ export class WishlistService {
     const { limit, offset } = options;
     const filter = this.buildItemFilters(userId, options);
 
-    let query = this.db
+    const baseQuery = this.db
       .select()
       .from(wishlistItems)
       .where(filter)
       .orderBy(desc(wishlistItems.created_at));
 
+    if (typeof limit === "number" && typeof offset === "number" && offset > 0) {
+      return await baseQuery.limit(limit).offset(offset).all();
+    }
+
     if (typeof limit === "number") {
-      query = query.limit(limit);
+      return await baseQuery.limit(limit).all();
     }
 
     if (typeof offset === "number" && offset > 0) {
-      query = query.offset(offset);
+      return await baseQuery.offset(offset).all();
     }
 
-    return await query.all();
+    return await baseQuery.all();
   }
 
   async getItemsByCategory(

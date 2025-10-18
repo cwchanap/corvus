@@ -130,23 +130,6 @@ describe("wishlist categories routes", () => {
       await expect(response.json()).resolves.toEqual({ success: true });
     });
 
-    it("maps known deletion errors to 400", async () => {
-      authenticate();
-      vi.spyOn(WishlistService.prototype, "deleteCategory").mockRejectedValue(
-        new Error("Cannot delete the last category"),
-      );
-      vi.spyOn(console, "error").mockImplementation(() => {});
-
-      const response = await categoriesApp.request("/abc", {
-        method: "DELETE",
-      });
-
-      expect(response.status).toBe(400);
-      await expect(response.json()).resolves.toEqual({
-        error: "Cannot delete the last category",
-      });
-    });
-
     it("handles unexpected errors", async () => {
       authenticate();
       vi.spyOn(WishlistService.prototype, "deleteCategory").mockRejectedValue(

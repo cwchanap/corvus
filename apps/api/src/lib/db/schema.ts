@@ -51,11 +51,9 @@ export const wishlistItems = sqliteTable("wishlist_items", {
     .references(() => users.id, {
       onDelete: "cascade",
     }),
-  category_id: text("category_id")
-    .notNull()
-    .references(() => wishlistCategories.id, {
-      onDelete: "cascade",
-    }),
+  category_id: text("category_id").references(() => wishlistCategories.id, {
+    onDelete: "set null",
+  }),
   title: text("title").notNull(),
   description: text("description"),
   favicon: text("favicon"),
