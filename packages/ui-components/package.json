@@ -10,6 +10,7 @@
     "./select": "./src/select.tsx",
     "./badge": "./src/badge.tsx",
     "./theme-toggle": "./src/theme-toggle.tsx",
+    "./confirm-dialog": "./src/confirm-dialog.tsx",
     "./styles": "./src/styles.css"
   },
   "scripts": {

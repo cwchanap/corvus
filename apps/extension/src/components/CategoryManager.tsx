@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
+import { ConfirmDialog } from "@repo/ui-components/confirm-dialog";
 import { WishlistApiError } from "@repo/common/api/wishlist-client";
 import { useWishlistData } from "../lib/wishlist/context.js";
 
@@ -18,6 +19,11 @@ interface CategoryManagerProps {
 export function CategoryManager(props: CategoryManagerProps) {
   const [newCategoryName, setNewCategoryName] = createSignal("");
   const [isAdding, setIsAdding] = createSignal(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = createSignal(false);
+  const [categoryToDelete, setCategoryToDelete] = createSignal<{
+    id: string;
+    name: string;
+  } | null>(null);
   const {
     value: wishlistValue,
     state: wishlistState,
@@ -61,10 +67,19 @@ export function CategoryManager(props: CategoryManagerProps) {
     }
   };
 
-  const handleRemoveCategory = async (categoryId: string) => {
+  const handleDeleteClick = (category: { id: string; name: string }) => {
+    setCategoryToDelete(category);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    const category = categoryToDelete();
+    if (!category) return;
+
     try {
-      await wishlistApi.deleteCategory(categoryId);
+      await wishlistApi.deleteCategory(category.id);
       await refetch();
+      setCategoryToDelete(null);
     } catch (error) {
       console.error("Error removing category:", error);
       alert(
@@ -84,87 +99,108 @@ export function CategoryManager(props: CategoryManagerProps) {
   };
 
   return (
-    <Card class="w-full">
-      <CardHeader>
-        <div class="flex items-center justify-between">
-          <CardTitle class="text-base">Manage Categories</CardTitle>
-          <Show when={props.onClose}>
-            <Button variant="ghost" size="sm" onClick={props.onClose}>
-              ✕
-            </Button>
-          </Show>
-        </div>
-      </CardHeader>
-      <CardContent class="space-y-4">
-        {/* Add new category */}
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Add New Category</label>
-          <div class="flex gap-2">
-            <Input
-              placeholder="Category name..."
-              value={newCategoryName()}
-              onInput={(e) => setNewCategoryName(e.currentTarget.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
-            />
-            <Button
-              onClick={handleAddCategory}
-              disabled={!newCategoryName().trim() || isAdding() || isErrored()}
-              size="sm"
-            >
-              {isAdding() ? "Adding..." : "Add"}
-            </Button>
+    <>
+      <Card class="w-full">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <CardTitle class="text-base">Manage Categories</CardTitle>
+            <Show when={props.onClose}>
+              <Button variant="ghost" size="sm" onClick={props.onClose}>
+                ✕
+              </Button>
+            </Show>
           </div>
-        </div>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          {/* Add new category */}
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Add New Category</label>
+            <div class="flex gap-2">
+              <Input
+                placeholder="Category name..."
+                value={newCategoryName()}
+                onInput={(e) => setNewCategoryName(e.currentTarget.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
+              />
+              <Button
+                onClick={handleAddCategory}
+                disabled={
+                  !newCategoryName().trim() || isAdding() || isErrored()
+                }
+                size="sm"
+              >
+                {isAdding() ? "Adding..." : "Add"}
+              </Button>
+            </div>
+          </div>
 
-        {/* Existing categories */}
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Existing Categories</label>
-          <Show
-            when={resolvedWishlist()}
-            fallback={
-              <div class="text-sm text-muted-foreground">
-                {isErrored() ? errorMessage() : "Loading…"}
-              </div>
-            }
-          >
-            {(data) => (
-              <div class="space-y-2 max-h-48 overflow-y-auto">
-                <For each={data().categories}>
-                  {(category) => {
-                    const itemCount = getItemCount(category.id);
-                    return (
-                      <div class="flex items-center justify-between p-2 border rounded">
-                        <div class="flex items-center gap-2">
-                          <div
-                            class="w-3 h-3 rounded-full"
-                            style={{ "background-color": category.color }}
-                          />
-                          <span class="text-sm font-medium">
-                            {category.name}
-                          </span>
-                          <Badge variant="secondary" class="text-xs">
-                            {itemCount} items
-                          </Badge>
+          {/* Existing categories */}
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Existing Categories</label>
+            <Show
+              when={resolvedWishlist()}
+              fallback={
+                <div class="text-sm text-muted-foreground">
+                  {isErrored() ? errorMessage() : "Loading…"}
+                </div>
+              }
+            >
+              {(data) => (
+                <div class="space-y-2 max-h-48 overflow-y-auto">
+                  <For each={data().categories}>
+                    {(category) => {
+                      const itemCount = getItemCount(category.id);
+                      return (
+                        <div class="flex items-center justify-between p-2 border rounded">
+                          <div class="flex items-center gap-2">
+                            <div
+                              class="w-3 h-3 rounded-full"
+                              style={{ "background-color": category.color }}
+                            />
+                            <span class="text-sm font-medium">
+                              {category.name}
+                            </span>
+                            <Badge variant="secondary" class="text-xs">
+                              {itemCount} items
+                            </Badge>
+                          </div>
+                          <Show when={data().categories.length > 1}>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() =>
+                                handleDeleteClick({
+                                  id: category.id,
+                                  name: category.name,
+                                })
+                              }
+                              class="h-6 px-2"
+                            >
+                              Remove
+                            </Button>
+                          </Show>
                         </div>
-                        <Show when={data().categories.length > 1}>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleRemoveCategory(category.id)}
-                            class="h-6 px-2"
-                          >
-                            Remove
-                          </Button>
-                        </Show>
-                      </div>
-                    );
-                  }}
-                </For>
-              </div>
-            )}
-          </Show>
-        </div>
-      </CardContent>
-    </Card>
+                      );
+                    }}
+                  </For>
+                </div>
+              )}
+            </Show>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirmOpen()}
+        onOpenChange={setDeleteConfirmOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Category"
+        description={`Are you sure you want to delete "${categoryToDelete()?.name}"? All items in this category will be moved to another category.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+      />
+    </>
   );
 }
