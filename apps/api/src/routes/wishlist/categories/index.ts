@@ -71,16 +71,6 @@ app.delete("/:id", async (c) => {
     return c.json({ success: true });
   } catch (error) {
     console.error("Delete category error:", error);
-    if (error instanceof Error) {
-      const message = error.message;
-      if (
-        message.includes("Cannot delete the last category") ||
-        message.includes("No fallback category")
-      ) {
-        return c.json({ error: message }, { status: 400 });
-      }
-    }
-
     return c.json({ error: "Failed to delete category" }, { status: 500 });
   }
 });

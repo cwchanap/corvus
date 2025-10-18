@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import { Badge } from "@repo/ui-components/badge";
 import { ConfirmDialog } from "@repo/ui-components/confirm-dialog";
 import type { WishlistCategoryRecord } from "@repo/common/types/wishlist-record";
 
@@ -188,21 +187,14 @@ export function CategoryManager(props: CategoryManagerProps) {
                       <span class="text-sm font-medium">{category.name}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                      <Show when={props.categories.length > 1}>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteClick(category)}
-                          class="h-8 px-3"
-                        >
-                          Remove
-                        </Button>
-                      </Show>
-                      <Show when={props.categories.length === 1}>
-                        <Badge variant="secondary" class="text-xs">
-                          Cannot delete last category
-                        </Badge>
-                      </Show>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteClick(category)}
+                        class="h-8 px-3"
+                      >
+                        Remove
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -218,7 +210,7 @@ export function CategoryManager(props: CategoryManagerProps) {
         onOpenChange={setDeleteConfirmOpen}
         onConfirm={handleConfirmDelete}
         title="Delete Category"
-        description={`Are you sure you want to delete "${categoryToDelete()?.name}"? All items in this category will be moved to another category.`}
+        description={`Are you sure you want to delete "${categoryToDelete()?.name}"? Items in this category will become uncategorized.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="destructive"

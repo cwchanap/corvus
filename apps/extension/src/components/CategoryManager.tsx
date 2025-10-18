@@ -164,21 +164,19 @@ export function CategoryManager(props: CategoryManagerProps) {
                               {itemCount} items
                             </Badge>
                           </div>
-                          <Show when={data().categories.length > 1}>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() =>
-                                handleDeleteClick({
-                                  id: category.id,
-                                  name: category.name,
-                                })
-                              }
-                              class="h-6 px-2"
-                            >
-                              Remove
-                            </Button>
-                          </Show>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() =>
+                              handleDeleteClick({
+                                id: category.id,
+                                name: category.name,
+                              })
+                            }
+                            class="h-6 px-2"
+                          >
+                            Remove
+                          </Button>
                         </div>
                       );
                     }}
@@ -196,7 +194,7 @@ export function CategoryManager(props: CategoryManagerProps) {
         onOpenChange={setDeleteConfirmOpen}
         onConfirm={handleConfirmDelete}
         title="Delete Category"
-        description={`Are you sure you want to delete "${categoryToDelete()?.name}"? All items in this category will be moved to another category.`}
+        description={`Are you sure you want to delete "${categoryToDelete()?.name}"? Items in this category will become uncategorized.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="destructive"
