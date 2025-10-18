@@ -28,6 +28,7 @@ import { useTheme } from "../lib/theme/context.jsx";
 import { AddItemDialog } from "./AddItemDialog.jsx";
 import { EditItemDialog } from "./EditItemDialog.jsx";
 import { ViewItemDialog } from "./ViewItemDialog.jsx";
+import { CategoryManager } from "./CategoryManager.jsx";
 
 type WishlistCategory = WishlistCategoryRecord;
 type WishlistItem = WishlistItemRecord;
@@ -136,6 +137,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const [editing, setEditing] = createSignal(false);
   const [viewOpen, setViewOpen] = createSignal(false);
   const [viewingItem, setViewingItem] = createSignal<WishlistItem | null>(null);
+  const [categoryManagerOpen, setCategoryManagerOpen] = createSignal(false);
 
   // Fetch wishlist data
   const [wishlistData, { refetch }] = createResource<
@@ -475,6 +477,10 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     }
   });
 
+  const handleCategoryRefetch = async () => {
+    await refetch();
+  };
+
   return (
     <div class="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
       {/* Header */}
@@ -536,12 +542,24 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
             <div class="lg:col-span-1">
               <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
                 <CardHeader class="pb-4">
-                  <CardTitle class="text-xl text-card-foreground">
-                    Categories
-                  </CardTitle>
-                  <CardDescription class="text-muted-foreground">
-                    Organize your wishlist
-                  </CardDescription>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <CardTitle class="text-xl text-card-foreground">
+                        Categories
+                      </CardTitle>
+                      <CardDescription class="text-muted-foreground">
+                        Organize your wishlist
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCategoryManagerOpen(true)}
+                      title="Manage Categories"
+                    >
+                      ⚙️
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent class="px-6 pb-6">
                   <div class="space-y-2">
@@ -725,6 +743,21 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         categories={wishlistData()?.categories || []}
         item={viewingItem()}
       />
+      <Show when={categoryManagerOpen()}>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setCategoryManagerOpen(false)}
+          />
+          <div class="relative z-50 w-full max-w-2xl">
+            <CategoryManager
+              categories={wishlistData()?.categories || []}
+              onRefetch={handleCategoryRefetch}
+              onClose={() => setCategoryManagerOpen(false)}
+            />
+          </div>
+        </div>
+      </Show>
     </div>
   );
 }
