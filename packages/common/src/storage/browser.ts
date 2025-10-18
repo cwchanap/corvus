@@ -61,8 +61,10 @@ const cachedExtensionStorage = (() => {
     const chromeStorage = globalObj.chrome?.storage?.local;
     if (chromeStorage) {
       const promisify = <T>(
-        method: (...args: unknown[]) => void,
-        ...args: unknown[]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        method: (...args: any[]) => void,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...args: any[]
       ): Promise<T> => {
         return new Promise<T>((resolve, reject) => {
           try {

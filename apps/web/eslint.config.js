@@ -5,6 +5,7 @@ const overrides = [
   {
     ignores: [
       ".turbo/**", // Turbo cache
+      "scripts/**", // Node.js build scripts
     ],
   },
 ];
