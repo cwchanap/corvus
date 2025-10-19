@@ -12,7 +12,12 @@
     "./types/wishlist-record": "./src/types/wishlist-record.ts",
     "./storage/base": "./src/storage/base.ts",
     "./storage/browser": "./src/storage/browser.ts",
-    "./utils/page-info": "./src/utils/page-info.ts"
+    "./utils/page-info": "./src/utils/page-info.ts",
+    "./graphql": "./src/graphql/index.ts",
+    "./graphql/client": "./src/graphql/client.ts",
+    "./graphql/types": "./src/graphql/types.ts",
+    "./graphql/operations/auth": "./src/graphql/operations/auth.ts",
+    "./graphql/operations/wishlist": "./src/graphql/operations/wishlist.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

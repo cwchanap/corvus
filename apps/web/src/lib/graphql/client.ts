@@ -1,54 +1,36 @@
 /**
- * GraphQL client utilities for making requests to the API
+ * Web app GraphQL client configuration
+ * Uses shared utilities from @repo/common
  */
 
+import {
+  graphqlRequest as baseGraphqlRequest,
+  type GraphQLClientOptions,
+} from "@repo/common/graphql/client";
+
 const GRAPHQL_ENDPOINT =
+  // eslint-disable-next-line turbo/no-undeclared-env-vars
   (import.meta.env.VITE_API_URL as string | undefined) ||
   "http://localhost:8787/graphql";
 
-export interface GraphQLResponse<T> {
-  data?: T;
-  errors?: Array<{
-    message: string;
-    extensions?: Record<string, unknown>;
-  }>;
-}
-
 /**
- * Make a GraphQL request
- * Automatically includes credentials for session cookies
+ * Pre-configured GraphQL request function for the web app
+ * Automatically uses the correct endpoint and includes credentials
  */
 export async function graphqlRequest<T>(
   query: string,
   variables?: Record<string, unknown>,
+  options?: Partial<GraphQLClientOptions>,
 ): Promise<T> {
-  const response = await fetch(GRAPHQL_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include", // Important: send cookies for session
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
+  return baseGraphqlRequest<T>(query, variables, {
+    endpoint: GRAPHQL_ENDPOINT,
+    credentials: "include",
+    ...options,
   });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  const json: GraphQLResponse<T> = await response.json();
-
-  if (json.errors && json.errors.length > 0) {
-    // Throw the first GraphQL error
-    const error = json.errors[0]!;
-    throw new Error(error.message);
-  }
-
-  if (!json.data) {
-    throw new Error("No data returned from GraphQL query");
-  }
-
-  return json.data;
 }
+
+// Re-export types
+export type {
+  GraphQLClientOptions,
+  GraphQLResponse,
+} from "@repo/common/graphql/client";
