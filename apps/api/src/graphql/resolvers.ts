@@ -2,6 +2,7 @@ import { GraphQLError } from "graphql";
 import type { Resolvers } from "./types.js";
 import { AuthService } from "../lib/auth/service.js";
 import { WishlistService } from "../lib/wishlist/service.js";
+import { setSessionCookie, clearSessionCookie } from "../lib/auth/session.js";
 import { mapUser, mapCategory, mapItem, mapLink } from "./mappers.js";
 
 /**
@@ -95,8 +96,9 @@ export const resolvers: Resolvers = {
           args.input.name,
         );
 
-        // Create session
-        await authService.createSession(user.id);
+        // Create session and set cookie
+        const sessionId = await authService.createSession(user.id);
+        setSessionCookie(context.honoContext, sessionId);
 
         return {
           success: true,
@@ -132,8 +134,9 @@ export const resolvers: Resolvers = {
         };
       }
 
-      // Create session
-      await authService.createSession(user.id);
+      // Create session and set cookie
+      const sessionId = await authService.createSession(user.id);
+      setSessionCookie(context.honoContext, sessionId);
 
       return {
         success: true,
@@ -142,12 +145,8 @@ export const resolvers: Resolvers = {
       };
     },
     logout: async (_parent, _args, context) => {
-      if (!context.user) {
-        return true;
-      }
-
-      // Note: Session cleanup would require session ID tracking in context
-      // For now, return true as logout is client-side cookie clearing
+      // Clear session cookie
+      clearSessionCookie(context.honoContext);
       return true;
     },
     createCategory: async (_parent, args, context) => {
