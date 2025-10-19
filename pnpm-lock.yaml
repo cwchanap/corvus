@@ -150,6 +150,9 @@ importers:
       "@solidjs/start":
         specifier: ^1.0.8
         version: 1.1.7(solid-js@1.9.7)(vinxi@0.5.8(@netlify/blobs@9.1.2)(@types/node@22.15.3)(better-sqlite3@9.6.0)(db0@0.3.2(better-sqlite3@9.6.0)(drizzle-orm@0.36.4(@cloudflare/workers-types@4.20250726.0)(better-sqlite3@9.6.0)(kysely@0.28.3)(react@19.1.1)))(drizzle-orm@0.36.4(@cloudflare/workers-types@4.20250726.0)(better-sqlite3@9.6.0)(kysely@0.28.3)(react@19.1.1))(ioredis@5.6.1)(jiti@2.5.1)(terser@5.43.1)(tsx@4.20.3)(xml2js@0.6.2)(yaml@2.8.0))(vite@6.3.5(@types/node@22.15.3)(jiti@2.5.1)(terser@5.43.1)(tsx@4.20.3)(yaml@2.8.0))
+      "@tanstack/solid-query":
+        specifier: ^5.90.6
+        version: 5.90.6(solid-js@1.9.7)
       better-auth:
         specifier: ^0.8.0
         version: 0.8.8
@@ -3571,6 +3574,12 @@ packages:
     peerDependencies:
       vite: ">=6.0.0"
 
+  "@tanstack/query-core@5.90.5":
+    resolution:
+      {
+        integrity: sha512-wLamYp7FaDq6ZnNehypKI5fNvxHPfTYylE0m/ZpuuzJfJqhR5Pxg9gvGBHZx4n7J+V5Rg5mZxHHTlv25Zt5u+w==,
+      }
+
   "@tanstack/router-utils@1.129.7":
     resolution:
       {
@@ -3584,6 +3593,14 @@ packages:
         integrity: sha512-a05fzK+jBGacsSAc1vE8an7lpBh4H0PyIEcivtEyHLomgSeElAJxm9E2It/0nYRZ5Lh23m0okbhzJNaYWZpAOg==,
       }
     engines: { node: ">=12" }
+
+  "@tanstack/solid-query@5.90.6":
+    resolution:
+      {
+        integrity: sha512-Ma5A3uQ2rqVCznR8FniNLHWYDFLtveVb2b+JMD1F+x3TgRTevVlGfiUfpL1KaFVWJMUX3ASvCB+aUQpeIBRDvA==,
+      }
+    peerDependencies:
+      solid-js: ^1.6.0
 
   "@theguild/federation-composition@0.20.1":
     resolution:
@@ -13942,6 +13959,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  "@tanstack/query-core@5.90.5": {}
+
   "@tanstack/router-utils@1.129.7":
     dependencies:
       "@babel/core": 7.28.0
@@ -13968,6 +13987,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - vite
+
+  "@tanstack/solid-query@5.90.6(solid-js@1.9.7)":
+    dependencies:
+      "@tanstack/query-core": 5.90.5
+      solid-js: 1.9.7
 
   "@theguild/federation-composition@0.20.1(graphql@16.11.0)":
     dependencies:

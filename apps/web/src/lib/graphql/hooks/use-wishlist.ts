@@ -62,7 +62,7 @@ export function useItem(id: Accessor<string>) {
   return createQuery(() => ({
     queryKey: ["wishlist", "item", id()],
     queryFn: () => getItem(id()),
-    enabled: () => !!id(),
+    enabled: !!id(),
   }));
 }
 
