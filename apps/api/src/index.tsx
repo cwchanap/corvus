@@ -1,6 +1,7 @@
 import type { D1Database, Fetcher } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { createGraphQLHandler } from "./graphql/handler.js";
 import authLoginRoutes from "./routes/auth/login";
 import authLogoutRoutes from "./routes/auth/logout";
 import authRegisterRoutes from "./routes/auth/register";
@@ -50,6 +51,9 @@ app.use(
     maxAge: 86400, // 24 hours
   }),
 );
+
+// GraphQL endpoint
+app.use("/graphql", createGraphQLHandler());
 
 // API routes
 app.route("/api/auth", authLoginRoutes);

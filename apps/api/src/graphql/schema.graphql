@@ -1,0 +1,261 @@
+"""
+A user in the system
+"""
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+"""
+Authentication response payload
+"""
+type AuthPayload {
+  success: Boolean!
+  user: User
+  error: String
+}
+
+"""
+A wishlist category
+"""
+type WishlistCategory {
+  id: ID!
+  userId: Int!
+  name: String!
+  color: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+"""
+A link associated with a wishlist item
+"""
+type WishlistItemLink {
+  id: ID!
+  itemId: String!
+  url: String!
+  description: String
+  isPrimary: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+"""
+A wishlist item
+"""
+type WishlistItem {
+  id: ID!
+  userId: Int!
+  categoryId: String
+  title: String!
+  description: String
+  favicon: String
+  links: [WishlistItemLink!]!
+  createdAt: String!
+  updatedAt: String!
+}
+
+"""
+Pagination information
+"""
+type PaginationInfo {
+  totalItems: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+  hasNext: Boolean!
+  hasPrevious: Boolean!
+}
+
+"""
+Wishlist data payload with categories, items, and pagination
+"""
+type WishlistPayload {
+  categories: [WishlistCategory!]!
+  items: [WishlistItem!]!
+  pagination: PaginationInfo!
+}
+
+"""
+Input for user registration
+"""
+input RegisterInput {
+  email: String!
+  password: String!
+  name: String!
+}
+
+"""
+Input for user login
+"""
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+"""
+Input for creating a category
+"""
+input CategoryInput {
+  name: String!
+  color: String
+}
+
+"""
+Input for updating a category
+"""
+input CategoryUpdateInput {
+  name: String
+  color: String
+}
+
+"""
+Input for creating a wishlist item
+"""
+input ItemInput {
+  title: String!
+  categoryId: String!
+  description: String
+  favicon: String
+  url: String
+  linkDescription: String
+}
+
+"""
+Input for updating a wishlist item
+"""
+input ItemUpdateInput {
+  title: String
+  categoryId: String
+  description: String
+  favicon: String
+}
+
+"""
+Input for creating an item link
+"""
+input ItemLinkInput {
+  url: String!
+  description: String
+  isPrimary: Boolean
+}
+
+"""
+Input for updating an item link
+"""
+input ItemLinkUpdateInput {
+  url: String
+  description: String
+  isPrimary: Boolean
+}
+
+"""
+Input for pagination
+"""
+input PaginationInput {
+  page: Int
+  pageSize: Int
+}
+
+"""
+Input for filtering wishlist data
+"""
+input WishlistFilterInput {
+  categoryId: String
+  search: String
+}
+
+type Query {
+  """
+  Get the current authenticated user
+  """
+  me: User
+
+  """
+  Get wishlist data with optional filters and pagination
+  """
+  wishlist(
+    filter: WishlistFilterInput
+    pagination: PaginationInput
+  ): WishlistPayload!
+
+  """
+  Get all categories for the current user
+  """
+  categories: [WishlistCategory!]!
+
+  """
+  Get a specific wishlist item by ID
+  """
+  item(id: ID!): WishlistItem
+}
+
+type Mutation {
+  """
+  Register a new user
+  """
+  register(input: RegisterInput!): AuthPayload!
+
+  """
+  Login with email and password
+  """
+  login(input: LoginInput!): AuthPayload!
+
+  """
+  Logout the current user
+  """
+  logout: Boolean!
+
+  """
+  Create a new category
+  """
+  createCategory(input: CategoryInput!): WishlistCategory!
+
+  """
+  Update a category
+  """
+  updateCategory(id: ID!, input: CategoryUpdateInput!): WishlistCategory
+
+  """
+  Delete a category
+  """
+  deleteCategory(id: ID!): Boolean!
+
+  """
+  Create a new wishlist item
+  """
+  createItem(input: ItemInput!): WishlistItem!
+
+  """
+  Update a wishlist item
+  """
+  updateItem(id: ID!, input: ItemUpdateInput!): WishlistItem
+
+  """
+  Delete a wishlist item
+  """
+  deleteItem(id: ID!): Boolean!
+
+  """
+  Add a link to a wishlist item
+  """
+  addItemLink(itemId: ID!, input: ItemLinkInput!): WishlistItemLink!
+
+  """
+  Update an item link
+  """
+  updateItemLink(id: ID!, input: ItemLinkUpdateInput!): WishlistItemLink
+
+  """
+  Delete an item link
+  """
+  deleteItemLink(id: ID!): Boolean!
+
+  """
+  Set a link as the primary link for an item
+  """
+  setPrimaryLink(itemId: ID!, linkId: ID!): Boolean!
+}

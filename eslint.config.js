@@ -10,6 +10,7 @@ export default [
       "**/.output/**",
       "**/.wxt/**",
       "**/.vinxi/**",
+      "**/src/graphql/types.ts", // Generated GraphQL types
     ],
   },
 ];
