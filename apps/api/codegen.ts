@@ -8,12 +8,9 @@ const config: CodegenConfig = {
       config: {
         useIndexSignature: true,
         contextType: "./context#GraphQLContext",
-        mappers: {
-          User: "../lib/db/types#PublicUser",
-          WishlistCategory: "../lib/db/types#WishlistCategory",
-          WishlistItem: "../lib/db/types#WishlistItem",
-          WishlistItemLink: "../lib/db/types#WishlistItemLink",
-        },
+        // Map GraphQL types to DB types without importing them
+        // This avoids type conflicts by using type aliases in resolvers
+        useTypeImports: true,
       },
     },
   },
