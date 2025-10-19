@@ -131,5 +131,5 @@ Use Playwright MCP to interact with browser for testing. DON't USE windsurf buil
 
 ## E2E Test Account (Local/Dev Only)
 
-Email: pwtester.20250808.001@example.com
-Password: Password123!
+Email: test@cwchanap.dev
+Password: password123
