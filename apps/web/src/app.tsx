@@ -3,6 +3,7 @@ import { FileRoutes } from "@solidjs/start/router";
 import { Suspense } from "solid-js";
 import { MetaProvider } from "@solidjs/meta";
 import { AuthProvider } from "./lib/auth/context.jsx";
+import { GraphQLProvider } from "./lib/graphql/provider.jsx";
 import "./app.css";
 import "@repo/ui-components/styles";
 
@@ -24,17 +25,19 @@ if (typeof window !== "undefined") {
 export default function App() {
   return (
     <MetaProvider>
-      <AuthProvider>
-        <Router
-          root={(props) => (
-            <Suspense fallback={<div>Loading...</div>}>
-              {props.children}
-            </Suspense>
-          )}
-        >
-          <FileRoutes />
-        </Router>
-      </AuthProvider>
+      <GraphQLProvider>
+        <AuthProvider>
+          <Router
+            root={(props) => (
+              <Suspense fallback={<div>Loading...</div>}>
+                {props.children}
+              </Suspense>
+            )}
+          >
+            <FileRoutes />
+          </Router>
+        </AuthProvider>
+      </GraphQLProvider>
     </MetaProvider>
   );
 }

@@ -31,10 +31,18 @@ Document the path for migrating `apps/api` from the current Hono REST service (`
   - [x] Implement `Mutation` resolvers covering auth, category, item, and link operations.
   - [x] Normalize error handling (auth failures, validation issues) into GraphQL-friendly responses.
   - [x] Create type mappers to convert between DB snake_case and GraphQL camelCase types.
-- [ ] **Phase 3 – Client Integration**
-  - [ ] Update `apps/web` data layer to use TanStack Query for GraphQL operations (define queries/mutations).
+  - [x] Fix session cookie persistence in GraphQL auth mutations.
+  - [x] Merge Hono headers into Yoga response to propagate Set-Cookie headers.
+- [x] **Phase 3 – Client Integration (Web App)**
+  - [x] Install TanStack Query (`@tanstack/solid-query`) for web app.
+  - [x] Create GraphQL client utilities with `graphqlRequest` function.
+  - [x] Define GraphQL queries and mutations for auth operations.
+  - [x] Define GraphQL queries and mutations for wishlist CRUD operations.
+  - [x] Create TanStack Query hooks for all GraphQL operations.
+  - [x] Set up `GraphQLProvider` and wrap app root.
+  - [x] Ensure session cookies flow automatically with `credentials: "include"`.
+- [ ] **Phase 3 – Client Integration (Extension)**
   - [ ] Update `apps/extension` to adopt TanStack Query for GraphQL interactions.
-  - [ ] Ensure session cookies flow with GraphQL requests in both clients.
 - [ ] **Phase 4 – Coexistence & Rollout**
   - [ ] Expose GraphQL under `/graphql` while keeping REST routes for compatibility.
   - [ ] Add environment flag or config toggle letting clients choose REST vs GraphQL.
