@@ -26,10 +26,11 @@ Document the path for migrating `apps/api` from the current Hono REST service (`
   - [x] Add GraphQL Yoga and @graphql-tools/schema dependencies and bootstrap the GraphQL handler within the existing Hono app.
   - [x] Create schema SDL definitions plus codegen pipeline.
   - [x] Build context factory that attaches `DB`, session user, and request metadata.
-- [ ] **Phase 2 – Resolver Implementation**
-  - [ ] Implement `Query` resolvers for `me`, `wishlist`, `categories`, `item` using `AuthService` and `WishlistService`.
-  - [ ] Implement `Mutation` resolvers covering auth, category, item, and link operations.
-  - [ ] Normalize error handling (auth failures, validation issues) into GraphQL-friendly responses.
+- [x] **Phase 2 – Resolver Implementation**
+  - [x] Implement `Query` resolvers for `me`, `wishlist`, `categories`, `item` using `AuthService` and `WishlistService`.
+  - [x] Implement `Mutation` resolvers covering auth, category, item, and link operations.
+  - [x] Normalize error handling (auth failures, validation issues) into GraphQL-friendly responses.
+  - [x] Create type mappers to convert between DB snake_case and GraphQL camelCase types.
 - [ ] **Phase 3 – Client Integration**
   - [ ] Update `apps/web` data layer to use TanStack Query for GraphQL operations (define queries/mutations).
   - [ ] Update `apps/extension` to adopt TanStack Query for GraphQL interactions.

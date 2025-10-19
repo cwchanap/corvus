@@ -1,11 +1,5 @@
-import { GraphQLResolveInfo } from "graphql";
-import {
-  PublicUser,
-  WishlistCategory,
-  WishlistItem,
-  WishlistItemLink,
-} from "../lib/db/types";
-import { GraphQLContext } from "./context";
+import type { GraphQLResolveInfo } from "graphql";
+import type { GraphQLContext } from "./context";
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = {
@@ -26,7 +20,6 @@ export type Incremental<T> =
   | {
       [P in keyof T]?: P extends " $fragmentName" | "__typename" ? T[P] : never;
     };
-export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 export type RequireFields<T, K extends keyof T> = Omit<T, K> & {
   [P in K]-?: NonNullable<T[P]>;
 };
@@ -396,9 +389,7 @@ export type DirectiveResolverFn<
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
-  AuthPayload: ResolverTypeWrapper<
-    Omit<AuthPayload, "user"> & { user?: Maybe<ResolversTypes["User"]> }
-  >;
+  AuthPayload: ResolverTypeWrapper<AuthPayload>;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
   CategoryInput: CategoryInput;
   CategoryUpdateInput: CategoryUpdateInput;
@@ -415,24 +406,17 @@ export type ResolversTypes = ResolversObject<{
   Query: ResolverTypeWrapper<{}>;
   RegisterInput: RegisterInput;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
-  User: ResolverTypeWrapper<PublicUser>;
+  User: ResolverTypeWrapper<User>;
   WishlistCategory: ResolverTypeWrapper<WishlistCategory>;
   WishlistFilterInput: WishlistFilterInput;
   WishlistItem: ResolverTypeWrapper<WishlistItem>;
   WishlistItemLink: ResolverTypeWrapper<WishlistItemLink>;
-  WishlistPayload: ResolverTypeWrapper<
-    Omit<WishlistPayload, "categories" | "items"> & {
-      categories: Array<ResolversTypes["WishlistCategory"]>;
-      items: Array<ResolversTypes["WishlistItem"]>;
-    }
-  >;
+  WishlistPayload: ResolverTypeWrapper<WishlistPayload>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
-  AuthPayload: Omit<AuthPayload, "user"> & {
-    user?: Maybe<ResolversParentTypes["User"]>;
-  };
+  AuthPayload: AuthPayload;
   Boolean: Scalars["Boolean"]["output"];
   CategoryInput: CategoryInput;
   CategoryUpdateInput: CategoryUpdateInput;
@@ -449,15 +433,12 @@ export type ResolversParentTypes = ResolversObject<{
   Query: {};
   RegisterInput: RegisterInput;
   String: Scalars["String"]["output"];
-  User: PublicUser;
+  User: User;
   WishlistCategory: WishlistCategory;
   WishlistFilterInput: WishlistFilterInput;
   WishlistItem: WishlistItem;
   WishlistItemLink: WishlistItemLink;
-  WishlistPayload: Omit<WishlistPayload, "categories" | "items"> & {
-    categories: Array<ResolversParentTypes["WishlistCategory"]>;
-    items: Array<ResolversParentTypes["WishlistItem"]>;
-  };
+  WishlistPayload: WishlistPayload;
 }>;
 
 export type AuthPayloadResolvers<
