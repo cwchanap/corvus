@@ -47,11 +47,25 @@ export const createGraphQLHandler = () => {
     (request as any).__honoContext = c;
 
     // Forward to Yoga
-    const response = await yoga.fetch(request, {
+    const yogaResponse = await yoga.fetch(request, {
       // Pass Cloudflare env if needed
       env: c.env,
     });
 
-    return response;
+    // Merge headers from Hono context into Yoga response
+    // This ensures Set-Cookie and other headers set by resolvers reach the client
+    const mergedHeaders = new Headers(yogaResponse.headers);
+
+    // Copy any headers set on the Hono context (e.g., Set-Cookie from auth mutations)
+    c.res.headers.forEach((value, key) => {
+      mergedHeaders.set(key, value);
+    });
+
+    // Return a new response with merged headers
+    return new Response(yogaResponse.body, {
+      status: yogaResponse.status,
+      statusText: yogaResponse.statusText,
+      headers: mergedHeaders,
+    });
   };
 };
