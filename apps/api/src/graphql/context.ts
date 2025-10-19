@@ -10,6 +10,7 @@ export interface GraphQLContext {
   db: DB;
   user: PublicUser | null;
   request: Request;
+  honoContext: Context;
 }
 
 /**
@@ -33,5 +34,6 @@ export async function createGraphQLContext(
     db,
     user,
     request: c.req.raw,
+    honoContext: c,
   };
 }
