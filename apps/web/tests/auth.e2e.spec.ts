@@ -51,16 +51,45 @@ test.describe("Auth E2E", () => {
       await expect(page.getByText("Access Denied")).toHaveCount(0);
     });
 
-    // Verify wishlist API is authorized and returns expected shape
-    await test.step("Verify wishlist API", async () => {
+    // Verify wishlist GraphQL API is authorized and returns expected shape
+    await test.step("Verify wishlist GraphQL API", async () => {
       // Use page.request so that session cookies from the browser context are sent
-      const res = await page.request.get("/api/wishlist");
+      const res = await page.request.post("/graphql", {
+        data: {
+          query: `
+            query {
+              wishlist {
+                categories {
+                  id
+                  name
+                  color
+                }
+                items {
+                  id
+                  title
+                  categoryId
+                }
+                pagination {
+                  totalItems
+                  page
+                  pageSize
+                }
+              }
+            }
+          `,
+        },
+      });
       expect(res.ok()).toBeTruthy();
       const json = await res.json();
-      expect(json).toHaveProperty("categories");
-      expect(json).toHaveProperty("items");
-      expect(Array.isArray(json.categories)).toBe(true);
-      expect(Array.isArray(json.items)).toBe(true);
+
+      // GraphQL response format: { data: { wishlist: { ... } } }
+      expect(json).toHaveProperty("data");
+      expect(json.data).toHaveProperty("wishlist");
+      expect(json.data.wishlist).toHaveProperty("categories");
+      expect(json.data.wishlist).toHaveProperty("items");
+      expect(json.data.wishlist).toHaveProperty("pagination");
+      expect(Array.isArray(json.data.wishlist.categories)).toBe(true);
+      expect(Array.isArray(json.data.wishlist.items)).toBe(true);
     });
   });
 });
