@@ -2,15 +2,6 @@ import type { D1Database, Fetcher } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createGraphQLHandler } from "./graphql/handler.js";
-import authLoginRoutes from "./routes/auth/login";
-import authLogoutRoutes from "./routes/auth/logout";
-import authRegisterRoutes from "./routes/auth/register";
-import authMeRoutes from "./routes/auth/me";
-import wishlistRoutes from "./routes/wishlist/index";
-import wishlistItemsRoutes from "./routes/wishlist/items/index";
-import wishlistItemRoutes from "./routes/wishlist/items/[id]";
-import wishlistItemLinksRoutes from "./routes/wishlist/items/links";
-import wishlistCategoriesRoutes from "./routes/wishlist/categories/index";
 
 type AppBindings = {
   DB: D1Database;
@@ -52,19 +43,10 @@ app.use(
   }),
 );
 
-// GraphQL endpoint
+// GraphQL endpoint - API is now GraphQL-only
 app.use("/graphql", createGraphQLHandler());
 
-// API routes
-app.route("/api/auth", authLoginRoutes);
-app.route("/api/auth", authLogoutRoutes);
-app.route("/api/auth", authRegisterRoutes);
-app.route("/api/auth", authMeRoutes);
-app.route("/api/wishlist", wishlistRoutes);
-app.route("/api/wishlist/categories", wishlistCategoriesRoutes);
-app.route("/api/wishlist/items", wishlistItemsRoutes);
-app.route("/api/wishlist/items", wishlistItemRoutes);
-app.route("/api/wishlist/items", wishlistItemLinksRoutes);
+// Catch-all for serving static assets (web app)
 app.get("*", async (c) => {
   const assetResponse = await c.env.ASSETS.fetch(c.req.raw);
 

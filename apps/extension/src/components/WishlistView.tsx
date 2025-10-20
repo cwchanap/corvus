@@ -60,10 +60,10 @@ export function WishlistView(props: WishlistViewProps) {
   };
 
   const getCategoryById = (
-    categoryId: string,
+    categoryId: string | null,
   ): WishlistCategory | undefined => {
     const data = resolvedWishlist();
-    if (!data) return undefined;
+    if (!data || !categoryId) return undefined;
     return data.categories.find((cat) => cat.id === categoryId);
   };
 
@@ -217,7 +217,7 @@ export function WishlistView(props: WishlistViewProps) {
                         <div class="flex items-start gap-3">
                           <Show when={item.favicon}>
                             <img
-                              src={item.favicon}
+                              src={item.favicon ?? undefined}
                               alt=""
                               class="w-4 h-4 mt-0.5 flex-shrink-0"
                             />
@@ -263,7 +263,7 @@ export function WishlistView(props: WishlistViewProps) {
                                   class="text-xs"
                                   style={{
                                     "background-color": category?.color + "20",
-                                    color: category?.color,
+                                    color: category?.color ?? undefined,
                                   }}
                                 >
                                   {category?.name}

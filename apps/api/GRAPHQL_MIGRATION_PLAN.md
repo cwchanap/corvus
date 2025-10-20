@@ -47,16 +47,14 @@ Document the path for migrating `apps/api` from the current Hono REST service (`
   - [x] Create auth operation wrappers using shared queries.
   - [x] Create wishlist operation wrappers using shared queries.
   - [x] Ensure session cookies flow with `credentials: "include"`.
-- [ ] **Phase 4 – Coexistence & Rollout**
-  - [ ] Expose GraphQL under `/graphql` while keeping REST routes for compatibility.
-  - [ ] Add environment flag or config toggle letting clients choose REST vs GraphQL.
-  - [ ] Document API usage and share migration guides with frontend teams.
+- [x] **Phase 4 – Decommission REST (Skipped Coexistence)**
+  - [x] Remove all REST routes from API (`apps/api/src/routes/`).
+  - [x] Update extension to use GraphQL instead of REST API.
+  - [x] API is now GraphQL-only at `/graphql` endpoint.
 - [ ] **Phase 5 – Tooling & Ops**
   - [ ] Extend Vitest and Playwright suites with GraphQL-focused tests.
   - [ ] Update Turbo tasks, Wrangler config, and CI scripts for schema/codegen steps.
-  - [ ] Monitor and log GraphQL traffic for parity checks during rollout.
-- [ ] **Phase 6 – Decommission REST**
-  - [ ] Remove unused REST routes once clients fully migrate.
+  - [ ] Monitor and log GraphQL traffic.
   - [ ] Clean up redundant DTOs/utilities and simplify `apps/api/src/index.tsx`.
   - [ ] Archive REST-specific documentation.
 
