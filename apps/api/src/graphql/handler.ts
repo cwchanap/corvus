@@ -57,8 +57,13 @@ export const createGraphQLHandler = () => {
     const mergedHeaders = new Headers(yogaResponse.headers);
 
     // Copy any headers set on the Hono context (e.g., Set-Cookie from auth mutations)
+    // Use append() for Set-Cookie to preserve multiple cookies, set() for others
     c.res.headers.forEach((value, key) => {
-      mergedHeaders.set(key, value);
+      if (key.toLowerCase() === "set-cookie") {
+        mergedHeaders.append(key, value);
+      } else {
+        mergedHeaders.set(key, value);
+      }
     });
 
     // Return a new response with merged headers
