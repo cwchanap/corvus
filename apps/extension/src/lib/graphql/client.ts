@@ -8,10 +8,14 @@ import {
   type GraphQLClientOptions,
 } from "@repo/common/graphql/client";
 
-const GRAPHQL_ENDPOINT =
-  // eslint-disable-next-line turbo/no-undeclared-env-vars
-  (import.meta.env.VITE_API_URL as string | undefined) ||
-  "http://localhost:8787/graphql";
+// Use VITE_API_BASE (same as REST client) and append /graphql
+const API_BASE =
+  (import.meta.env.VITE_API_BASE as string | undefined) ||
+  (import.meta.env.MODE === "development" ? "http://localhost:8787" : "");
+
+const GRAPHQL_ENDPOINT = API_BASE
+  ? `${API_BASE}/graphql`
+  : "http://localhost:8787/graphql";
 
 /**
  * Pre-configured GraphQL request function for the extension
