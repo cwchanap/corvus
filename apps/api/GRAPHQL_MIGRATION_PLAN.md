@@ -51,12 +51,19 @@ Document the path for migrating `apps/api` from the current Hono REST service (`
   - [x] Remove all REST routes from API (`apps/api/src/routes/`).
   - [x] Update extension to use GraphQL instead of REST API.
   - [x] API is now GraphQL-only at `/graphql` endpoint.
-- [ ] **Phase 5 – Tooling & Ops**
-  - [ ] Extend Vitest and Playwright suites with GraphQL-focused tests.
-  - [ ] Update Turbo tasks, Wrangler config, and CI scripts for schema/codegen steps.
-  - [ ] Monitor and log GraphQL traffic.
-  - [ ] Clean up redundant DTOs/utilities and simplify `apps/api/src/index.tsx`.
-  - [ ] Archive REST-specific documentation.
+- [x] **Phase 5 – Cleanup & Production Readiness**
+  - [x] Fixed P0 production bug: Extension uses VITE_API_BASE instead of VITE_API_URL.
+  - [x] Removed obsolete REST client code from `@repo/common`.
+  - [x] Removed obsolete REST types (auth.ts, wishlist.ts).
+  - [x] Removed unused storage abstraction layer.
+  - [x] Updated extension components to remove WishlistApiError dependencies.
+  - [x] Updated web app to use GraphQL types (GraphQLUser instead of PublicUser).
+  - [x] Fixed Set-Cookie header handling in GraphQL handler (append vs overwrite).
+  - [x] Cleaned ~1,500 lines of obsolete code.
+- [ ] **Phase 6 – Testing & Monitoring (Optional)**
+  - [ ] Add GraphQL-specific E2E tests with Playwright.
+  - [ ] Add monitoring/logging for GraphQL operations.
+  - [ ] Performance testing for GraphQL vs previous REST.
 
 ## Migration Notes
 
