@@ -41,8 +41,12 @@ Document the path for migrating `apps/api` from the current Hono REST service (`
   - [x] Create TanStack Query hooks for all GraphQL operations.
   - [x] Set up `GraphQLProvider` and wrap app root.
   - [x] Ensure session cookies flow automatically with `credentials: "include"`.
-- [ ] **Phase 3 – Client Integration (Extension)**
-  - [ ] Update `apps/extension` to adopt TanStack Query for GraphQL interactions.
+- [x] **Phase 3 – Client Integration (Extension)**
+  - [x] Extract shared GraphQL utilities to `@repo/common` package.
+  - [x] Create GraphQL client wrapper for extension.
+  - [x] Create auth operation wrappers using shared queries.
+  - [x] Create wishlist operation wrappers using shared queries.
+  - [x] Ensure session cookies flow with `credentials: "include"`.
 - [ ] **Phase 4 – Coexistence & Rollout**
   - [ ] Expose GraphQL under `/graphql` while keeping REST routes for compatibility.
   - [ ] Add environment flag or config toggle letting clients choose REST vs GraphQL.
