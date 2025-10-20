@@ -6,17 +6,17 @@ import {
   onMount,
 } from "solid-js";
 import { isServer } from "solid-js/web";
-import type { PublicUser } from "@repo/common/types/auth";
+import type { GraphQLUser } from "@repo/common/graphql/types";
 
 interface AuthContextValue {
-  user: () => PublicUser | undefined;
+  user: () => GraphQLUser | undefined;
   isAuthenticated: () => boolean;
   isLoading: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue>();
 
-async function getCurrentUser(): Promise<PublicUser | null> {
+async function getCurrentUser(): Promise<GraphQLUser | null> {
   console.log("getCurrentUser: Called");
 
   // Skip during SSR to avoid cookie domain issues
@@ -48,7 +48,7 @@ async function getCurrentUser(): Promise<PublicUser | null> {
     const text = await response.text();
     console.log("getCurrentUser: Response text", text);
 
-    const data = JSON.parse(text) as { user: PublicUser | null };
+    const data = JSON.parse(text) as { user: GraphQLUser | null };
     console.log("getCurrentUser: Response data", data);
     return data.user;
   } catch (e) {
@@ -58,7 +58,7 @@ async function getCurrentUser(): Promise<PublicUser | null> {
 }
 
 export const AuthProvider: ParentComponent = (props) => {
-  const [user, setUser] = createSignal<PublicUser | null | undefined>(
+  const [user, setUser] = createSignal<GraphQLUser | null | undefined>(
     undefined,
   );
   const [isLoading, setIsLoading] = createSignal(true);

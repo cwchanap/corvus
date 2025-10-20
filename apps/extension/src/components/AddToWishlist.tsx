@@ -9,7 +9,6 @@ import {
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
 import { getCurrentPageInfo } from "../utils/page-info.js";
-import { WishlistApiError } from "@repo/common/api/wishlist-client";
 import { useWishlistData } from "../lib/wishlist/context.js";
 import type { WishlistItem } from "../types/wishlist";
 
@@ -44,7 +43,6 @@ export function AddToWishlist(props: AddToWishlistProps) {
   const resolvedWishlist = () => wishlistValue();
   const wishlistErrorMessage = () => {
     const error = wishlistError();
-    if (error instanceof WishlistApiError) return error.message;
     if (error instanceof Error) return error.message;
     return "Unable to load wishlist data. Please sign in.";
   };

@@ -5,7 +5,6 @@ import { Badge } from "@repo/ui-components/badge";
 import { ThemeToggle } from "@repo/ui-components/theme-toggle";
 import { Select } from "@repo/ui-components/select";
 import { useTheme } from "../lib/theme/context.js";
-import { WishlistApiError } from "@repo/common/api/wishlist-client";
 import { useWishlistData } from "../lib/wishlist/context.js";
 import type { WishlistCategory, WishlistItem } from "../types/wishlist";
 import { ItemDetailsModal } from "./ItemDetailsModal.js";
@@ -36,7 +35,6 @@ export function WishlistView(props: WishlistViewProps) {
   const isErrored = () => wishlistState() === "errored";
   const errorMessage = () => {
     const error = wishlistError();
-    if (error instanceof WishlistApiError) return error.message;
     if (error instanceof Error) return error.message;
     return "Unable to load your wishlist. Please sign in.";
   };
@@ -100,9 +98,7 @@ export function WishlistView(props: WishlistViewProps) {
       await refetch();
     } catch (error) {
       console.error("Error removing item:", error);
-      if (error instanceof WishlistApiError) {
-        alert(error.message);
-      } else if (error instanceof Error) {
+      if (error instanceof Error) {
         alert(error.message);
       } else {
         alert("Failed to remove item");

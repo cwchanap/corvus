@@ -37,7 +37,7 @@ type WishlistPagination = WishlistPaginationRecord;
 
 interface WishlistDashboardProps {
   user: {
-    id: number;
+    id: string;
     name: string;
     email: string;
   };

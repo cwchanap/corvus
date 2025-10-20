@@ -1,4 +1,8 @@
-import type { PageInfo } from "../types/wishlist.js";
+export interface PageInfo {
+  title: string;
+  url: string;
+  favicon?: string;
+}
 
 export async function getCurrentPageInfo(): Promise<PageInfo> {
   try {
