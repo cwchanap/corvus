@@ -1,6 +1,7 @@
+// Re-export GraphQL types with legacy names for component compatibility
 export type {
-  WishlistCategory,
-  WishlistItem,
-  WishlistData,
-  PageInfo,
-} from "@repo/common/types/wishlist";
+  GraphQLWishlistCategory as WishlistCategory,
+  GraphQLWishlistItem as WishlistItem,
+  GraphQLWishlistPayload as WishlistData,
+  GraphQLPaginationInfo as PageInfo,
+} from "@repo/common/graphql/types";

@@ -9,16 +9,16 @@ import {
   type Resource,
   type ResourceActions,
 } from "solid-js";
-import type { WishlistData } from "@repo/common/types/wishlist";
-import { wishlistApi } from "../api/wishlist.js";
+import type { GraphQLWishlistPayload } from "@repo/common/graphql/types";
+import * as wishlistGraphQL from "../graphql/wishlist.js";
 
 interface WishlistDataContextValue {
-  data: Resource<WishlistData | undefined>;
-  refetch: ResourceActions<WishlistData | undefined>["refetch"];
-  mutate: ResourceActions<WishlistData | undefined>["mutate"];
-  api: typeof wishlistApi;
-  value: () => WishlistData | undefined;
-  state: () => Resource<WishlistData | undefined>["state"];
+  data: Resource<GraphQLWishlistPayload | undefined>;
+  refetch: ResourceActions<GraphQLWishlistPayload | undefined>["refetch"];
+  mutate: ResourceActions<GraphQLWishlistPayload | undefined>["mutate"];
+  api: typeof wishlistGraphQL;
+  value: () => GraphQLWishlistPayload | undefined;
+  state: () => Resource<GraphQLWishlistPayload | undefined>["state"];
   error: () => unknown;
   page: () => number;
   setPage: (page: number) => void;
@@ -37,11 +37,10 @@ export function WishlistDataProvider(props: { children: JSX.Element }) {
   const [data, { refetch, mutate }] = createResource(
     () => ({ page: page(), categoryId: categoryId() }),
     async ({ page: currentPage, categoryId: categoryFilter }) => {
-      const result = await wishlistApi.getWishlist({
-        page: currentPage,
-        pageSize: PAGE_SIZE,
-        categoryId: categoryFilter ?? undefined,
-      });
+      const result = await wishlistGraphQL.getWishlist(
+        { categoryId: categoryFilter ?? undefined },
+        { page: currentPage, pageSize: PAGE_SIZE },
+      );
 
       const normalizedPage =
         result.pagination.page && result.pagination.page > 0
@@ -77,7 +76,7 @@ export function WishlistDataProvider(props: { children: JSX.Element }) {
     data,
     refetch,
     mutate,
-    api: wishlistApi,
+    api: wishlistGraphQL,
     value: valueAccessor,
     state: () => data.state,
     error: () => data.error,
