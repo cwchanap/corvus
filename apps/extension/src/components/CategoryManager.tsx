@@ -9,7 +9,6 @@ import {
 } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
 import { ConfirmDialog } from "@repo/ui-components/confirm-dialog";
-import { WishlistApiError } from "@repo/common/api/wishlist-client";
 import { useWishlistData } from "../lib/wishlist/context.js";
 
 interface CategoryManagerProps {
@@ -36,7 +35,6 @@ export function CategoryManager(props: CategoryManagerProps) {
   const resolvedWishlist = () => wishlistValue();
   const errorMessage = () => {
     const error = wishlistError();
-    if (error instanceof WishlistApiError) return error.message;
     if (error instanceof Error) return error.message;
     return "Unable to load categories. Please sign in.";
   };
@@ -55,9 +53,7 @@ export function CategoryManager(props: CategoryManagerProps) {
       await refetch();
     } catch (error) {
       console.error("Error adding category:", error);
-      if (error instanceof WishlistApiError) {
-        alert(error.message);
-      } else if (error instanceof Error) {
+      if (error instanceof Error) {
         alert(error.message);
       } else {
         alert("Failed to add category");
@@ -83,11 +79,7 @@ export function CategoryManager(props: CategoryManagerProps) {
     } catch (error) {
       console.error("Error removing category:", error);
       alert(
-        error instanceof WishlistApiError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : "Failed to remove category",
+        error instanceof Error ? error.message : "Failed to remove category",
       );
     }
   };

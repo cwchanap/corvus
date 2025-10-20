@@ -1,6 +1,6 @@
 import { getCookie, setCookie, deleteCookie } from "vinxi/http";
 import { redirect } from "@solidjs/router";
-import type { PublicUser } from "@repo/common/types/auth";
+import type { GraphQLUser } from "@repo/common/graphql/types";
 
 export interface SessionData {
   userId: number;
@@ -29,7 +29,7 @@ export function clearSessionCookie(): void {
   deleteCookie(SESSION_COOKIE_NAME, { path: "/" });
 }
 
-export function requireAuth(user: PublicUser | null): PublicUser {
+export function requireAuth(user: GraphQLUser | null): GraphQLUser {
   if (!user) {
     throw redirect("/login");
   }

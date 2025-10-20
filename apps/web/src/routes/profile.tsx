@@ -109,7 +109,7 @@ export default function Profile() {
                       Member Since
                     </div>
                     <div class="col-span-2 text-foreground">
-                      {formatDate(auth.user()!.created_at)}
+                      {formatDate(auth.user()!.createdAt)}
                     </div>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center py-4">
@@ -117,7 +117,7 @@ export default function Profile() {
                       Last Updated
                     </div>
                     <div class="col-span-2 text-foreground">
-                      {formatDate(auth.user()!.updated_at)}
+                      {formatDate(auth.user()!.updatedAt)}
                     </div>
                   </div>
                 </div>
