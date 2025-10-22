@@ -117,7 +117,7 @@ Input for creating a wishlist item
 """
 input ItemInput {
   title: String!
-  categoryId: String!
+  categoryId: String
   description: String
   favicon: String
   url: String

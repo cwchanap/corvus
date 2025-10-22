@@ -9,6 +9,10 @@ import {
 } from "@repo/ui-components/card";
 import { ConfirmDialog } from "@repo/ui-components/confirm-dialog";
 import type { WishlistCategoryRecord } from "@repo/common/types/wishlist-record";
+import {
+  useCreateCategory,
+  useDeleteCategory,
+} from "../lib/graphql/hooks/use-wishlist.js";
 
 interface CategoryManagerProps {
   categories: WishlistCategoryRecord[];
@@ -19,33 +23,24 @@ interface CategoryManagerProps {
 export function CategoryManager(props: CategoryManagerProps) {
   const [newCategoryName, setNewCategoryName] = createSignal("");
   const [newCategoryColor, setNewCategoryColor] = createSignal("#6366f1");
-  const [isAdding, setIsAdding] = createSignal(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = createSignal(false);
   const [categoryToDelete, setCategoryToDelete] =
     createSignal<WishlistCategoryRecord | null>(null);
   const [error, setError] = createSignal<string | null>(null);
 
+  const createCategoryMutation = useCreateCategory();
+  const deleteCategoryMutation = useDeleteCategory();
+
   const handleAddCategory = async () => {
     const name = newCategoryName().trim();
     if (!name) return;
 
-    setIsAdding(true);
     setError(null);
     try {
-      const response = await fetch("/api/wishlist/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          name,
-          color: newCategoryColor(),
-        }),
+      await createCategoryMutation.mutateAsync({
+        name,
+        color: newCategoryColor(),
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to add category");
-      }
 
       setNewCategoryName("");
       setNewCategoryColor("#6366f1");
@@ -53,8 +48,6 @@ export function CategoryManager(props: CategoryManagerProps) {
     } catch (err) {
       console.error("Error adding category:", err);
       setError(err instanceof Error ? err.message : "Failed to add category");
-    } finally {
-      setIsAdding(false);
     }
   };
 
@@ -69,15 +62,7 @@ export function CategoryManager(props: CategoryManagerProps) {
 
     setError(null);
     try {
-      const response = await fetch(`/api/wishlist/categories/${category.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete category");
-      }
+      await deleteCategoryMutation.mutateAsync(category.id);
 
       await props.onRefetch();
       setCategoryToDelete(null);
@@ -162,10 +147,12 @@ export function CategoryManager(props: CategoryManagerProps) {
               </Button>
               <Button
                 onClick={handleAddCategory}
-                disabled={!newCategoryName().trim() || isAdding()}
+                disabled={
+                  !newCategoryName().trim() || createCategoryMutation.isPending
+                }
                 size="sm"
               >
-                {isAdding() ? "Adding..." : "Add"}
+                {createCategoryMutation.isPending ? "Adding..." : "Add"}
               </Button>
             </div>
           </div>
