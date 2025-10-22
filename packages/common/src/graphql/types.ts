@@ -99,7 +99,7 @@ export interface CategoryUpdateInput {
 
 export interface ItemInput {
   title: string;
-  categoryId: string;
+  categoryId?: string;
   description?: string;
   favicon?: string;
   url?: string;
@@ -108,7 +108,7 @@ export interface ItemInput {
 
 export interface ItemUpdateInput {
   title?: string;
-  categoryId?: string;
+  categoryId?: string | null;
   description?: string;
   favicon?: string;
 }

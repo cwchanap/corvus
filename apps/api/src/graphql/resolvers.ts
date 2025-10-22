@@ -233,7 +233,9 @@ export const resolvers: Resolvers = {
       const wishlistService = new WishlistService(context.db);
       const item = await wishlistService.updateItem(args.id, context.user.id, {
         title: args.input.title ?? undefined,
-        category_id: args.input.categoryId ?? undefined,
+        // Preserve null to allow clearing category; only use undefined if field not provided
+        category_id:
+          "categoryId" in args.input ? args.input.categoryId : undefined,
         description: args.input.description ?? undefined,
         favicon: args.input.favicon ?? undefined,
       });

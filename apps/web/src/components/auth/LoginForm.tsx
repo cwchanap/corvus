@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { A } from "@solidjs/router";
+import { A, useNavigate } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import {
   Card,
@@ -7,14 +7,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
+import { useLogin } from "../../lib/graphql/hooks/use-auth.js";
 
 export function LoginForm() {
-  const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string>("");
+  const navigate = useNavigate();
+  const loginMutation = useLogin();
 
   const handleSubmit = async (event: Event) => {
     event.preventDefault();
-    setIsLoading(true);
     setError("");
 
     const form = event.currentTarget as HTMLFormElement;
@@ -23,42 +24,16 @@ export function LoginForm() {
     const password = formData.get("password") as string;
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
+      const result = await loginMutation.mutateAsync({ email, password });
 
-      let data: { error?: string; success?: boolean } = {};
-
-      try {
-        data = (await response.json()) as {
-          error?: string;
-          success?: boolean;
-        };
-      } catch {
-        // If response is not valid JSON (e.g., HTML error page), provide a generic error
-        if (!response.ok) {
-          throw new Error(
-            `Server error (${response.status}): API server may not be running`,
-          );
-        }
-        throw new Error("Invalid response from server");
+      if (!result.success) {
+        throw new Error(result.error || "Login failed");
       }
 
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      // Full reload so server picks up HTTP-only session cookie
-      window.location.href = "/dashboard";
+      // Navigate to dashboard on success
+      navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -113,10 +88,10 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            disabled={isLoading()}
+            disabled={loginMutation.isPending}
             class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
           >
-            {isLoading() ? "Signing in..." : "Sign In"}
+            {loginMutation.isPending ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 

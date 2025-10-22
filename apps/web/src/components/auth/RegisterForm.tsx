@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { A } from "@solidjs/router";
+import { A, useNavigate } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import {
   Card,
@@ -7,14 +7,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
+import { useRegister } from "../../lib/graphql/hooks/use-auth.js";
 
 export function RegisterForm() {
-  const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string>("");
+  const navigate = useNavigate();
+  const registerMutation = useRegister();
 
   const handleSubmit = async (event: Event) => {
     event.preventDefault();
-    setIsLoading(true);
     setError("");
 
     const form = event.currentTarget as HTMLFormElement;
@@ -24,30 +25,20 @@ export function RegisterForm() {
     const password = formData.get("password") as string;
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ name, email, password }),
+      const result = await registerMutation.mutateAsync({
+        name,
+        email,
+        password,
       });
 
-      const data = (await response.json()) as {
-        error?: string;
-        success?: boolean;
-      };
-
-      if (!response.ok) {
-        throw new Error(data.error || "Registration failed");
+      if (!result.success) {
+        throw new Error(result.error || "Registration failed");
       }
 
-      // Full reload so server picks up HTTP-only session cookie
-      window.location.href = "/dashboard";
+      // Navigate to dashboard on success
+      navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -117,10 +108,12 @@ export function RegisterForm() {
 
           <Button
             type="submit"
-            disabled={isLoading()}
+            disabled={registerMutation.isPending}
             class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
           >
-            {isLoading() ? "Creating account..." : "Create Account"}
+            {registerMutation.isPending
+              ? "Creating account..."
+              : "Create Account"}
           </Button>
         </form>
 

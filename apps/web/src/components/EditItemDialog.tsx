@@ -16,7 +16,7 @@ interface EditItemDialogProps {
     id: string;
     title: string;
     description?: string;
-    category_id: string;
+    category_id?: string | null;
     links: Array<{
       id?: string;
       url: string;
@@ -25,7 +25,7 @@ interface EditItemDialogProps {
       isNew?: boolean;
       isDeleted?: boolean;
     }>;
-  }) => void;
+  }) => Promise<void>;
   categories: WishlistCategoryRecord[];
   item: WishlistItemRecord | null;
   submitting?: boolean;
@@ -43,7 +43,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
     if (props.open && props.item) {
       setTitle(props.item.title);
       setDescription(props.item.description || "");
-      setCategoryId(props.item.category_id);
+      setCategoryId(props.item.category_id || "");
 
       // Convert existing links
       const existingLinks: LinkItem[] = (props.item.links || []).map(
@@ -80,7 +80,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
       id: props.item.id,
       title: title().trim(),
       description: description().trim() || undefined,
-      category_id: categoryId(),
+      category_id: categoryId().trim() || null,
       links: activeLinks.map((link: LinkItem) => ({
         id: link.id,
         url: link.url.trim(),

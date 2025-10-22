@@ -20,7 +20,7 @@ export interface WishlistItemLinkRecord {
 export interface WishlistItemRecord {
   id: string;
   user_id?: number;
-  category_id: string;
+  category_id?: string;
   title: string;
   description?: string;
   favicon?: string;

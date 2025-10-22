@@ -1,12 +1,12 @@
 import {
   createSignal,
-  createResource,
   For,
   Show,
   createMemo,
   createEffect,
+  on,
 } from "solid-js";
-import { A } from "@solidjs/router";
+import { A, useNavigate } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
@@ -20,20 +20,27 @@ import {
 } from "@repo/ui-components/card";
 import type {
   WishlistCategoryRecord,
-  WishlistDataRecord,
   WishlistItemRecord,
-  WishlistPaginationRecord,
 } from "@repo/common/types/wishlist-record";
 import { useTheme } from "../lib/theme/context.jsx";
 import { AddItemDialog } from "./AddItemDialog.jsx";
 import { EditItemDialog } from "./EditItemDialog.jsx";
 import { ViewItemDialog } from "./ViewItemDialog.jsx";
 import { CategoryManager } from "./CategoryManager.jsx";
+import {
+  useWishlist,
+  useDeleteItem,
+  useCreateItem,
+  useUpdateItem,
+  useAddItemLink,
+  useUpdateItemLink,
+  useDeleteItemLink,
+} from "../lib/graphql/hooks/use-wishlist.js";
+import { useLogout } from "../lib/graphql/hooks/use-auth.js";
+import { adaptWishlistData } from "../lib/graphql/adapters.js";
 
 type WishlistCategory = WishlistCategoryRecord;
 type WishlistItem = WishlistItemRecord;
-type WishlistData = WishlistDataRecord;
-type WishlistPagination = WishlistPaginationRecord;
 
 interface WishlistDashboardProps {
   user: {
@@ -126,110 +133,64 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     "custom",
   );
   const [page, setPage] = createSignal(1);
-  const [pagination, setPagination] = createSignal<WishlistPagination | null>(
-    null,
-  );
-  const [items, setItems] = createSignal<WishlistItem[]>([]);
   const [addOpen, setAddOpen] = createSignal(false);
-  const [adding, setAdding] = createSignal(false);
   const [editOpen, setEditOpen] = createSignal(false);
   const [editingItem, setEditingItem] = createSignal<WishlistItem | null>(null);
-  const [editing, setEditing] = createSignal(false);
   const [viewOpen, setViewOpen] = createSignal(false);
   const [viewingItem, setViewingItem] = createSignal<WishlistItem | null>(null);
   const [categoryManagerOpen, setCategoryManagerOpen] = createSignal(false);
 
-  // Fetch wishlist data
-  const [wishlistData, { refetch }] = createResource<
-    WishlistData,
-    { page: number; categoryId: string | null; search: string }
-  >(
+  const navigate = useNavigate();
+  const logoutMutation = useLogout();
+  const deleteItemMutation = useDeleteItem();
+  const createItemMutation = useCreateItem();
+  const updateItemMutation = useUpdateItem();
+  const addItemLinkMutation = useAddItemLink();
+  const updateItemLinkMutation = useUpdateItemLink();
+  const deleteItemLinkMutation = useDeleteItemLink();
+
+  // Fetch wishlist data using GraphQL
+  const wishlistQuery = useWishlist(
+    () => ({
+      categoryId: selectedCategory() ?? undefined,
+      search: searchQuery().trim() || undefined,
+    }),
     () => ({
       page: page(),
-      categoryId: selectedCategory(),
-      search: searchQuery(),
+      pageSize: PAGE_SIZE,
     }),
-    async ({ page: currentPage, categoryId, search }) => {
-      if (typeof window === "undefined") {
-        // Avoid relative fetch on server
-        return {
-          categories: [],
-          items: [],
-          pagination: {
-            total_items: 0,
-            page: 1,
-            page_size: PAGE_SIZE,
-            total_pages: 0,
-            has_next: false,
-            has_previous: false,
-          },
-        } as WishlistData;
-      }
-
-      const query = new URLSearchParams({
-        page: String(currentPage),
-        pageSize: String(PAGE_SIZE),
-      });
-
-      if (categoryId) {
-        query.set("categoryId", categoryId);
-      }
-
-      const trimmedSearch = search.trim();
-      if (trimmedSearch) {
-        query.set("search", trimmedSearch);
-      }
-
-      const response = await fetch(`/api/wishlist?${query.toString()}`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch wishlist data");
-      }
-
-      const data = (await response.json()) as WishlistData;
-      const itemsList = Array.isArray(data.items) ? data.items : [];
-      setItems(itemsList);
-      setPagination(data.pagination);
-
-      const normalizedPage =
-        data.pagination.page && data.pagination.page > 0
-          ? data.pagination.page
-          : currentPage;
-      if (normalizedPage !== currentPage) {
-        queueMicrotask(() => {
-          setPage(normalizedPage);
-        });
-      }
-
-      return data;
-    },
   );
 
-  createEffect(() => {
-    selectedCategory();
-    if (page() !== 1) {
-      setPage(1);
-    }
+  // Adapt GraphQL data to component's expected format
+  const wishlistData = createMemo(() => {
+    if (!wishlistQuery.data) return undefined;
+    return adaptWishlistData(wishlistQuery.data);
   });
 
-  createEffect(() => {
-    searchQuery();
-    if (page() !== 1) {
+  const items = createMemo(() => wishlistData()?.items ?? []);
+  const pagination = createMemo(() => wishlistData()?.pagination ?? null);
+
+  // Reset page when category or search changes
+  // Use on() to explicitly track only the signals we care about
+  createEffect(
+    on(selectedCategory, () => {
       setPage(1);
-    }
-  });
+    }),
+  );
+
+  createEffect(
+    on(searchQuery, () => {
+      setPage(1);
+    }),
+  );
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "GET",
-        credentials: "include",
-      });
-    } catch {
-      // ignore
-    } finally {
-      // Force full reload to refresh server-authenticated state
-      window.location.href = "/login";
+      await logoutMutation.mutateAsync();
+      // Redirect to home after logout
+      navigate("/");
+    } catch (err) {
+      console.error("Logout error:", err);
     }
   };
 
@@ -243,48 +204,32 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       isPrimary?: boolean;
     }>;
   }) => {
-    setAdding(true);
     try {
-      // Create the item
-      const response = await fetch("/api/wishlist/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          title: payload.title,
-          description: payload.description,
-          category_id: payload.category_id,
-        }),
+      // Create the item via GraphQL
+      const newItem = await createItemMutation.mutateAsync({
+        title: payload.title,
+        categoryId: payload.category_id || undefined,
+        description: payload.description,
       });
-
-      if (!response.ok) throw new Error("Failed to create item");
-
-      const newItem = (await response.json()) as WishlistItem;
 
       // Add links to the item
       for (const link of payload.links) {
-        await fetch(`/api/wishlist/items/${newItem.id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
+        await addItemLinkMutation.mutateAsync({
+          itemId: newItem.id,
+          input: {
             url: link.url,
             description: link.description,
-            is_primary: link.isPrimary || false,
-          }),
+            isPrimary: link.isPrimary || false,
+          },
         });
       }
 
-      if (page() === 1) {
-        await refetch();
-      } else {
+      if (page() !== 1) {
         setPage(1);
       }
       setAddOpen(false);
     } catch (error) {
       console.error("Failed to add item:", error);
-    } finally {
-      setAdding(false);
     }
   };
 
@@ -323,18 +268,15 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   });
 
   const deleteItem = async (itemId: string) => {
-    const response = await fetch(`/api/wishlist/items/${itemId}`, {
-      method: "DELETE",
-    });
-
-    if (response.ok) {
-      // Update local state immediately
-      setItems((prev) => prev.filter((item) => item.id !== itemId));
+    try {
+      await deleteItemMutation.mutateAsync(itemId);
       if (viewingItem()?.id === itemId) {
         setViewOpen(false);
         setViewingItem(null);
       }
-      await refetch();
+      // TanStack Query automatically refetches
+    } catch (err) {
+      console.error("Error deleting item:", err);
     }
   };
 
@@ -391,7 +333,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     id: string;
     title: string;
     description?: string;
-    category_id: string;
+    category_id?: string | null;
     links: Array<{
       id?: string;
       url: string;
@@ -401,64 +343,49 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       isDeleted?: boolean;
     }>;
   }) => {
-    setEditing(true);
     try {
-      // Update the item
-      const response = await fetch(`/api/wishlist/items/${payload.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
+      // Update the item via GraphQL
+      await updateItemMutation.mutateAsync({
+        id: payload.id,
+        input: {
           title: payload.title,
           description: payload.description,
-          category_id: payload.category_id,
-        }),
+          categoryId: payload.category_id,
+        },
       });
-
-      if (!response.ok) throw new Error("Failed to update item");
 
       // Handle link updates
       for (const link of payload.links) {
         if (link.isDeleted && link.id) {
           // Delete existing link
-          await fetch(`/api/wishlist/items/${payload.id}/links/${link.id}`, {
-            method: "DELETE",
-            credentials: "include",
-          });
+          await deleteItemLinkMutation.mutateAsync(link.id);
         } else if (link.isNew) {
           // Create new link
-          await fetch(`/api/wishlist/items/${payload.id}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
+          await addItemLinkMutation.mutateAsync({
+            itemId: payload.id,
+            input: {
               url: link.url,
               description: link.description,
-              is_primary: link.isPrimary || false,
-            }),
+              isPrimary: link.isPrimary || false,
+            },
           });
         } else if (link.id) {
           // Update existing link
-          await fetch(`/api/wishlist/items/${payload.id}/links/${link.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
+          await updateItemLinkMutation.mutateAsync({
+            id: link.id,
+            input: {
               url: link.url,
               description: link.description,
-              is_primary: link.isPrimary || false,
-            }),
+              isPrimary: link.isPrimary || false,
+            },
           });
         }
       }
 
-      await refetch();
       setEditOpen(false);
       setEditingItem(null);
     } catch (error) {
       console.error("Failed to update item:", error);
-    } finally {
-      setEditing(false);
     }
   };
 
@@ -478,7 +405,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   });
 
   const handleCategoryRefetch = async () => {
-    await refetch();
+    await wishlistQuery.refetch();
   };
 
   return (
@@ -522,21 +449,22 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       </header>
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Show when={wishlistData.loading}>
+        <Show when={wishlistQuery.isLoading}>
           <div class="text-center py-12">
             <div class="text-muted-foreground">Loading your wishlist...</div>
           </div>
         </Show>
 
-        <Show when={wishlistData.error}>
+        <Show when={wishlistQuery.isError}>
           <div class="text-center py-12">
             <div class="text-destructive">
-              Error loading wishlist: {wishlistData.error.message}
+              Error loading wishlist:{" "}
+              {wishlistQuery.error?.message || "Unknown error"}
             </div>
           </div>
         </Show>
 
-        <Show when={wishlistData()}>
+        <Show when={!wishlistQuery.isLoading && !wishlistQuery.isError}>
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Categories Sidebar */}
             <div class="lg:col-span-1">
@@ -727,7 +655,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         onSubmit={handleAddSubmit}
         categories={wishlistData()?.categories || []}
         initialCategoryId={selectedCategory()}
-        submitting={adding()}
+        submitting={createItemMutation.isPending}
       />
       <EditItemDialog
         open={editOpen()}
@@ -735,7 +663,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         onSubmit={handleEditSubmit}
         categories={wishlistData()?.categories || []}
         item={editingItem()}
-        submitting={editing()}
+        submitting={updateItemMutation.isPending}
       />
       <ViewItemDialog
         open={viewOpen()}
