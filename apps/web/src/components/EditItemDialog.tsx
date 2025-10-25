@@ -148,6 +148,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
                   onChange={(e) => setCategoryId(e.currentTarget.value)}
                   class="w-full"
                 >
+                  <option value="">No category</option>
                   <For each={props.categories}>
                     {(category) => (
                       <option value={category.id}>{category.name}</option>
