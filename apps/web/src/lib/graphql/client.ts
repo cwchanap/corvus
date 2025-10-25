@@ -11,7 +11,7 @@ import {
 const GRAPHQL_ENDPOINT =
   // eslint-disable-next-line turbo/no-undeclared-env-vars
   (import.meta.env.VITE_API_URL as string | undefined) ||
-  "http://localhost:8787/graphql";
+  "http://localhost:5002/graphql";
 
 /**
  * Pre-configured GraphQL request function for the web app

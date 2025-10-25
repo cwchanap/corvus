@@ -44,7 +44,7 @@ app.use(
 );
 
 // GraphQL endpoint - API is now GraphQL-only
-app.use("/graphql", createGraphQLHandler());
+app.all("/graphql", createGraphQLHandler());
 
 // Catch-all for serving static assets (web app)
 app.get("*", async (c) => {
