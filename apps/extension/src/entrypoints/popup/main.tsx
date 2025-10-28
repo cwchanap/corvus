@@ -26,18 +26,42 @@ function LoadingScreen() {
   );
 }
 
-function ErrorScreen(props: { message: string; onRetry: () => void }) {
+function ErrorScreen(props: {
+  message: string;
+  isAuthError: boolean;
+  onRetry: () => void;
+}) {
+  const webAppUrl = import.meta.env.VITE_WEB_BASE || "http://localhost:5000";
+
+  const handleLoginRedirect = () => {
+    browser.tabs.create({ url: `${webAppUrl}/login` });
+  };
+
   return (
     <div class="flex h-full w-full flex-col items-center justify-center gap-3 bg-background px-4 text-center">
       <div class="space-y-1">
         <div class="text-sm font-semibold text-destructive">
-          Unable to load wishlist
+          {props.isAuthError ? "Not signed in" : "Unable to load wishlist"}
         </div>
         <div class="text-xs text-muted-foreground">{props.message}</div>
       </div>
-      <Button size="sm" onClick={props.onRetry}>
-        Try again
-      </Button>
+      <Show
+        when={props.isAuthError}
+        fallback={
+          <Button size="sm" onClick={props.onRetry}>
+            Try again
+          </Button>
+        }
+      >
+        <div class="flex gap-2">
+          <Button size="sm" onClick={handleLoginRedirect}>
+            Sign in
+          </Button>
+          <Button size="sm" variant="outline" onClick={props.onRetry}>
+            Try again
+          </Button>
+        </div>
+      </Show>
     </div>
   );
 }
@@ -56,12 +80,31 @@ function Popup() {
     const current = dataState();
     return current === "ready" || current === "refreshing";
   };
+
+  const isAuthError = () => {
+    const cause = error();
+    if (cause instanceof Error) {
+      const msg = cause.message.toLowerCase();
+      return (
+        msg.includes("not authenticated") ||
+        msg.includes("unauthenticated") ||
+        msg.includes("unauthorized") ||
+        msg.includes("authentication") ||
+        msg.includes("sign in")
+      );
+    }
+    return false;
+  };
+
   const errorMessage = () => {
     const cause = error();
+    if (isAuthError()) {
+      return "Please sign in to access your wishlist.";
+    }
     if (cause instanceof Error) {
       return cause.message;
     }
-    return "Please sign in and try again.";
+    return "Failed to fetch. Please check your connection.";
   };
 
   return (
@@ -70,6 +113,7 @@ function Popup() {
         <Match when={isErrored()}>
           <ErrorScreen
             message={errorMessage()}
+            isAuthError={isAuthError()}
             onRetry={() => void refetch()}
           />
         </Match>
