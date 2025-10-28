@@ -6,10 +6,9 @@ import {
   createEffect,
   on,
 } from "solid-js";
+import type { Accessor } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
-import { Input } from "@repo/ui-components/input";
-import { Select } from "@repo/ui-components/select";
 import { ThemeToggle } from "@repo/ui-components/theme-toggle";
 import {
   Card,
@@ -26,6 +25,7 @@ import { useTheme } from "../lib/theme/context.jsx";
 import { AddItemDialog } from "./AddItemDialog.jsx";
 import { EditItemDialog } from "./EditItemDialog.jsx";
 import { ViewItemDialog } from "./ViewItemDialog.jsx";
+import { WishlistFilters } from "./WishlistFilters.jsx";
 import { CategoryManager } from "./CategoryManager.jsx";
 import {
   useWishlist,
@@ -41,6 +41,7 @@ import { adaptWishlistData } from "../lib/graphql/adapters.js";
 
 type WishlistCategory = WishlistCategoryRecord;
 type WishlistItem = WishlistItemRecord;
+type WishlistQueryResult = ReturnType<typeof useWishlist>;
 
 interface WishlistDashboardProps {
   user: {
@@ -122,6 +123,113 @@ function SortableWishlistItem(props: {
   );
 }
 
+interface WishlistItemsSectionProps {
+  wishlistQuery: WishlistQueryResult;
+  filteredItems: Accessor<WishlistItem[]>;
+  searchQuery: Accessor<string>;
+  totalItems: Accessor<number>;
+  pageRange: Accessor<{ start: number; end: number }>;
+  displayPage: Accessor<number>;
+  displayTotalPages: Accessor<number>;
+  pageSizeDisplay: Accessor<number>;
+  canGoPrevious: Accessor<boolean>;
+  canGoNext: Accessor<boolean>;
+  onPrevious: () => void;
+  onNext: () => void;
+  onDelete: (id: string) => Promise<void> | void;
+  onEdit: (item: WishlistItem) => void;
+  onView: (item: WishlistItem) => void;
+}
+
+function WishlistItemsSection(props: WishlistItemsSectionProps) {
+  const hasItems = () => props.filteredItems().length > 0;
+
+  return (
+    <div class="lg:col-span-3">
+      <Show when={props.wishlistQuery.isLoading && !props.wishlistQuery.data}>
+        <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+          <CardContent class="text-center py-16">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+            <div class="text-muted-foreground">Loading your wishlist...</div>
+          </CardContent>
+        </Card>
+      </Show>
+
+      <Show when={props.wishlistQuery.data}>
+        <Show when={props.wishlistQuery.isFetching}>
+          <div class="text-center py-2 mb-4">
+            <div class="text-sm text-muted-foreground flex items-center justify-center gap-2">
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+              <span>Updating...</span>
+            </div>
+          </div>
+        </Show>
+
+        <Show when={!hasItems()}>
+          <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+            <CardContent class="text-center py-16">
+              <div class="text-muted-foreground text-lg">
+                {props.searchQuery()
+                  ? `No items found matching "${props.searchQuery()}"`
+                  : "No items in this category yet. Add your first item!"}
+              </div>
+            </CardContent>
+          </Card>
+        </Show>
+
+        <Show when={hasItems()}>
+          <div class="space-y-4">
+            <For each={props.filteredItems()}>
+              {(item: WishlistItem) => (
+                <SortableWishlistItem
+                  item={item}
+                  onDelete={props.onDelete}
+                  onEdit={props.onEdit}
+                  onView={props.onView}
+                />
+              )}
+            </For>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+              <div class="text-sm text-muted-foreground">
+                <Show
+                  when={props.totalItems() > 0 && props.pageRange().start > 0}
+                  fallback={<span>No items to display</span>}
+                >
+                  {`Showing ${props.pageRange().start}–${props.pageRange().end} of ${props.totalItems()} items`}
+                </Show>
+              </div>
+              <div class="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={props.onPrevious}
+                  disabled={!props.canGoPrevious()}
+                >
+                  Previous
+                </Button>
+                <span class="text-sm font-medium text-muted-foreground">
+                  Page {props.displayPage()} of {props.displayTotalPages()}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={props.onNext}
+                  disabled={!props.canGoNext()}
+                >
+                  Next
+                </Button>
+                <span class="text-xs text-muted-foreground">
+                  {props.pageSizeDisplay()} per page
+                </span>
+              </div>
+            </div>
+          </div>
+        </Show>
+      </Show>
+    </div>
+  );
+}
+
 export function WishlistDashboard(props: WishlistDashboardProps) {
   const theme = useTheme();
   const PAGE_SIZE = 10;
@@ -129,6 +237,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     null,
   );
   const [searchQuery, setSearchQuery] = createSignal("");
+  const [debouncedSearch, setDebouncedSearch] = createSignal("");
   const [sortBy, setSortBy] = createSignal<"date" | "title" | "custom">(
     "custom",
   );
@@ -149,11 +258,20 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const updateItemLinkMutation = useUpdateItemLink();
   const deleteItemLinkMutation = useDeleteItemLink();
 
+  // Debounce search query
+  createEffect(() => {
+    const query = searchQuery();
+    const timer = setTimeout(() => {
+      setDebouncedSearch(query);
+    }, 300);
+    return () => clearTimeout(timer);
+  });
+
   // Fetch wishlist data using GraphQL
   const wishlistQuery = useWishlist(
     () => ({
       categoryId: selectedCategory() ?? undefined,
-      search: searchQuery().trim() || undefined,
+      search: debouncedSearch().trim() || undefined,
     }),
     () => ({
       page: page(),
@@ -169,6 +287,14 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
 
   const items = createMemo(() => wishlistData()?.items ?? []);
   const pagination = createMemo(() => wishlistData()?.pagination ?? null);
+  const categories = createMemo(() => wishlistData()?.categories ?? []);
+
+  // Get current category name
+  const currentCategoryName = createMemo(() => {
+    const catId = selectedCategory();
+    if (!catId) return "All Items";
+    return categories().find((c) => c.id === catId)?.name || "All Items";
+  });
 
   // Reset page when category or search changes
   // Use on() to explicitly track only the signals we care about
@@ -179,7 +305,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   );
 
   createEffect(
-    on(searchQuery, () => {
+    on(debouncedSearch, () => {
       setPage(1);
     }),
   );
@@ -237,20 +363,8 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const filteredAndSortedItems = createMemo(() => {
     let result = items();
 
-    // Filter by category
-    if (selectedCategory()) {
-      result = result.filter((item) => item.category_id === selectedCategory());
-    }
-
-    // Filter by search query
-    const query = searchQuery().trim().toLowerCase();
-    if (query) {
-      result = result.filter(
-        (item) =>
-          item.title.toLowerCase().includes(query) ||
-          item.description?.toLowerCase().includes(query),
-      );
-    }
+    // Note: Category and search filtering is done server-side via GraphQL
+    // Only client-side sorting is needed here
 
     // Sort items
     const sort = sortBy();
@@ -449,12 +563,6 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       </header>
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Show when={wishlistQuery.isLoading}>
-          <div class="text-center py-12">
-            <div class="text-muted-foreground">Loading your wishlist...</div>
-          </div>
-        </Show>
-
         <Show when={wishlistQuery.isError}>
           <div class="text-center py-12">
             <div class="text-destructive">
@@ -464,196 +572,114 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
           </div>
         </Show>
 
-        <Show when={!wishlistQuery.isLoading && !wishlistQuery.isError}>
-          <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Categories Sidebar */}
-            <div class="lg:col-span-1">
-              <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
-                <CardHeader class="pb-4">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <CardTitle class="text-xl text-card-foreground">
-                        Categories
-                      </CardTitle>
-                      <CardDescription class="text-muted-foreground">
-                        Organize your wishlist
-                      </CardDescription>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCategoryManagerOpen(true)}
-                      title="Manage Categories"
-                    >
-                      ⚙️
-                    </Button>
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Categories Sidebar */}
+          <div class="lg:col-span-1">
+            <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+              <CardHeader class="pb-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <CardTitle class="text-xl text-card-foreground">
+                      Categories
+                    </CardTitle>
+                    <CardDescription class="text-muted-foreground">
+                      Organize your wishlist
+                    </CardDescription>
                   </div>
-                </CardHeader>
-                <CardContent class="px-6 pb-6">
-                  <div class="space-y-2">
-                    <button
-                      onClick={() => setSelectedCategory(null)}
-                      class={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                        selectedCategory() === null
-                          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
-                          : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                      }`}
-                    >
-                      All Items ({totalItems()})
-                    </button>
-                    <For each={wishlistData()?.categories || []}>
-                      {(category: WishlistCategory) => (
-                        <button
-                          onClick={() => setSelectedCategory(category.id)}
-                          class={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                            selectedCategory() === category.id
-                              ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
-                              : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                          }`}
-                        >
-                          <div class="flex items-center space-x-3">
-                            <div
-                              class="w-3 h-3 rounded-full"
-                              style={{
-                                "background-color": category.color || "#6366f1",
-                              }}
-                            />
-                            <span class="flex-1">{category.name}</span>
-                          </div>
-                        </button>
-                      )}
-                    </For>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Items Grid */}
-            <div class="lg:col-span-3">
-              {/* Search and Filter Controls */}
-              <div class="mb-8 space-y-6">
-                <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                  <h2 class="text-2xl font-bold text-foreground">
-                    {selectedCategory()
-                      ? wishlistData()?.categories?.find(
-                          (c: WishlistCategory) => c.id === selectedCategory(),
-                        )?.name
-                      : "All Items"}
-                  </h2>
                   <Button
-                    onClick={() => {
-                      setAddOpen(true);
-                    }}
-                    class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-500 dark:to-pink-500 dark:hover:from-purple-600 dark:hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCategoryManagerOpen(true)}
+                    title="Manage Categories"
                   >
-                    Add Item
+                    ⚙️
                   </Button>
                 </div>
-
-                <div class="flex flex-col sm:flex-row gap-4">
-                  <div class="flex-1">
-                    <Input
-                      type="text"
-                      placeholder="Search items..."
-                      value={searchQuery()}
-                      onInput={(e) => setSearchQuery(e.currentTarget.value)}
-                      class="w-full"
-                    />
-                  </div>
-                  <div class="sm:w-48">
-                    <Select
-                      value={sortBy()}
-                      onChange={(e) =>
-                        setSortBy(
-                          e.currentTarget.value as "date" | "title" | "custom",
-                        )
-                      }
-                    >
-                      <option value="custom">Custom Order</option>
-                      <option value="date">Sort by Date</option>
-                      <option value="title">Sort by Title</option>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <Show when={filteredAndSortedItems().length === 0}>
-                <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
-                  <CardContent class="text-center py-16">
-                    <div class="text-muted-foreground text-lg">
-                      {searchQuery()
-                        ? `No items found matching "${searchQuery()}"`
-                        : "No items in this category yet. Add your first item!"}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Show>
-
-              <Show when={filteredAndSortedItems().length > 0}>
-                <div class="space-y-4">
-                  <For each={filteredAndSortedItems()}>
-                    {(item: WishlistItem) => (
-                      <SortableWishlistItem
-                        item={item}
-                        onDelete={deleteItem}
-                        onEdit={openEditDialog}
-                        onView={openViewDialog}
-                      />
+              </CardHeader>
+              <CardContent class="px-6 pb-6">
+                <div class="space-y-2">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    class={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      selectedCategory() === null
+                        ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                        : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                  >
+                    All Items ({totalItems()})
+                  </button>
+                  <For each={categories()}>
+                    {(category: WishlistCategory) => (
+                      <button
+                        onClick={() => setSelectedCategory(category.id)}
+                        class={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                          selectedCategory() === category.id
+                            ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                            : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                        }`}
+                      >
+                        <div class="flex items-center space-x-3">
+                          <div
+                            class="w-3 h-3 rounded-full"
+                            style={{
+                              "background-color": category.color || "#6366f1",
+                            }}
+                          />
+                          <span class="flex-1">{category.name}</span>
+                        </div>
+                      </button>
                     )}
                   </For>
-                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-                    <div class="text-sm text-muted-foreground">
-                      <Show
-                        when={totalItems() > 0 && pageRange().start > 0}
-                        fallback={<span>No items to display</span>}
-                      >
-                        {`Showing ${pageRange().start}–${pageRange().end} of ${totalItems()} items`}
-                      </Show>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (canGoPrevious()) {
-                            setPage(Math.max(1, currentPage() - 1));
-                          }
-                        }}
-                        disabled={!canGoPrevious()}
-                      >
-                        Previous
-                      </Button>
-                      <span class="text-sm font-medium text-muted-foreground">
-                        Page {displayPage()} of {displayTotalPages()}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (canGoNext()) {
-                            setPage(currentPage() + 1);
-                          }
-                        }}
-                        disabled={!canGoNext()}
-                      >
-                        Next
-                      </Button>
-                      <span class="text-xs text-muted-foreground">
-                        {pageSizeDisplay()} per page
-                      </span>
-                    </div>
-                  </div>
                 </div>
-              </Show>
-            </div>
+              </CardContent>
+            </Card>
           </div>
-        </Show>
+
+          {/* Items Grid */}
+          <div class="lg:col-span-3">
+            {/* Search and Filter Controls - Always visible */}
+            <WishlistFilters
+              categoryName={currentCategoryName()}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              onAddItem={() => setAddOpen(true)}
+            />
+
+            <WishlistItemsSection
+              wishlistQuery={wishlistQuery}
+              filteredItems={filteredAndSortedItems}
+              searchQuery={searchQuery}
+              totalItems={totalItems}
+              pageRange={pageRange}
+              displayPage={displayPage}
+              displayTotalPages={displayTotalPages}
+              pageSizeDisplay={pageSizeDisplay}
+              canGoPrevious={canGoPrevious}
+              canGoNext={canGoNext}
+              onPrevious={() => {
+                if (canGoPrevious()) {
+                  setPage(Math.max(1, currentPage() - 1));
+                }
+              }}
+              onNext={() => {
+                if (canGoNext()) {
+                  setPage(currentPage() + 1);
+                }
+              }}
+              onDelete={deleteItem}
+              onEdit={openEditDialog}
+              onView={openViewDialog}
+            />
+          </div>
+        </div>
       </div>
       <AddItemDialog
         open={addOpen()}
         onOpenChange={setAddOpen}
         onSubmit={handleAddSubmit}
-        categories={wishlistData()?.categories || []}
+        categories={categories()}
         initialCategoryId={selectedCategory()}
         submitting={createItemMutation.isPending}
       />
@@ -661,14 +687,14 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         open={editOpen()}
         onOpenChange={setEditOpen}
         onSubmit={handleEditSubmit}
-        categories={wishlistData()?.categories || []}
+        categories={categories()}
         item={editingItem()}
         submitting={updateItemMutation.isPending}
       />
       <ViewItemDialog
         open={viewOpen()}
         onOpenChange={handleViewOpenChange}
-        categories={wishlistData()?.categories || []}
+        categories={categories()}
         item={viewingItem()}
       />
       <Show when={categoryManagerOpen()}>
@@ -679,7 +705,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
           />
           <div class="relative z-50 w-full max-w-2xl">
             <CategoryManager
-              categories={wishlistData()?.categories || []}
+              categories={categories()}
               onRefetch={handleCategoryRefetch}
               onClose={() => setCategoryManagerOpen(false)}
             />

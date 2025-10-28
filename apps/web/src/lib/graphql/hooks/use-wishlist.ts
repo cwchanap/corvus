@@ -42,6 +42,8 @@ export function useWishlist(
   return createQuery(() => ({
     queryKey: ["wishlist", filter?.(), pagination?.()],
     queryFn: () => getWishlist(filter?.(), pagination?.()),
+    placeholderData: (previous) => previous,
+    suspense: false,
   }));
 }
 
