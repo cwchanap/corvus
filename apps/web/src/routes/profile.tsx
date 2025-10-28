@@ -1,9 +1,9 @@
 import { Show } from "solid-js";
-import { A } from "@solidjs/router";
+import { A, useNavigate } from "@solidjs/router";
 import { Title } from "@solidjs/meta";
 import { useAuth } from "../lib/auth/context.jsx";
 import { ThemeProvider } from "../lib/theme/context.jsx";
-import { logoutAction } from "../lib/auth/server.js";
+import { useLogout } from "../lib/graphql/hooks/use-auth.js";
 import { Button } from "@repo/ui-components/button";
 import {
   Card,
@@ -30,6 +30,13 @@ function formatDate(value: unknown): string {
 
 export default function Profile() {
   const auth = useAuth();
+  const navigate = useNavigate();
+  const logoutMutation = useLogout();
+
+  const handleLogout = async () => {
+    await logoutMutation.mutateAsync();
+    navigate("/");
+  };
 
   return (
     <ThemeProvider>
@@ -131,18 +138,13 @@ export default function Profile() {
                       Back to Dashboard
                     </Button>
                   </A>
-                  <form
-                    method="post"
-                    action={logoutAction}
-                    class="w-full sm:w-auto"
+                  <Button
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                    class="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto disabled:opacity-50"
                   >
-                    <Button
-                      type="submit"
-                      class="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto"
-                    >
-                      Sign Out
-                    </Button>
-                  </form>
+                    {logoutMutation.isPending ? "Signing Out..." : "Sign Out"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
