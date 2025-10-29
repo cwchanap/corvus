@@ -263,7 +263,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     const query = searchQuery();
     const timer = setTimeout(() => {
       setDebouncedSearch(query);
-    }, 300);
+    }, 500);
     return () => clearTimeout(timer);
   });
 
