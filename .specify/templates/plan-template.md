@@ -31,7 +31,17 @@
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-[Gates determined based on constitution file]
+Verify compliance with [Corvus Constitution](../../.specify/memory/constitution.md):
+
+- [ ] **Monorepo Architecture**: Feature integrates into existing apps/ or packages/ structure
+- [ ] **TypeScript & SolidJS**: All code uses TypeScript strict mode, UI uses SolidJS patterns
+- [ ] **Test-Driven Development**: Playwright tests written before implementation
+- [ ] **Code Quality**: ESLint (<25 warnings), Prettier formatting, naming conventions
+- [ ] **Conventional Commits**: Commit messages follow `<type>(<scope>): <subject>` format
+- [ ] **Shared Components**: Reusable code in @repo packages, no duplication
+- [ ] **Cloudflare-First**: API uses Workers/D1, web uses cloudflare-pages preset
+
+**Violations Requiring Justification**: [List any NON-NEGOTIABLE principle violations with rationale or mark N/A]
 
 ## Project Structure
 
