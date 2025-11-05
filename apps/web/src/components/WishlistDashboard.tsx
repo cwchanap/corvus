@@ -249,6 +249,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const [viewingItem, setViewingItem] = createSignal<WishlistItem | null>(null);
   const [categoryManagerOpen, setCategoryManagerOpen] = createSignal(false);
 
+  // Store timeout ID in a variable outside the effect
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   const navigate = useNavigate();
   const logoutMutation = useLogout();
   const deleteItemMutation = useDeleteItem();
@@ -259,25 +262,46 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const deleteItemLinkMutation = useDeleteItemLink();
 
   // Debounce search query
-  createEffect(() => {
-    const query = searchQuery();
-    const timer = setTimeout(() => {
-      setDebouncedSearch(query);
-    }, 500);
-    return () => clearTimeout(timer);
-  });
+  createEffect(
+    on(
+      searchQuery,
+      (query) => {
+        // Clear existing timer
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+        // Set new timer
+        debounceTimer = setTimeout(() => {
+          setDebouncedSearch(query);
+          debounceTimer = null;
+        }, 500);
+      },
+      { defer: true },
+    ),
+  );
 
-  // Fetch wishlist data using GraphQL
-  const wishlistQuery = useWishlist(
-    () => ({
+  // Memoize filter to prevent unnecessary re-queries
+  const filterMemo = createMemo(() => {
+    const filter: Record<string, unknown> = {
       categoryId: selectedCategory() ?? undefined,
       search: debouncedSearch().trim() || undefined,
-    }),
-    () => ({
-      page: page(),
-      pageSize: PAGE_SIZE,
-    }),
-  );
+    };
+
+    // Only include sortBy when user selected a real sort (not 'custom')
+    const s = sortBy();
+    if (s && s !== "custom") {
+      filter.sortBy = s;
+    }
+    return filter;
+  });
+
+  const paginationMemo = createMemo(() => ({
+    page: page(),
+    pageSize: PAGE_SIZE,
+  }));
+
+  // Fetch wishlist data using GraphQL
+  const wishlistQuery = useWishlist(filterMemo, paginationMemo);
 
   // Adapt GraphQL data to component's expected format
   const wishlistData = createMemo(() => {
@@ -359,27 +383,19 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     }
   };
 
-  // Enhanced filtering and sorting
-  const filteredAndSortedItems = createMemo(() => {
-    let result = items();
+  // Reset page when sort changes
+  createEffect(
+    on(sortBy, () => {
+      setPage(1);
+    }),
+  );
 
-    // Note: Category and search filtering is done server-side via GraphQL
-    // Only client-side sorting is needed here
-
-    // Sort items
-    const sort = sortBy();
-    if (sort === "date") {
-      result = [...result].sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-    } else if (sort === "title") {
-      result = [...result].sort((a, b) => a.title.localeCompare(b.title));
-    }
-    // "custom" maintains the current order for drag-and-drop
-
-    return result;
-  });
+  // Reset page when sort changes
+  createEffect(
+    on(sortBy, () => {
+      setPage(1);
+    }),
+  );
 
   const deleteItem = async (itemId: string) => {
     try {
@@ -412,7 +428,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   });
   const pageRange = createMemo(() => {
     const meta = pagination();
-    const currentItems = filteredAndSortedItems();
+    const currentItems = items();
 
     if (!meta || meta.total_items === 0 || currentItems.length === 0) {
       return { start: 0, end: 0 };
@@ -649,7 +665,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
 
             <WishlistItemsSection
               wishlistQuery={wishlistQuery}
-              filteredItems={filteredAndSortedItems}
+              filteredItems={items}
               searchQuery={searchQuery}
               totalItems={totalItems}
               pageRange={pageRange}

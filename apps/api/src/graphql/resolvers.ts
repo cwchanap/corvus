@@ -31,12 +31,16 @@ export const resolvers: Resolvers = {
       // Parse filters
       const categoryId = args.filter?.categoryId ?? undefined;
       const search = args.filter?.search ?? undefined;
+      const sortBy = args.filter?.sortBy ?? undefined;
+      const sortDir = args.filter?.sortDir ?? undefined;
 
       const data = await wishlistService.getUserWishlistData(context.user.id, {
         limit: pageSize,
         offset,
         categoryId,
         search,
+        sortBy,
+        sortDir,
       });
 
       return {

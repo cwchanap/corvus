@@ -80,6 +80,7 @@ export interface LoginInput {
 export interface WishlistFilterInput {
   categoryId?: string;
   search?: string;
+  sortBy?: string;
 }
 
 export interface PaginationInput {

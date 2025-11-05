@@ -161,11 +161,37 @@ input PaginationInput {
 }
 
 """
+Sort direction enum
+"""
+enum SortDirection {
+  ASC
+  DESC
+}
+
+"""
+Sort keys for wishlist items and categories
+"""
+enum WishlistSortKey {
+  CREATED_AT
+  UPDATED_AT
+  NAME
+  TITLE
+}
+
+"""
 Input for filtering wishlist data
 """
 input WishlistFilterInput {
   categoryId: String
   search: String
+  """
+  Field to sort by. Defaults to CREATED_AT if not specified.
+  """
+  sortBy: WishlistSortKey
+  """
+  Sort direction. Defaults to DESC if not specified.
+  """
+  sortDir: SortDirection
 }
 
 type Query {

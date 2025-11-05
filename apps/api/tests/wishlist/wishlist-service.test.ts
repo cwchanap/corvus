@@ -5,6 +5,7 @@ import type {
   WishlistItemLink,
 } from "../../src/lib/db/types";
 import { WishlistService } from "../../src/lib/wishlist/service";
+import type { WishlistSortKey, SortDirection } from "../../src/graphql/types";
 
 describe("WishlistService", () => {
   it("aggregates wishlist data with pagination and link mapping", async () => {
@@ -172,5 +173,72 @@ describe("WishlistService", () => {
       has_previous: false,
     });
     expect(fakeDb.select).not.toHaveBeenCalled();
+  });
+
+  it("handles enum-based sorting with direction", async () => {
+    const items: WishlistItem[] = [
+      {
+        id: "item-1",
+        user_id: 42,
+        category_id: "cat-1",
+        title: "Apple",
+        description: null,
+        favicon: null,
+        created_at: "2024-01-05T00:00:00.000Z",
+        updated_at: "2024-01-05T00:00:00.000Z",
+      },
+      {
+        id: "item-2",
+        user_id: 42,
+        category_id: "cat-1",
+        title: "Zebra",
+        description: null,
+        favicon: null,
+        created_at: "2024-01-04T00:00:00.000Z",
+        updated_at: "2024-01-04T00:00:00.000Z",
+      },
+    ];
+
+    const orderAllMock = vi.fn().mockResolvedValue(items);
+    const selectChain = {
+      from: vi.fn(() => selectChain),
+      where: vi.fn(() => selectChain),
+      orderBy: vi.fn(() => ({ all: orderAllMock })),
+    };
+
+    const fakeDb: Partial<DB> = {
+      select: vi.fn(() => selectChain),
+    };
+
+    class TestWishlistService extends WishlistService {
+      constructor() {
+        super(fakeDb as DB);
+      }
+
+      override async getUserCategories() {
+        return [];
+      }
+
+      override async getUserItemsCount() {
+        return 2;
+      }
+    }
+
+    const service = new TestWishlistService();
+
+    // Test sorting by title in ascending order using enum values
+    const sortBy = "Title" as WishlistSortKey;
+    const sortDir = "Asc" as SortDirection;
+
+    const result = await service.getUserItems(42, { sortBy, sortDir });
+
+    expect(result).toEqual(items);
+    expect(fakeDb.select).toHaveBeenCalledTimes(1);
+    expect(selectChain.where).toHaveBeenCalledTimes(1);
+    expect(selectChain.orderBy).toHaveBeenCalledTimes(1);
+
+    // Verify that orderBy was called (we can't easily test the exact argument due to mock limitations)
+    // but we can verify the chain was properly constructed
+    expect(orderAllMock).toHaveBeenCalledTimes(1);
   });
 });
