@@ -54,7 +54,7 @@ export type CategoryUpdateInput = {
 
 /** Input for creating a wishlist item */
 export type ItemInput = {
-  categoryId: Scalars["String"]["input"];
+  categoryId?: InputMaybe<Scalars["String"]["input"]>;
   description?: InputMaybe<Scalars["String"]["input"]>;
   favicon?: InputMaybe<Scalars["String"]["input"]>;
   linkDescription?: InputMaybe<Scalars["String"]["input"]>;
@@ -218,6 +218,12 @@ export type RegisterInput = {
   password: Scalars["String"]["input"];
 };
 
+/** Sort direction enum */
+export enum SortDirection {
+  Asc = "ASC",
+  Desc = "DESC",
+}
+
 /** A user in the system */
 export type User = {
   __typename?: "User";
@@ -243,6 +249,10 @@ export type WishlistCategory = {
 export type WishlistFilterInput = {
   categoryId?: InputMaybe<Scalars["String"]["input"]>;
   search?: InputMaybe<Scalars["String"]["input"]>;
+  /** Field to sort by. Defaults to CREATED_AT if not specified. */
+  sortBy?: InputMaybe<WishlistSortKey>;
+  /** Sort direction. Defaults to DESC if not specified. */
+  sortDir?: InputMaybe<SortDirection>;
 };
 
 /** A wishlist item */
@@ -278,6 +288,14 @@ export type WishlistPayload = {
   items: Array<WishlistItem>;
   pagination: PaginationInfo;
 };
+
+/** Sort keys for wishlist items and categories */
+export enum WishlistSortKey {
+  CreatedAt = "CREATED_AT",
+  Name = "NAME",
+  Title = "TITLE",
+  UpdatedAt = "UPDATED_AT",
+}
 
 export type WithIndex<TObject> = TObject & Record<string, any>;
 export type ResolversObject<TObject> = WithIndex<TObject>;
@@ -405,6 +423,7 @@ export type ResolversTypes = ResolversObject<{
   PaginationInput: PaginationInput;
   Query: ResolverTypeWrapper<{}>;
   RegisterInput: RegisterInput;
+  SortDirection: SortDirection;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
   User: ResolverTypeWrapper<User>;
   WishlistCategory: ResolverTypeWrapper<WishlistCategory>;
@@ -412,6 +431,7 @@ export type ResolversTypes = ResolversObject<{
   WishlistItem: ResolverTypeWrapper<WishlistItem>;
   WishlistItemLink: ResolverTypeWrapper<WishlistItemLink>;
   WishlistPayload: ResolverTypeWrapper<WishlistPayload>;
+  WishlistSortKey: WishlistSortKey;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */

@@ -17,12 +17,15 @@ import {
 } from "../db/schema.js";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
+import type { WishlistSortKey, SortDirection } from "../../graphql/types.js";
 
 type ItemQueryOptions = {
   limit?: number;
   offset?: number;
   categoryId?: string | null;
   search?: string | null;
+  sortBy?: WishlistSortKey | null;
+  sortDir?: SortDirection | null;
 };
 
 export class WishlistService {
@@ -120,28 +123,56 @@ export class WishlistService {
     userId: number,
     options: ItemQueryOptions = {},
   ): Promise<WishlistItem[]> {
-    const { limit, offset } = options;
+    const { limit, offset, sortBy, sortDir } = options;
     const filter = this.buildItemFilters(userId, options);
 
-    const baseQuery = this.db
-      .select()
-      .from(wishlistItems)
-      .where(filter)
-      .orderBy(desc(wishlistItems.created_at));
+    // Build base query with proper type
+    const query = this.db.select().from(wishlistItems).where(filter);
+
+    // Apply sorting based on enum values
+    let orderedQuery;
+
+    // Map sort keys to database columns
+    // Note: NAME is intended for categories, not items - falls back to CREATED_AT for items
+    const getSortColumn = (sortKey?: WishlistSortKey | null) => {
+      switch (sortKey) {
+        case "CREATED_AT":
+          return wishlistItems.created_at;
+        case "UPDATED_AT":
+          return wishlistItems.updated_at;
+        case "TITLE":
+          return wishlistItems.title;
+        case "NAME":
+          // NAME doesn't apply to items, fallback to created_at
+          return wishlistItems.created_at;
+        default:
+          return wishlistItems.created_at; // Default fallback
+      }
+    };
+
+    const sortColumn = getSortColumn(sortBy);
+    // Default to DESC when no sort direction specified (maintains backward compatibility)
+    const isDescending = sortDir === "DESC" || (!sortBy && !sortDir);
+
+    if (isDescending) {
+      orderedQuery = query.orderBy(desc(sortColumn));
+    } else {
+      orderedQuery = query.orderBy(asc(sortColumn));
+    }
 
     if (typeof limit === "number" && typeof offset === "number" && offset > 0) {
-      return await baseQuery.limit(limit).offset(offset).all();
+      return await orderedQuery.limit(limit).offset(offset).all();
     }
 
     if (typeof limit === "number") {
-      return await baseQuery.limit(limit).all();
+      return await orderedQuery.limit(limit).all();
     }
 
     if (typeof offset === "number" && offset > 0) {
-      return await baseQuery.offset(offset).all();
+      return await orderedQuery.offset(offset).all();
     }
 
-    return await baseQuery.all();
+    return await orderedQuery.all();
   }
 
   async getItemsByCategory(
@@ -271,11 +302,18 @@ export class WishlistService {
 
   // Combined operations
   async getUserWishlistData(userId: number, options: ItemQueryOptions = {}) {
-    const { limit, offset = 0, categoryId, search } = options;
+    const { limit, offset = 0, categoryId, search, sortBy, sortDir } = options;
 
     const [categories, items, totalItems] = await Promise.all([
       this.getUserCategories(userId),
-      this.getUserItems(userId, { limit, offset, categoryId, search }),
+      this.getUserItems(userId, {
+        limit,
+        offset,
+        categoryId,
+        search,
+        sortBy,
+        sortDir,
+      }),
       this.getUserItemsCount(userId, { categoryId, search }),
     ]);
 
