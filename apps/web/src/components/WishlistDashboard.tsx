@@ -301,7 +301,10 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   }));
 
   // Fetch wishlist data using GraphQL
-  const wishlistQuery = useWishlist(filterMemo, paginationMemo);
+  const wishlistQuery = useWishlist(
+    () => filterMemo(),
+    () => paginationMemo(),
+  );
 
   // Adapt GraphQL data to component's expected format
   const wishlistData = createMemo(() => {

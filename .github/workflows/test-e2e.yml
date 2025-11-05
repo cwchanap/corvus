@@ -35,17 +35,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm -C apps/web exec playwright install --with-deps chromium
-
-      - name: Build web app
-        run: pnpm -C apps/web build
-        env:
-          NODE_ENV: production
+        run: pnpm -C apps/web exec playwright install --with-deps chromium firefox webkit
 
       - name: Run Playwright tests
         run: pnpm -C apps/web test
         env:
           CI: true
+          VITE_API_BASE: http://localhost:5002
+          VITE_WEB_BASE: http://localhost:5000
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
