@@ -13,7 +13,8 @@
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
     "test": "playwright test",
-    "test:ui": "playwright test --ui"
+    "test:ui": "playwright test --ui",
+    "test:unit": "pnpm dlx vitest run --passWithNoTests"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
