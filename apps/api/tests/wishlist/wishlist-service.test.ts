@@ -904,10 +904,22 @@ describe("WishlistService", () => {
             await service.setPrimaryLink("item-1", "link-2");
 
             expect(updateMock).toHaveBeenCalledTimes(2);
+
+            // First update should unset all primary flags
             expect(setMock1).toHaveBeenCalledTimes(1);
+            expect(setMock1).toHaveBeenCalledWith({
+                is_primary: false,
+                updated_at: expect.any(String),
+            });
             expect(whereMock1).toHaveBeenCalledTimes(1);
             expect(runMock1).toHaveBeenCalledTimes(1);
+
+            // Second update should set the specific link as primary
             expect(setMock2).toHaveBeenCalledTimes(1);
+            expect(setMock2).toHaveBeenCalledWith({
+                is_primary: true,
+                updated_at: expect.any(String),
+            });
             expect(whereMock2).toHaveBeenCalledTimes(1);
             expect(runMock2).toHaveBeenCalledTimes(1);
         });
