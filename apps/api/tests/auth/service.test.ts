@@ -220,6 +220,11 @@ describe("AuthService", () => {
 
     describe("createSession", () => {
         it("creates a session with 7-day expiry", async () => {
+            // Use fake timers for deterministic time-based testing
+            vi.useFakeTimers();
+            const mockDate = new Date("2024-01-01T00:00:00.000Z");
+            vi.setSystemTime(mockDate);
+
             const insertChain = {
                 values: vi.fn().mockReturnThis(),
                 run: vi.fn().mockResolvedValue(undefined),
@@ -234,26 +239,18 @@ describe("AuthService", () => {
 
             expect(mockGenerateSessionId).toHaveBeenCalled();
             expect(result).toBe("session-id-123");
-            expect(insertChain.values).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    id: "session-id-123",
-                    user_id: 42,
-                }),
-            );
 
-            // Verify expiry is approximately 7 days from now
-            const call = (insertChain.values as ReturnType<typeof vi.fn>).mock
-                .calls[0][0];
-            const expiresAt = new Date(call.expires_at);
-            const now = new Date();
-            const expectedExpiry = new Date(
-                now.getTime() + 7 * 24 * 60 * 60 * 1000,
-            );
+            // Calculate expected expiry (7 days from mock date)
+            const expectedExpiry = new Date("2024-01-08T00:00:00.000Z");
 
-            // Allow 1 second tolerance for test execution time
-            expect(
-                Math.abs(expiresAt.getTime() - expectedExpiry.getTime()),
-            ).toBeLessThan(1000);
+            expect(insertChain.values).toHaveBeenCalledWith({
+                id: "session-id-123",
+                user_id: 42,
+                expires_at: expectedExpiry.toISOString(),
+                created_at: mockDate.toISOString(),
+            });
+
+            vi.useRealTimers();
         });
     });
 
