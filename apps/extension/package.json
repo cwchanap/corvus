@@ -12,6 +12,7 @@
     "zip:firefox": "wxt zip -b firefox",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
+    "test:unit": "pnpm dlx vitest run --passWithNoTests",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
