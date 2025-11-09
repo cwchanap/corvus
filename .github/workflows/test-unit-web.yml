@@ -1,4 +1,4 @@
-name: Unit Tests
+name: Unit Tests (Web)
 
 on:
   push:
@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  unit-tests:
-    name: Unit Tests (API)
+  unit-tests-web:
+    name: Unit Tests (Web)
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -34,20 +34,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run API unit tests
-        run: pnpm -C apps/api test
+      - name: Run web unit tests
+        run: pnpm -C apps/web test:unit
         env:
           NODE_ENV: test
-
-      - name: Run API tests with coverage
-        run: pnpm -C apps/api test:coverage
-        env:
-          NODE_ENV: test
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-api
-          path: apps/api/coverage/
-          retention-days: 7
