@@ -34,6 +34,36 @@ describe("AuthService", () => {
     const mockCreateDefaultCategories =
         migrations.createDefaultCategories as ReturnType<typeof vi.fn>;
 
+    // Helper functions to reduce boilerplate
+    const createSelectChain = (returnValue: unknown) => ({
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        get: vi.fn().mockResolvedValue(returnValue),
+    });
+
+    const createSelectChainWithJoin = (returnValue: unknown) => ({
+        from: vi.fn().mockReturnThis(),
+        innerJoin: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        get: vi.fn().mockResolvedValue(returnValue),
+    });
+
+    const createInsertChain = (returnValue: unknown) => ({
+        values: vi.fn().mockReturnThis(),
+        returning: vi.fn().mockReturnThis(),
+        get: vi.fn().mockResolvedValue(returnValue),
+    });
+
+    const createInsertRunChain = () => ({
+        values: vi.fn().mockReturnThis(),
+        run: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const createDeleteChain = () => ({
+        where: vi.fn().mockReturnThis(),
+        run: vi.fn().mockResolvedValue(undefined),
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockHashPassword.mockResolvedValue("hashed-password");
@@ -52,17 +82,8 @@ describe("AuthService", () => {
                 updated_at: "2024-01-01T00:00:00.000Z",
             };
 
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(null), // No existing user
-            };
-
-            const insertChain = {
-                values: vi.fn().mockReturnThis(),
-                returning: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(mockUser),
-            };
+            const selectChain = createSelectChain(null); // No existing user
+            const insertChain = createInsertChain(mockUser);
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
@@ -95,11 +116,7 @@ describe("AuthService", () => {
         });
 
         it("throws error when user already exists", async () => {
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue({ id: 1 }), // Existing user
-            };
+            const selectChain = createSelectChain({ id: 1 }); // Existing user
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
@@ -131,11 +148,7 @@ describe("AuthService", () => {
                 updated_at: "2024-01-01T00:00:00.000Z",
             };
 
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(mockUser),
-            };
+            const selectChain = createSelectChain(mockUser);
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
@@ -162,11 +175,7 @@ describe("AuthService", () => {
         });
 
         it("returns null when user does not exist", async () => {
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(null),
-            };
+            const selectChain = createSelectChain(null);
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
@@ -192,11 +201,7 @@ describe("AuthService", () => {
                 updated_at: "2024-01-01T00:00:00.000Z",
             };
 
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(mockUser),
-            };
+            const selectChain = createSelectChain(mockUser);
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
@@ -225,10 +230,7 @@ describe("AuthService", () => {
             const mockDate = new Date("2024-01-01T00:00:00.000Z");
             vi.setSystemTime(mockDate);
 
-            const insertChain = {
-                values: vi.fn().mockReturnThis(),
-                run: vi.fn().mockResolvedValue(undefined),
-            };
+            const insertChain = createInsertRunChain();
 
             const mockDb = {
                 insert: vi.fn(() => insertChain),
@@ -268,12 +270,7 @@ describe("AuthService", () => {
                 expires_at: futureDate.toISOString(),
             };
 
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                innerJoin: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(mockSession),
-            };
+            const selectChain = createSelectChainWithJoin(mockSession);
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
@@ -293,12 +290,7 @@ describe("AuthService", () => {
         });
 
         it("returns null for non-existent session", async () => {
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                innerJoin: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(null),
-            };
+            const selectChain = createSelectChainWithJoin(null);
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
@@ -314,12 +306,7 @@ describe("AuthService", () => {
             const pastDate = new Date();
             pastDate.setDate(pastDate.getDate() - 1);
 
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                innerJoin: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(null), // Database filters out expired sessions
-            };
+            const selectChain = createSelectChainWithJoin(null); // Database filters out expired sessions
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
@@ -334,10 +321,7 @@ describe("AuthService", () => {
 
     describe("deleteSession", () => {
         it("deletes the specified session", async () => {
-            const deleteChain = {
-                where: vi.fn().mockReturnThis(),
-                run: vi.fn().mockResolvedValue(undefined),
-            };
+            const deleteChain = createDeleteChain();
 
             const mockDb = {
                 delete: vi.fn(() => deleteChain),
@@ -354,10 +338,7 @@ describe("AuthService", () => {
 
     describe("cleanupExpiredSessions", () => {
         it("deletes sessions with expired timestamps", async () => {
-            const deleteChain = {
-                where: vi.fn().mockReturnThis(),
-                run: vi.fn().mockResolvedValue(undefined),
-            };
+            const deleteChain = createDeleteChain();
 
             const mockDb = {
                 delete: vi.fn(() => deleteChain),
@@ -382,11 +363,7 @@ describe("AuthService", () => {
                 updated_at: "2024-01-01T00:00:00.000Z",
             };
 
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(mockUser),
-            };
+            const selectChain = createSelectChain(mockUser);
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
@@ -400,11 +377,7 @@ describe("AuthService", () => {
         });
 
         it("returns null when user not found", async () => {
-            const selectChain = {
-                from: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue(undefined),
-            };
+            const selectChain = createSelectChain(undefined);
 
             const mockDb = {
                 select: vi.fn(() => selectChain),
