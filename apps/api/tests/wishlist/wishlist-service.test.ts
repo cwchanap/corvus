@@ -230,7 +230,7 @@ describe("WishlistService", () => {
         const service = new TestWishlistService();
 
         // Test sorting by title in ascending order using enum values
-        const sortBy = "Title" as WishlistSortKey;
+        const sortBy = "TITLE" as WishlistSortKey;
         const sortDir = "Asc" as SortDirection;
 
         const result = await service.getUserItems(42, { sortBy, sortDir });
