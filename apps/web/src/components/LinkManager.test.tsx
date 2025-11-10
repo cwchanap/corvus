@@ -25,16 +25,36 @@ describe("LinkManager", () => {
     isPrimary,
   });
 
-  it("should render empty state when no links are provided", () => {
-    render(() => (
+  // Helper function to render LinkManager with default props
+  const renderLinkManager = (
+    overrides: {
+      links?: LinkItem[];
+      onAddLink?: () => void;
+      onUpdateLink?: (
+        index: number,
+        field: keyof LinkItem,
+        value: string | boolean,
+      ) => void;
+      onRemoveLink?: (index: number) => void;
+      onRemoveAllLinks?: () => void;
+      emptyMessage?: string;
+      emptySubMessage?: string;
+    } = {},
+  ) => {
+    return render(() => (
       <LinkManager
         links={[]}
         onAddLink={mockOnAddLink}
         onUpdateLink={mockOnUpdateLink}
         onRemoveLink={mockOnRemoveLink}
         onRemoveAllLinks={mockOnRemoveAllLinks}
+        {...overrides}
       />
     ));
+  };
+
+  it("should render empty state when no links are provided", () => {
+    renderLinkManager();
 
     expect(screen.getByText("No links added yet")).toBeInTheDocument();
     expect(
@@ -48,17 +68,10 @@ describe("LinkManager", () => {
     const customMessage = "Custom empty message";
     const customSubMessage = "Custom sub message";
 
-    render(() => (
-      <LinkManager
-        links={[]}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-        emptyMessage={customMessage}
-        emptySubMessage={customSubMessage}
-      />
-    ));
+    renderLinkManager({
+      emptyMessage: customMessage,
+      emptySubMessage: customSubMessage,
+    });
 
     expect(screen.getByText(customMessage)).toBeInTheDocument();
     expect(screen.getByText(customSubMessage)).toBeInTheDocument();
@@ -70,15 +83,7 @@ describe("LinkManager", () => {
       createMockLink("https://test.com", "Test site", false, "2"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     const urlInputs = screen.getAllByPlaceholderText("Enter website URL");
     const descriptionInputs = screen.getAllByPlaceholderText(
@@ -90,15 +95,7 @@ describe("LinkManager", () => {
   });
 
   it("should not show 'Remove All' button when no links are visible", () => {
-    render(() => (
-      <LinkManager
-        links={[]}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager();
 
     expect(screen.queryByText("Remove All")).not.toBeInTheDocument();
   });
@@ -108,29 +105,13 @@ describe("LinkManager", () => {
       createMockLink("https://example.com", "Example site"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     expect(screen.getByText("Remove All")).toBeInTheDocument();
   });
 
   it("should call onAddLink when 'Add Link' button is clicked", () => {
-    render(() => (
-      <LinkManager
-        links={[]}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager();
 
     const addButton = screen.getByText("+ Add Link");
     fireEvent.click(addButton);
@@ -143,15 +124,7 @@ describe("LinkManager", () => {
       createMockLink("https://example.com", "Example site"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     const removeAllButton = screen.getByText("Remove All");
     fireEvent.click(removeAllButton);
@@ -165,15 +138,7 @@ describe("LinkManager", () => {
       createMockLink("https://test.com", "Test site", false, "2"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     const removeButtons = screen.getAllByText("Remove");
     fireEvent.click(removeButtons[0]!);
@@ -186,15 +151,7 @@ describe("LinkManager", () => {
       createMockLink("https://example.com", "Example site"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     const urlInput = screen.getByPlaceholderText(
       "Enter website URL",
@@ -213,15 +170,7 @@ describe("LinkManager", () => {
       createMockLink("https://example.com", "Example site"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     const descriptionInput = screen.getByPlaceholderText(
       "Link description (optional)",
@@ -246,15 +195,7 @@ describe("LinkManager", () => {
       },
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     // Should only render one link (the non-deleted one)
     const removeButtons = screen.queryAllByText("Remove");
@@ -273,15 +214,7 @@ describe("LinkManager", () => {
       },
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     expect(screen.getByText("No links added yet")).toBeInTheDocument();
     expect(screen.queryByText("Remove All")).not.toBeInTheDocument();
@@ -292,15 +225,7 @@ describe("LinkManager", () => {
       createMockLink("https://example.com", "Example description"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     const urlInput = screen.getByPlaceholderText(
       "Enter website URL",
@@ -320,30 +245,14 @@ describe("LinkManager", () => {
       createMockLink("https://example3.com", "Example 3", false, "3"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     const removeButtons = screen.getAllByText("Remove");
     expect(removeButtons).toHaveLength(3);
   });
 
   it("should have correct accessibility labels", () => {
-    render(() => (
-      <LinkManager
-        links={[]}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager();
 
     expect(screen.getByText("Links (optional)")).toBeInTheDocument();
     expect(screen.getByText("+ Add Link")).toBeInTheDocument();
@@ -354,15 +263,7 @@ describe("LinkManager", () => {
       createMockLink("https://example.com", "Example site"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     const urlInput = screen.getByPlaceholderText(
       "Enter website URL",
@@ -375,15 +276,7 @@ describe("LinkManager", () => {
       createMockLink("https://example.com", "Example site"),
     ];
 
-    render(() => (
-      <LinkManager
-        links={mockLinks}
-        onAddLink={mockOnAddLink}
-        onUpdateLink={mockOnUpdateLink}
-        onRemoveLink={mockOnRemoveLink}
-        onRemoveAllLinks={mockOnRemoveAllLinks}
-      />
-    ));
+    renderLinkManager({ links: mockLinks });
 
     const urlInput = screen.getByPlaceholderText(
       "Enter website URL",
