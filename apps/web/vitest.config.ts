@@ -8,6 +8,7 @@ export default defineConfig({
         include: ["src/**/*.{test,spec}.{ts,tsx}"],
         globals: true,
         setupFiles: ["./src/test-setup.ts"],
+        clearMocks: true,
     },
     resolve: {
         conditions: ["development", "browser"],
