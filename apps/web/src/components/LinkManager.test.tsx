@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@solidjs/testing-library";
-import userEvent from "@testing-library/user-event";
+import { render, screen, fireEvent } from "@solidjs/testing-library";
 import { LinkManager, type LinkItem } from "./LinkManager.jsx";
 
 describe("LinkManager", () => {
@@ -111,18 +110,16 @@ describe("LinkManager", () => {
     expect(screen.getByText("Remove All")).toBeInTheDocument();
   });
 
-  it("should call onAddLink when 'Add Link' button is clicked", async () => {
-    const user = userEvent.setup();
+  it("should call onAddLink when 'Add Link' button is clicked", () => {
     renderLinkManager();
 
     const addButton = screen.getByText("+ Add Link");
-    await user.click(addButton);
+    fireEvent.click(addButton);
 
     expect(mockOnAddLink).toHaveBeenCalledTimes(1);
   });
 
-  it("should call onRemoveAllLinks when 'Remove All' button is clicked", async () => {
-    const user = userEvent.setup();
+  it("should call onRemoveAllLinks when 'Remove All' button is clicked", () => {
     const mockLinks: LinkItem[] = [
       createMockLink("https://example.com", "Example site"),
     ];
@@ -130,13 +127,12 @@ describe("LinkManager", () => {
     renderLinkManager({ links: mockLinks });
 
     const removeAllButton = screen.getByText("Remove All");
-    await user.click(removeAllButton);
+    fireEvent.click(removeAllButton);
 
     expect(mockOnRemoveAllLinks).toHaveBeenCalledTimes(1);
   });
 
-  it("should call onRemoveLink with correct index when Remove button is clicked", async () => {
-    const user = userEvent.setup();
+  it("should call onRemoveLink with correct index when Remove button is clicked", () => {
     const mockLinks: LinkItem[] = [
       createMockLink("https://example.com", "Example site"),
       createMockLink("https://test.com", "Test site", false, "2"),
@@ -145,13 +141,12 @@ describe("LinkManager", () => {
     renderLinkManager({ links: mockLinks });
 
     const removeButtons = screen.getAllByText("Remove");
-    await user.click(removeButtons[0]!);
+    fireEvent.click(removeButtons[0]!);
 
     expect(mockOnRemoveLink).toHaveBeenCalledWith(0);
   });
 
-  it("should call onUpdateLink when URL input changes", async () => {
-    const user = userEvent.setup();
+  it("should call onUpdateLink when URL input changes", () => {
     const mockLinks: LinkItem[] = [
       createMockLink("https://example.com", "Example site"),
     ];
@@ -161,8 +156,7 @@ describe("LinkManager", () => {
     const urlInput = screen.getByPlaceholderText(
       "Enter website URL",
     ) as HTMLInputElement;
-    await user.clear(urlInput);
-    await user.type(urlInput, "https://newurl.com");
+    fireEvent.input(urlInput, { target: { value: "https://newurl.com" } });
 
     expect(mockOnUpdateLink).toHaveBeenCalledWith(
       0,
@@ -171,8 +165,7 @@ describe("LinkManager", () => {
     );
   });
 
-  it("should call onUpdateLink when description input changes", async () => {
-    const user = userEvent.setup();
+  it("should call onUpdateLink when description input changes", () => {
     const mockLinks: LinkItem[] = [
       createMockLink("https://example.com", "Example site"),
     ];
@@ -182,8 +175,9 @@ describe("LinkManager", () => {
     const descriptionInput = screen.getByPlaceholderText(
       "Link description (optional)",
     ) as HTMLInputElement;
-    await user.clear(descriptionInput);
-    await user.type(descriptionInput, "New description");
+    fireEvent.input(descriptionInput, {
+      target: { value: "New description" },
+    });
 
     expect(mockOnUpdateLink).toHaveBeenCalledWith(
       0,
