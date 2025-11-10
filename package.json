@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "build:deploy": "turbo run build:api --filter=api",
-    "deploy": "turbo run deploy --filter=api",
+    "build:deploy": "turbo run build:web build:api",
+    "copy-assets": "rm -rf apps/api/dist/client && mkdir -p apps/api/dist/client && cp -r apps/web/.output/public/. apps/api/dist/client/",
+    "deploy": "turbo run deploy",
     "dev": "turbo run db:local dev --filter=api --filter=web --filter=extension",
     "dev:web": "turbo run dev --filter=web",
     "dev:web:split": "pnpm -C apps/web dev:split",

@@ -20,12 +20,14 @@
       "outputs": [".wxt/**", ".vinxi/**", ".output/**", "dist/**"]
     },
     "build:web": {
+      "dependsOn": ["^build:web"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".output/**", ".vinxi/**"]
     },
     "copy-assets": {
       "dependsOn": ["web#build:web"],
-      "cache": false
+      "cache": false,
+      "outputs": ["apps/api/dist/client/**"]
     },
     "build:api": {
       "dependsOn": ["copy-assets"],
