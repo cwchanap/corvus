@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "build": "vite build",
+    "copy-assets": "rm -rf dist/client && mkdir -p dist/client && cp -r ../web/.output/public/. dist/client/",
     "build:api": "vite build",
     "preview": "$npm_execpath run build && vite preview",
     "deploy": "wrangler deploy",

@@ -27,7 +27,7 @@
     "copy-assets": {
       "dependsOn": ["web#build:web"],
       "cache": false,
-      "outputs": ["apps/api/dist/client/**"]
+      "outputs": ["dist/client/**"]
     },
     "build:api": {
       "dependsOn": ["copy-assets"],
