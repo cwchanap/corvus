@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@solidjs/testing-library";
 import { LinkManager, type LinkItem } from "./LinkManager.jsx";
 
@@ -7,6 +7,10 @@ describe("LinkManager", () => {
   const mockOnUpdateLink = vi.fn();
   const mockOnRemoveLink = vi.fn();
   const mockOnRemoveAllLinks = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   // Helper function to create mock links
   const createMockLink = (
