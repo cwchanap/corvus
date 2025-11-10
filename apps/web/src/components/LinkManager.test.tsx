@@ -76,12 +76,13 @@ describe("LinkManager", () => {
       />
     ));
 
-    expect(
-      screen.getByPlaceholderText("Enter website URL"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText("Link description (optional)"),
-    ).toBeInTheDocument();
+    const urlInputs = screen.getAllByPlaceholderText("Enter website URL");
+    const descriptionInputs = screen.getAllByPlaceholderText(
+      "Link description (optional)",
+    );
+
+    expect(urlInputs).toHaveLength(2);
+    expect(descriptionInputs).toHaveLength(2);
   });
 
   it("should not show 'Remove All' button when no links are visible", () => {
