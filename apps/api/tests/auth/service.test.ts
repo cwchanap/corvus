@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { DB } from "../../src/lib/db";
-import { AuthService } from "../../src/lib/auth/service";
-import type { User } from "../../src/lib/db/types";
-import * as crypto from "../../src/lib/auth/crypto";
-import * as migrations from "../../src/lib/db/migrations";
+import type { DB } from "../../src/lib/db.ts";
+import { AuthService } from "../../src/lib/auth/service.ts";
+import type { User } from "../../src/lib/db/types.ts";
+import * as crypto from "../../src/lib/auth/crypto.ts";
+import * as migrations from "../../src/lib/db/migrations.ts";
 
 // Mock the crypto module
 vi.mock("../../src/lib/auth/crypto.js", async () => {

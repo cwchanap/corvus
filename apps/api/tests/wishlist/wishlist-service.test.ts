@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DB } from "../../src/lib/db";
+import type { DB } from "../../src/lib/db.ts";
 import type {
     WishlistCategory,
     WishlistItem,
     WishlistItemLink,
-} from "../../src/lib/db/types";
-import { WishlistService } from "../../src/lib/wishlist/service";
-import type { WishlistSortKey, SortDirection } from "../../src/graphql/types";
+} from "../../src/lib/db/types.ts";
+import { WishlistService } from "../../src/lib/wishlist/service.ts";
+import type {
+    WishlistSortKey,
+    SortDirection,
+} from "../../src/graphql/types.ts";
 
 describe("WishlistService", () => {
     it("aggregates wishlist data with pagination and link mapping", async () => {

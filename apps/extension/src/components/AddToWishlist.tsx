@@ -8,9 +8,9 @@ import {
 } from "@repo/ui-components/card";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
-import { getCurrentPageInfo } from "../utils/page-info.js";
-import { useWishlistData } from "../lib/wishlist/context.js";
-import type { WishlistItem } from "../types/wishlist";
+import { getCurrentPageInfo } from "../utils/page-info.ts";
+import { useWishlistData } from "../lib/wishlist/context.tsx";
+import type { WishlistItem } from "../types/wishlist.ts";
 
 interface AddToWishlistProps {
   onSuccess?: () => void;

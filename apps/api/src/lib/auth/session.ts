@@ -1,64 +1,64 @@
 import type { Context } from "hono";
-import type { PublicUser } from "../db/types.js";
+import type { PublicUser } from "../db/types.ts";
 
 export interface SessionData {
-  userId: number;
-  sessionId: string;
+    userId: number;
+    sessionId: string;
 }
 
 const SESSION_COOKIE_NAME = "corvus-session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export function getSessionCookie(c?: Context): string | undefined {
-  const cookieHeader = c?.req.header("cookie");
-  if (!cookieHeader) return undefined;
+    const cookieHeader = c?.req.header("cookie");
+    if (!cookieHeader) return undefined;
 
-  const cookies = cookieHeader.split(";").map((c) => c.trim());
-  for (const cookie of cookies) {
-    if (cookie.startsWith(`${SESSION_COOKIE_NAME}=`)) {
-      return cookie.substring(SESSION_COOKIE_NAME.length + 1);
+    const cookies = cookieHeader.split(";").map((c) => c.trim());
+    for (const cookie of cookies) {
+        if (cookie.startsWith(`${SESSION_COOKIE_NAME}=`)) {
+            return cookie.substring(SESSION_COOKIE_NAME.length + 1);
+        }
     }
-  }
-  return undefined;
+    return undefined;
 }
 
 export function setSessionCookie(c: Context, sessionId: string): void {
-  const isDev = c.env.DEV;
-  const cookieOptions = [
-    `HttpOnly`,
-    isDev ? `SameSite=Lax` : `SameSite=None`,
-    isDev ? "" : `Secure`,
-    `Max-Age=${SESSION_MAX_AGE}`,
-    `Path=/`,
-  ]
-    .filter(Boolean)
-    .join("; ");
+    const isDev = c.env.DEV;
+    const cookieOptions = [
+        `HttpOnly`,
+        isDev ? `SameSite=Lax` : `SameSite=None`,
+        isDev ? "" : `Secure`,
+        `Max-Age=${SESSION_MAX_AGE}`,
+        `Path=/`,
+    ]
+        .filter(Boolean)
+        .join("; ");
 
-  c.header(
-    "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=${sessionId}; ${cookieOptions}`,
-  );
+    c.header(
+        "Set-Cookie",
+        `${SESSION_COOKIE_NAME}=${sessionId}; ${cookieOptions}`,
+    );
 }
 
 export function clearSessionCookie(c: Context): void {
-  const isDev = c.env.DEV;
-  const cookieOptions = [
-    `HttpOnly`,
-    isDev ? `SameSite=Lax` : `SameSite=None`,
-    isDev ? "" : `Secure`,
-    `Max-Age=0`,
-    `Path=/`,
-  ]
-    .filter(Boolean)
-    .join("; ");
+    const isDev = c.env.DEV;
+    const cookieOptions = [
+        `HttpOnly`,
+        isDev ? `SameSite=Lax` : `SameSite=None`,
+        isDev ? "" : `Secure`,
+        `Max-Age=0`,
+        `Path=/`,
+    ]
+        .filter(Boolean)
+        .join("; ");
 
-  // Must match the same attributes (at least path) used when setting the cookie
-  c.header("Set-Cookie", `${SESSION_COOKIE_NAME}=; ${cookieOptions}`);
+    // Must match the same attributes (at least path) used when setting the cookie
+    c.header("Set-Cookie", `${SESSION_COOKIE_NAME}=; ${cookieOptions}`);
 }
 
 export function requireAuth(user: PublicUser | null): PublicUser {
-  if (!user) {
-    throw new Error("Authentication required");
-  }
-  return user;
+    if (!user) {
+        throw new Error("Authentication required");
+    }
+    return user;
 }

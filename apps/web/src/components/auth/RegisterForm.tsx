@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import { useRegister } from "../../lib/graphql/hooks/use-auth.js";
+import { useRegister } from "../../lib/graphql/hooks/use-auth.ts";
 
 export function RegisterForm() {
   const [error, setError] = createSignal<string>("");
