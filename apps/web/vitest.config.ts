@@ -9,8 +9,12 @@ export default defineConfig({
         globals: true,
         setupFiles: ["./src/test-setup.ts"],
         clearMocks: true,
+        typecheck: {
+            enabled: false,
+        },
     },
     resolve: {
         conditions: ["development", "browser"],
+        extensions: [".ts", ".tsx", ".js", ".jsx"],
     },
 });
