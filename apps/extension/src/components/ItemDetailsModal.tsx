@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import type { WishlistCategory, WishlistItem } from "../types/wishlist";
+import type { WishlistCategory, WishlistItem } from "../types/wishlist.ts";
 
 interface ItemDetailsModalProps {
   item: WishlistItem | undefined;

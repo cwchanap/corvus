@@ -3,13 +3,13 @@
  * Can be used in both web app and extension
  */
 
-import { graphqlRequest, type GraphQLClientOptions } from "../client.js";
+import { graphqlRequest, type GraphQLClientOptions } from "../client.ts";
 import type {
-  GraphQLUser,
-  AuthPayload,
-  RegisterInput,
-  LoginInput,
-} from "../types.js";
+    GraphQLUser,
+    AuthPayload,
+    RegisterInput,
+    LoginInput,
+} from "../types.ts";
 
 // Query strings
 export const ME_QUERY = `
@@ -64,47 +64,47 @@ export const LOGOUT_MUTATION = `
 
 // Operation functions
 export async function getCurrentUser(
-  options?: Partial<GraphQLClientOptions>,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLUser | null> {
-  const data = await graphqlRequest<{ me: GraphQLUser | null }>(
-    ME_QUERY,
-    undefined,
-    options,
-  );
-  return data.me;
+    const data = await graphqlRequest<{ me: GraphQLUser | null }>(
+        ME_QUERY,
+        undefined,
+        options,
+    );
+    return data.me;
 }
 
 export async function register(
-  input: RegisterInput,
-  options?: Partial<GraphQLClientOptions>,
+    input: RegisterInput,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<AuthPayload> {
-  const data = await graphqlRequest<{ register: AuthPayload }>(
-    REGISTER_MUTATION,
-    { input },
-    options,
-  );
-  return data.register;
+    const data = await graphqlRequest<{ register: AuthPayload }>(
+        REGISTER_MUTATION,
+        { input },
+        options,
+    );
+    return data.register;
 }
 
 export async function login(
-  input: LoginInput,
-  options?: Partial<GraphQLClientOptions>,
+    input: LoginInput,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<AuthPayload> {
-  const data = await graphqlRequest<{ login: AuthPayload }>(
-    LOGIN_MUTATION,
-    { input },
-    options,
-  );
-  return data.login;
+    const data = await graphqlRequest<{ login: AuthPayload }>(
+        LOGIN_MUTATION,
+        { input },
+        options,
+    );
+    return data.login;
 }
 
 export async function logout(
-  options?: Partial<GraphQLClientOptions>,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<boolean> {
-  const data = await graphqlRequest<{ logout: boolean }>(
-    LOGOUT_MUTATION,
-    undefined,
-    options,
-  );
-  return data.logout;
+    const data = await graphqlRequest<{ logout: boolean }>(
+        LOGOUT_MUTATION,
+        undefined,
+        options,
+    );
+    return data.logout;
 }

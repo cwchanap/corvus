@@ -3,8 +3,8 @@ import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
 import type { WishlistCategoryRecord } from "@repo/common/types/wishlist-record";
-import { LinkManager } from "./LinkManager.jsx";
-import { useLinkManager, type LinkItem } from "./useLinkManager.js";
+import { LinkManager } from "./LinkManager.tsx";
+import { useLinkManager, type LinkItem } from "./useLinkManager.ts";
 
 export interface AddItemPayload {
   title: string;
