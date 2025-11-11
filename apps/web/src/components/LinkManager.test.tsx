@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@solidjs/testing-library";
-import { LinkManager, type LinkItem } from "./LinkManager.jsx";
+import { LinkManager, type LinkItem } from "./LinkManager";
 
 describe("LinkManager", () => {
   const mockOnAddLink = vi.fn();

@@ -6,5 +6,13 @@
     "types": ["@solidjs/start/env", "node"]
   },
   "include": ["src/**/*", "app.config.ts"],
-  "exclude": ["node_modules", ".vinxi", ".output"]
+  "exclude": [
+    "node_modules",
+    ".vinxi",
+    ".output",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx"
+  ]
 }
