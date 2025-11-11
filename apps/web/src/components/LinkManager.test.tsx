@@ -141,7 +141,8 @@ describe("LinkManager", () => {
     renderLinkManager({ links: mockLinks });
 
     const removeButtons = screen.getAllByText("Remove");
-    fireEvent.click(removeButtons[0]!);
+    const [firstRemoveButton] = removeButtons;
+    fireEvent.click(firstRemoveButton);
 
     expect(mockOnRemoveLink).toHaveBeenCalledWith(0);
   });
