@@ -140,9 +140,9 @@ describe("LinkManager", () => {
 
     renderLinkManager({ links: mockLinks });
 
+    // getAllByText guarantees at least one element exists (throws otherwise)
     const removeButtons = screen.getAllByText("Remove");
-    const [firstRemoveButton] = removeButtons;
-    fireEvent.click(firstRemoveButton);
+    fireEvent.click(removeButtons[0]!);
 
     expect(mockOnRemoveLink).toHaveBeenCalledWith(0);
   });
