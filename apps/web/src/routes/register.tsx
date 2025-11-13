@@ -1,6 +1,6 @@
 import { Title } from "@solidjs/meta";
-import { RegisterForm } from "../components/auth/RegisterForm.jsx";
-import { ThemeProvider } from "../lib/theme/context.jsx";
+import { RegisterForm } from "../components/auth/RegisterForm";
+import { ThemeProvider } from "../lib/theme/context";
 
 export default function Register() {
   return (

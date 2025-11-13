@@ -1,3 +1,3 @@
-export * from "./session.js";
-export * from "./service.js";
-export * from "./crypto.js";
+export * from "./session";
+export * from "./service";
+export * from "./crypto";
