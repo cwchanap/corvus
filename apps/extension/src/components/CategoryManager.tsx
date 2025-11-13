@@ -9,7 +9,7 @@ import {
 } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
 import { ConfirmDialog } from "@repo/ui-components/confirm-dialog";
-import { useWishlistData } from "../lib/wishlist/context.js";
+import { useWishlistData } from "../lib/wishlist/context";
 
 interface CategoryManagerProps {
   onClose?: () => void;

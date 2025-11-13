@@ -5,7 +5,7 @@ import {
   createMemo,
 } from "solid-js";
 import type { GraphQLUser } from "@repo/common/graphql/types";
-import { useCurrentUser } from "../graphql/hooks/use-auth.js";
+import { useCurrentUser } from "../graphql/hooks/use-auth";
 
 interface AuthContextValue {
   user: () => GraphQLUser | undefined;
