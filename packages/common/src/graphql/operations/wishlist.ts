@@ -3,7 +3,7 @@
  * Can be used in both web app and extension
  */
 
-import { graphqlRequest, type GraphQLClientOptions } from "../client";
+import { graphqlRequest, type GraphQLClientOptions } from "../client.js";
 import type {
   GraphQLWishlistPayload,
   GraphQLWishlistCategory,
@@ -17,7 +17,7 @@ import type {
   ItemUpdateInput,
   ItemLinkInput,
   ItemLinkUpdateInput,
-} from "../types";
+} from "../types.js";
 
 // Query strings
 export const WISHLIST_QUERY = `
