@@ -3,13 +3,13 @@
  * Can be used in both web app and extension
  */
 
-import { graphqlRequest, type GraphQLClientOptions } from "../client";
+import { graphqlRequest, type GraphQLClientOptions } from "../client.js";
 import type {
   GraphQLUser,
   AuthPayload,
   RegisterInput,
   LoginInput,
-} from "../types";
+} from "../types.js";
 
 // Query strings
 export const ME_QUERY = `
