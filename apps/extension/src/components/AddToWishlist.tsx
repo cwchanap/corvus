@@ -8,8 +8,8 @@ import {
 } from "@repo/ui-components/card";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
-import { getCurrentPageInfo } from "../utils/page-info.js";
-import { useWishlistData } from "../lib/wishlist/context.js";
+import { getCurrentPageInfo } from "../utils/page-info";
+import { useWishlistData } from "../lib/wishlist/context";
 import type { WishlistItem } from "../types/wishlist";
 
 interface AddToWishlistProps {

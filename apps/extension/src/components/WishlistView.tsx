@@ -4,10 +4,10 @@ import { Card } from "@repo/ui-components/card";
 import { Badge } from "@repo/ui-components/badge";
 import { ThemeToggle } from "@repo/ui-components/theme-toggle";
 import { Select } from "@repo/ui-components/select";
-import { useTheme } from "../lib/theme/context.js";
-import { useWishlistData } from "../lib/wishlist/context.js";
+import { useTheme } from "../lib/theme/context";
+import { useWishlistData } from "../lib/wishlist/context";
 import type { WishlistCategory, WishlistItem } from "../types/wishlist";
-import { ItemDetailsModal } from "./ItemDetailsModal.js";
+import { ItemDetailsModal } from "./ItemDetailsModal";
 
 interface WishlistViewProps {
   onAddNew?: () => void;

@@ -1,9 +1,9 @@
 import { GraphQLError } from "graphql";
-import type { Resolvers } from "./types.js";
-import { AuthService } from "../lib/auth/service.js";
-import { WishlistService } from "../lib/wishlist/service.js";
-import { setSessionCookie, clearSessionCookie } from "../lib/auth/session.js";
-import { mapUser, mapCategory, mapItem, mapLink } from "./mappers.js";
+import type { Resolvers } from "./types";
+import { AuthService } from "../lib/auth/service";
+import { WishlistService } from "../lib/wishlist/service";
+import { setSessionCookie, clearSessionCookie } from "../lib/auth/session";
+import { mapUser, mapCategory, mapItem, mapLink } from "./mappers";
 
 /**
  * GraphQL resolvers

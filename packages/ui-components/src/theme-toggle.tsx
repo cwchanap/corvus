@@ -1,4 +1,4 @@
-import { Button } from "./button.js";
+import { Button } from "./button";
 
 interface ThemeToggleProps {
   theme: () => "light" | "dark" | "system";
