@@ -1,4 +1,4 @@
-import type { DB } from "../db.js";
+import type { DB } from "../db";
 import type {
   WishlistCategory,
   NewWishlistCategory,
@@ -9,15 +9,15 @@ import type {
   WishlistItemLink,
   NewWishlistItemLink,
   WishlistItemLinkUpdate,
-} from "../db/types.js";
+} from "../db/types";
 import {
   wishlistCategories,
   wishlistItems,
   wishlistItemLinks,
-} from "../db/schema.js";
+} from "../db/schema";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
-import type { WishlistSortKey, SortDirection } from "../../graphql/types.js";
+import type { WishlistSortKey, SortDirection } from "../../graphql/types";
 
 type ItemQueryOptions = {
   limit?: number;

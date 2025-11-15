@@ -1,7 +1,7 @@
 import type { D1Database, Fetcher } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { createGraphQLHandler } from "./graphql/handler.js";
+import { createGraphQLHandler } from "./graphql/handler";
 
 type AppBindings = {
   DB: D1Database;
