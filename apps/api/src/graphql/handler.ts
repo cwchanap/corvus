@@ -1,8 +1,8 @@
 import { createYoga } from "graphql-yoga";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import type { Context } from "hono";
-import { createGraphQLContext } from "./context";
-import { resolvers } from "./resolvers";
+import { createGraphQLContext } from "./context.js";
+import { resolvers } from "./resolvers.js";
 import typeDefs from "./schema.graphql?raw";
 
 // Build the executable schema with resolvers

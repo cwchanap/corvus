@@ -1,6 +1,6 @@
 import { ParentComponent, Show } from "solid-js";
 import { Navigate } from "@solidjs/router";
-import { useAuth } from "../../lib/auth/context";
+import { useAuth } from "../../lib/auth/context.jsx";
 
 export const ProtectedRoute: ParentComponent = (props) => {
   const auth = useAuth();

@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui-components/card";
-import { useLogin } from "../../lib/graphql/hooks/use-auth";
+import { useLogin } from "../../lib/graphql/hooks/use-auth.js";
 
 export function LoginForm() {
   const [error, setError] = createSignal<string>("");

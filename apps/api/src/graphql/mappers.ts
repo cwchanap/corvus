@@ -7,13 +7,13 @@ import type {
   WishlistCategory as DBCategory,
   WishlistItem as DBItem,
   WishlistItemLink as DBLink,
-} from "../lib/db/types";
+} from "../lib/db/types.js";
 import type {
   User,
   WishlistCategory,
   WishlistItem,
   WishlistItemLink,
-} from "./types";
+} from "./types.js";
 
 export function mapUser(dbUser: DBPublicUser): User {
   return {

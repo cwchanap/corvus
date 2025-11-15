@@ -4,7 +4,7 @@ import {
   wishlistCategories,
   wishlistItems,
   wishlistItemLinks,
-} from "./schema";
+} from "./schema.js";
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

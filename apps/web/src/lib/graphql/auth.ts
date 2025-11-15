@@ -9,7 +9,7 @@ import {
   LOGIN_MUTATION,
   LOGOUT_MUTATION,
 } from "@repo/common/graphql/operations/auth";
-import { graphqlRequest } from "./client";
+import { graphqlRequest } from "./client.js";
 
 // Re-export shared types
 export type {
