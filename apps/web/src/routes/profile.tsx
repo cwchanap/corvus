@@ -1,9 +1,9 @@
 import { Show } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 import { Title } from "@solidjs/meta";
-import { useAuth } from "../lib/auth/context";
-import { ThemeProvider } from "../lib/theme/context";
-import { useLogout } from "../lib/graphql/hooks/use-auth";
+import { useAuth } from "../lib/auth/context.jsx";
+import { ThemeProvider } from "../lib/theme/context.jsx";
+import { useLogout } from "../lib/graphql/hooks/use-auth.js";
 import { Button } from "@repo/ui-components/button";
 import {
   Card,

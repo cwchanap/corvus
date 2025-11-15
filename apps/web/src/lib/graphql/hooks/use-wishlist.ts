@@ -21,7 +21,7 @@ import {
   updateItemLink,
   deleteItemLink,
   setPrimaryLink,
-} from "../wishlist";
+} from "../wishlist.js";
 import type { Accessor } from "solid-js";
 import type {
   WishlistFilterInput,
@@ -30,7 +30,7 @@ import type {
   ItemUpdateInput,
   ItemLinkInput,
   ItemLinkUpdateInput,
-} from "../wishlist";
+} from "../wishlist.js";
 
 /**
  * Query hook to get wishlist data with pagination and filtering

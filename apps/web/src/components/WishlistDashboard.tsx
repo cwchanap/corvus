@@ -21,12 +21,12 @@ import type {
   WishlistCategoryRecord,
   WishlistItemRecord,
 } from "@repo/common/types/wishlist-record";
-import { useTheme } from "../lib/theme/context";
-import { AddItemDialog } from "./AddItemDialog";
-import { EditItemDialog } from "./EditItemDialog";
-import { ViewItemDialog } from "./ViewItemDialog";
-import { WishlistFilters } from "./WishlistFilters";
-import { CategoryManager } from "./CategoryManager";
+import { useTheme } from "../lib/theme/context.jsx";
+import { AddItemDialog } from "./AddItemDialog.jsx";
+import { EditItemDialog } from "./EditItemDialog.jsx";
+import { ViewItemDialog } from "./ViewItemDialog.jsx";
+import { WishlistFilters } from "./WishlistFilters.jsx";
+import { CategoryManager } from "./CategoryManager.jsx";
 import {
   useWishlist,
   useDeleteItem,
@@ -35,9 +35,9 @@ import {
   useAddItemLink,
   useUpdateItemLink,
   useDeleteItemLink,
-} from "../lib/graphql/hooks/use-wishlist";
-import { useLogout } from "../lib/graphql/hooks/use-auth";
-import { adaptWishlistData } from "../lib/graphql/adapters";
+} from "../lib/graphql/hooks/use-wishlist.js";
+import { useLogout } from "../lib/graphql/hooks/use-auth.js";
+import { adaptWishlistData } from "../lib/graphql/adapters.js";
 
 type WishlistCategory = WishlistCategoryRecord;
 type WishlistItem = WishlistItemRecord;

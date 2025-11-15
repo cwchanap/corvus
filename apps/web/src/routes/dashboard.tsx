@@ -1,9 +1,9 @@
 import { Show, createEffect } from "solid-js";
 import { Title } from "@solidjs/meta";
 import { useNavigate } from "@solidjs/router";
-import { useAuth } from "../lib/auth/context";
-import { WishlistDashboard } from "../components/WishlistDashboard";
-import { ThemeProvider } from "../lib/theme/context";
+import { useAuth } from "../lib/auth/context.jsx";
+import { WishlistDashboard } from "../components/WishlistDashboard.jsx";
+import { ThemeProvider } from "../lib/theme/context.jsx";
 
 export default function Dashboard() {
   const auth = useAuth();
