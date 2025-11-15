@@ -10,7 +10,7 @@ import {
   type ResourceActions,
 } from "solid-js";
 import type { GraphQLWishlistPayload } from "@repo/common/graphql/types";
-import * as wishlistGraphQL from "../graphql/wishlist";
+import * as wishlistGraphQL from "../graphql/wishlist.js";
 
 interface WishlistDataContextValue {
   data: Resource<GraphQLWishlistPayload | undefined>;

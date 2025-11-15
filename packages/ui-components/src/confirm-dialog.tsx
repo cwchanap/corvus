@@ -1,5 +1,5 @@
 import { Show, type JSX } from "solid-js";
-import { Button } from "./button";
+import { Button } from "./button.js";
 
 interface ConfirmDialogProps {
   open: boolean;

@@ -2,14 +2,14 @@ import { render } from "solid-js/web";
 import { createSignal, Show, Switch, Match } from "solid-js";
 import "@repo/ui-components/styles";
 import { Button } from "@repo/ui-components/button";
-import { ThemeProvider } from "../../lib/theme/context";
-import { AddToWishlist } from "../../components/AddToWishlist";
-import { WishlistView } from "../../components/WishlistView";
-import { CategoryManager } from "../../components/CategoryManager";
+import { ThemeProvider } from "../../lib/theme/context.js";
+import { AddToWishlist } from "../../components/AddToWishlist.js";
+import { WishlistView } from "../../components/WishlistView.js";
+import { CategoryManager } from "../../components/CategoryManager.js";
 import {
   WishlistDataProvider,
   useWishlistData,
-} from "../../lib/wishlist/context";
+} from "../../lib/wishlist/context.js";
 
 type View = "list" | "add" | "categories";
 

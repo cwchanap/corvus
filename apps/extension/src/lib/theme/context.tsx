@@ -6,7 +6,7 @@ import {
   onMount,
   JSX,
 } from "solid-js";
-import { applyThemeVariables } from "./init-styles";
+import { applyThemeVariables } from "./init-styles.js";
 
 type Theme = "light" | "dark" | "system";
 
