@@ -6,9 +6,9 @@ import * as crypto from "../../src/lib/auth/crypto";
 import * as migrations from "../../src/lib/db/migrations";
 
 // Mock the crypto module
-vi.mock("../../src/lib/auth/crypto.js", async () => {
+vi.mock("../../src/lib/auth/crypto", async () => {
     const actual = await vi.importActual<typeof crypto>(
-        "../../src/lib/auth/crypto.js",
+        "../../src/lib/auth/crypto",
     );
     return {
         ...actual,
@@ -19,7 +19,7 @@ vi.mock("../../src/lib/auth/crypto.js", async () => {
 });
 
 // Mock the migrations module
-vi.mock("../../src/lib/db/migrations.js", () => ({
+vi.mock("../../src/lib/db/migrations", () => ({
     createDefaultCategories: vi.fn(),
 }));
 
