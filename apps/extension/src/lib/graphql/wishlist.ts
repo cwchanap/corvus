@@ -18,7 +18,7 @@ import {
   DELETE_ITEM_LINK_MUTATION,
   SET_PRIMARY_LINK_MUTATION,
 } from "@repo/common/graphql/operations/wishlist";
-import { graphqlRequest } from "./client";
+import { graphqlRequest } from "./client.js";
 
 // Re-export shared types
 export type {

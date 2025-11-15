@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps } from "solid-js";
-import { cn } from "./utils";
+import { cn } from "./utils.js";
 
 export type CardProps = ComponentProps<"div">;
 

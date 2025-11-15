@@ -6,8 +6,8 @@ import type {
   WishlistCategoryRecord,
   WishlistItemRecord,
 } from "@repo/common/types/wishlist-record";
-import { LinkManager } from "./LinkManager";
-import { useLinkManager, type LinkItem } from "./useLinkManager";
+import { LinkManager } from "./LinkManager.jsx";
+import { useLinkManager, type LinkItem } from "./useLinkManager.js";
 
 interface EditItemDialogProps {
   open: boolean;

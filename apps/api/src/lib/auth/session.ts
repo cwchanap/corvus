@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { PublicUser } from "../db/types";
+import type { PublicUser } from "../db/types.js";
 
 export interface SessionData {
   userId: number;
