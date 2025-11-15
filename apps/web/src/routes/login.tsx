@@ -1,6 +1,6 @@
 import { Title } from "@solidjs/meta";
-import { LoginForm } from "../components/auth/LoginForm.jsx";
-import { ThemeProvider } from "../lib/theme/context.jsx";
+import { LoginForm } from "../components/auth/LoginForm";
+import { ThemeProvider } from "../lib/theme/context";
 
 export default function Login() {
   return (

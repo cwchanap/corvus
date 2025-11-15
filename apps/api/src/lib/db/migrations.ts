@@ -1,5 +1,5 @@
-import type { DB } from "../db.js";
-import { wishlistCategories } from "./schema.js";
+import type { DB } from "../db";
+import { wishlistCategories } from "./schema";
 
 // Note: We rely on Drizzle schema migrations for DDL. This file keeps
 // Drizzle-powered data bootstrapping utilities only.

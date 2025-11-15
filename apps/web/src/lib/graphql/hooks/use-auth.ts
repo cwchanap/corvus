@@ -7,7 +7,7 @@ import {
   createMutation,
   useQueryClient,
 } from "@tanstack/solid-query";
-import { getCurrentUser, login, logout, register } from "../auth.js";
+import { getCurrentUser, login, logout, register } from "../auth";
 
 /**
  * Query hook to get current authenticated user
