@@ -1,9 +1,9 @@
-import type { PublicUser } from "../db/types.js";
-import type { DB } from "../db.js";
-import { users, sessions } from "../db/schema.js";
+import type { PublicUser } from "../db/types";
+import type { DB } from "../db";
+import { users, sessions } from "../db/schema";
 import { eq, and, gt, lt } from "drizzle-orm";
-import { hashPassword, verifyPassword, generateSessionId } from "./crypto.js";
-import { createDefaultCategories } from "../db/migrations.js";
+import { hashPassword, verifyPassword, generateSessionId } from "./crypto";
+import { createDefaultCategories } from "../db/migrations";
 
 export class AuthService {
   constructor(private db: DB) {}

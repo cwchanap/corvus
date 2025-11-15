@@ -1,10 +1,10 @@
 import type { Context } from "hono";
-import type { DB } from "../lib/db.js";
-import type { PublicUser } from "../lib/db/types.js";
-import { createDatabase } from "../lib/db.js";
-import { AuthService } from "../lib/auth/service.js";
-import { getSessionCookie } from "../lib/auth/session.js";
-import { getD1 } from "../lib/cloudflare.js";
+import type { DB } from "../lib/db";
+import type { PublicUser } from "../lib/db/types";
+import { createDatabase } from "../lib/db";
+import { AuthService } from "../lib/auth/service";
+import { getSessionCookie } from "../lib/auth/session";
+import { getD1 } from "../lib/cloudflare";
 
 export interface GraphQLContext {
   db: DB;

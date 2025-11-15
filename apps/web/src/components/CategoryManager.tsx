@@ -12,7 +12,7 @@ import type { WishlistCategoryRecord } from "@repo/common/types/wishlist-record"
 import {
   useCreateCategory,
   useDeleteCategory,
-} from "../lib/graphql/hooks/use-wishlist.js";
+} from "../lib/graphql/hooks/use-wishlist";
 
 interface CategoryManagerProps {
   categories: WishlistCategoryRecord[];
