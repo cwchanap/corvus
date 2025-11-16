@@ -9,9 +9,9 @@ import type {
 // Mock all the hooks and dependencies
 vi.mock("../lib/theme/context", () => ({
   useTheme: () => ({
-    theme: "light",
+    theme: () => "light",
     setTheme: vi.fn(),
-    resolvedTheme: "light",
+    resolvedTheme: () => "light",
   }),
 }));
 
