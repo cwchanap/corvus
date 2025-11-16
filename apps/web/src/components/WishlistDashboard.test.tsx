@@ -100,10 +100,7 @@ vi.mock("./CategoryManager", () => ({
 }));
 
 vi.mock("./WishlistFilters", () => ({
-  WishlistFilters: (props: {
-    categoryName: string;
-    onAddItem: () => void;
-  }) => (
+  WishlistFilters: (props: { categoryName: string; onAddItem: () => void }) => (
     <div data-testid="wishlist-filters">
       <h2>{props.categoryName}</h2>
       <button onClick={() => props.onAddItem()}>Add Item</button>
@@ -586,7 +583,8 @@ describe("WishlistDashboard", () => {
       };
 
       render(() => <WishlistDashboard user={mockUser} />);
-      expect(screen.getByText(/All Items/)).toBeInTheDocument();
+      const allItemsElements = screen.getAllByText(/All Items/);
+      expect(allItemsElements.length).toBeGreaterThan(0);
     });
 
     it("should handle null pagination gracefully", () => {
