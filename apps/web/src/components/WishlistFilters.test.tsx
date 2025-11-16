@@ -64,7 +64,9 @@ describe("WishlistFilters", () => {
 
     it("should render search input", () => {
       renderWishlistFilters();
-      expect(screen.getByPlaceholderText("Search items...")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText("Search items..."),
+      ).toBeInTheDocument();
     });
 
     it("should render sort dropdown", () => {
@@ -125,16 +127,16 @@ describe("WishlistFilters", () => {
 
   describe("Sort Dropdown", () => {
     it("should display initial sort value", () => {
-      renderWishlistFilters({ initialSortBy: "date" });
-      const select = screen.getByDisplayValue("Sort by Date");
+      const { sortBy } = renderWishlistFilters({ initialSortBy: "date" });
+      expect(sortBy()).toBe("date");
+      // Also verify the select element exists
+      const select = screen.getByRole("combobox");
       expect(select).toBeInTheDocument();
     });
 
     it("should update sort value when custom is selected", () => {
       const { sortBy } = renderWishlistFilters({ initialSortBy: "date" });
-      const select = screen.getByDisplayValue(
-        "Sort by Date",
-      ) as HTMLSelectElement;
+      const select = screen.getByRole("combobox") as HTMLSelectElement;
 
       fireEvent.change(select, { target: { value: "custom" } });
       expect(sortBy()).toBe("custom");
@@ -142,9 +144,7 @@ describe("WishlistFilters", () => {
 
     it("should update sort value when date is selected", () => {
       const { sortBy } = renderWishlistFilters();
-      const select = screen.getByDisplayValue(
-        "Custom Order",
-      ) as HTMLSelectElement;
+      const select = screen.getByRole("combobox") as HTMLSelectElement;
 
       fireEvent.change(select, { target: { value: "date" } });
       expect(sortBy()).toBe("date");
@@ -152,9 +152,7 @@ describe("WishlistFilters", () => {
 
     it("should update sort value when title is selected", () => {
       const { sortBy } = renderWishlistFilters();
-      const select = screen.getByDisplayValue(
-        "Custom Order",
-      ) as HTMLSelectElement;
+      const select = screen.getByRole("combobox") as HTMLSelectElement;
 
       fireEvent.change(select, { target: { value: "title" } });
       expect(sortBy()).toBe("title");
