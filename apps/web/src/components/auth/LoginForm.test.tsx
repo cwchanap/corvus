@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@solidjs/testing-library";
+import { type JSX } from "solid-js";
 import { LoginForm } from "./LoginForm";
 
 // Mock @solidjs/router
@@ -9,7 +10,7 @@ vi.mock("@solidjs/router", async () => {
   return {
     ...actual,
     useNavigate: () => mockNavigate,
-    A: (props: any) => <a {...props} />,
+    A: (props: JSX.AnchorHTMLAttributes<HTMLAnchorElement>) => <a {...props} />,
   };
 });
 
@@ -27,6 +28,8 @@ vi.mock("../../lib/graphql/hooks/use-auth", () => ({
 describe("LoginForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock state to prevent test isolation issues
+    mockLoginState.isPending = false;
   });
 
   describe("Rendering", () => {
@@ -243,9 +246,6 @@ describe("LoginForm", () => {
       expect(
         screen.getByRole("button", { name: "Signing in..." }),
       ).toBeInTheDocument();
-
-      // Reset state
-      mockLoginState.isPending = false;
     });
 
     it("should disable submit button when mutation is pending", () => {
@@ -257,9 +257,6 @@ describe("LoginForm", () => {
         name: "Signing in...",
       });
       expect(submitButton).toBeDisabled();
-
-      // Reset state
-      mockLoginState.isPending = false;
     });
 
     it("should enable submit button when mutation is not pending", () => {
