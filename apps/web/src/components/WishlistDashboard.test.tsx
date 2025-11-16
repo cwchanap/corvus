@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@solidjs/testing-library";
+import { Show } from "solid-js";
 import { WishlistDashboard } from "./WishlistDashboard";
 import type {
   WishlistCategoryRecord,
@@ -60,28 +61,40 @@ vi.mock("./AddItemDialog", () => ({
   AddItemDialog: (props: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-  }) => (props.open ? <div data-testid="add-item-dialog">Add Item Dialog</div> : null),
+  }) => (
+    <Show when={props.open}>
+      <div data-testid="add-item-dialog">Add Item Dialog</div>
+    </Show>
+  ),
 }));
 
 vi.mock("./EditItemDialog", () => ({
   EditItemDialog: (props: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-  }) => (props.open ? <div data-testid="edit-item-dialog">Edit Item Dialog</div> : null),
+  }) => (
+    <Show when={props.open}>
+      <div data-testid="edit-item-dialog">Edit Item Dialog</div>
+    </Show>
+  ),
 }));
 
 vi.mock("./ViewItemDialog", () => ({
   ViewItemDialog: (props: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-  }) => (props.open ? <div data-testid="view-item-dialog">View Item Dialog</div> : null),
+  }) => (
+    <Show when={props.open}>
+      <div data-testid="view-item-dialog">View Item Dialog</div>
+    </Show>
+  ),
 }));
 
 vi.mock("./CategoryManager", () => ({
   CategoryManager: (props: { onClose: () => void }) => (
     <div data-testid="category-manager">
       Category Manager
-      <button onClick={props.onClose}>Close</button>
+      <button onClick={() => props.onClose()}>Close</button>
     </div>
   ),
 }));
@@ -93,7 +106,7 @@ vi.mock("./WishlistFilters", () => ({
   }) => (
     <div data-testid="wishlist-filters">
       <h2>{props.categoryName}</h2>
-      <button onClick={props.onAddItem}>Add Item</button>
+      <button onClick={() => props.onAddItem()}>Add Item</button>
     </div>
   ),
 }));
