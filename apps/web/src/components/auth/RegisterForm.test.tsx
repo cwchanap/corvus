@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@solidjs/testing-library";
 import { type JSX } from "solid-js";
 import { RegisterForm } from "./RegisterForm";
+import * as useAuth from "../../lib/graphql/hooks/use-auth";
 
 // Mock @solidjs/router
 const mockNavigate = vi.fn();
@@ -15,21 +16,18 @@ vi.mock("@solidjs/router", async () => {
 });
 
 // Mock useRegister hook
-const mockMutateAsync = vi.fn();
-const mockRegisterState = {
-  mutateAsync: mockMutateAsync,
-  isPending: false,
-};
-
-vi.mock("../../lib/graphql/hooks/use-auth", () => ({
-  useRegister: vi.fn(() => mockRegisterState),
-}));
+vi.mock("../../lib/graphql/hooks/use-auth");
 
 describe("RegisterForm", () => {
+  const mockMutateAsync = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mock state to prevent test isolation issues
-    mockRegisterState.isPending = false;
+    // Provide default mock implementation
+    vi.mocked(useAuth.useRegister).mockReturnValue({
+      mutateAsync: mockMutateAsync,
+      isPending: false,
+    });
   });
 
   describe("Rendering", () => {
@@ -285,7 +283,10 @@ describe("RegisterForm", () => {
 
   describe("Loading State", () => {
     it("should show loading text when mutation is pending", () => {
-      mockRegisterState.isPending = true;
+      vi.mocked(useAuth.useRegister).mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isPending: true,
+      });
 
       render(() => <RegisterForm />);
 
@@ -295,7 +296,10 @@ describe("RegisterForm", () => {
     });
 
     it("should disable submit button when mutation is pending", () => {
-      mockRegisterState.isPending = true;
+      vi.mocked(useAuth.useRegister).mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isPending: true,
+      });
 
       render(() => <RegisterForm />);
 
@@ -306,7 +310,10 @@ describe("RegisterForm", () => {
     });
 
     it("should enable submit button when mutation is not pending", () => {
-      mockRegisterState.isPending = false;
+      vi.mocked(useAuth.useRegister).mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isPending: false,
+      });
 
       render(() => <RegisterForm />);
 
