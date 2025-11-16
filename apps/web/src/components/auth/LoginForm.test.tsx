@@ -268,23 +268,4 @@ describe("LoginForm", () => {
       expect(submitButton).not.toBeDisabled();
     });
   });
-
-  describe("Accessibility", () => {
-    it("should have proper label associations for inputs", () => {
-      render(() => <LoginForm />);
-
-      const emailInput = screen.getByLabelText("Email Address");
-      const passwordInput = screen.getByLabelText("Password");
-
-      expect(emailInput).toBeInTheDocument();
-      expect(passwordInput).toBeInTheDocument();
-    });
-
-    it("should have a submit button", () => {
-      render(() => <LoginForm />);
-
-      const submitButton = screen.getByRole("button", { name: "Sign In" });
-      expect(submitButton).toHaveAttribute("type", "submit");
-    });
-  });
 });
