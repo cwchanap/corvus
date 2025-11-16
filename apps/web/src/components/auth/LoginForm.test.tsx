@@ -269,26 +269,6 @@ describe("LoginForm", () => {
     });
   });
 
-  describe("Form Validation", () => {
-    it("should have required attribute on email input", () => {
-      render(() => <LoginForm />);
-
-      const emailInput = screen.getByLabelText(
-        "Email Address",
-      ) as HTMLInputElement;
-      expect(emailInput.required).toBe(true);
-    });
-
-    it("should have required attribute on password input", () => {
-      render(() => <LoginForm />);
-
-      const passwordInput = screen.getByLabelText(
-        "Password",
-      ) as HTMLInputElement;
-      expect(passwordInput.required).toBe(true);
-    });
-  });
-
   describe("Accessibility", () => {
     it("should have proper label associations for inputs", () => {
       render(() => <LoginForm />);

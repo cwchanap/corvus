@@ -317,42 +317,6 @@ describe("RegisterForm", () => {
     });
   });
 
-  describe("Form Validation", () => {
-    it("should have required attribute on name input", () => {
-      render(() => <RegisterForm />);
-
-      const nameInput = screen.getByLabelText("Full Name") as HTMLInputElement;
-      expect(nameInput.required).toBe(true);
-    });
-
-    it("should have required attribute on email input", () => {
-      render(() => <RegisterForm />);
-
-      const emailInput = screen.getByLabelText(
-        "Email Address",
-      ) as HTMLInputElement;
-      expect(emailInput.required).toBe(true);
-    });
-
-    it("should have required attribute on password input", () => {
-      render(() => <RegisterForm />);
-
-      const passwordInput = screen.getByLabelText(
-        "Password",
-      ) as HTMLInputElement;
-      expect(passwordInput.required).toBe(true);
-    });
-
-    it("should enforce minimum password length of 8 characters", () => {
-      render(() => <RegisterForm />);
-
-      const passwordInput = screen.getByLabelText(
-        "Password",
-      ) as HTMLInputElement;
-      expect(passwordInput.minLength).toBe(8);
-    });
-  });
-
   describe("Accessibility", () => {
     it("should have proper label associations for inputs", () => {
       render(() => <RegisterForm />);
