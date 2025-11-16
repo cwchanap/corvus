@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@solidjs/testing-library";
 import { type JSX } from "solid-js";
 import { LoginForm } from "./LoginForm";
+import * as useAuth from "../../lib/graphql/hooks/use-auth";
 
 // Mock @solidjs/router
 const mockNavigate = vi.fn();
@@ -15,21 +16,18 @@ vi.mock("@solidjs/router", async () => {
 });
 
 // Mock useLogin hook
-const mockMutateAsync = vi.fn();
-const mockLoginState = {
-  mutateAsync: mockMutateAsync,
-  isPending: false,
-};
-
-vi.mock("../../lib/graphql/hooks/use-auth", () => ({
-  useLogin: vi.fn(() => mockLoginState),
-}));
+vi.mock("../../lib/graphql/hooks/use-auth");
 
 describe("LoginForm", () => {
+  const mockMutateAsync = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mock state to prevent test isolation issues
-    mockLoginState.isPending = false;
+    // Provide default mock implementation
+    vi.mocked(useAuth.useLogin).mockReturnValue({
+      mutateAsync: mockMutateAsync,
+      isPending: false,
+    });
   });
 
   describe("Rendering", () => {
@@ -239,7 +237,10 @@ describe("LoginForm", () => {
 
   describe("Loading State", () => {
     it("should show loading text when mutation is pending", () => {
-      mockLoginState.isPending = true;
+      vi.mocked(useAuth.useLogin).mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isPending: true,
+      });
 
       render(() => <LoginForm />);
 
@@ -249,7 +250,10 @@ describe("LoginForm", () => {
     });
 
     it("should disable submit button when mutation is pending", () => {
-      mockLoginState.isPending = true;
+      vi.mocked(useAuth.useLogin).mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isPending: true,
+      });
 
       render(() => <LoginForm />);
 
@@ -260,7 +264,10 @@ describe("LoginForm", () => {
     });
 
     it("should enable submit button when mutation is not pending", () => {
-      mockLoginState.isPending = false;
+      vi.mocked(useAuth.useLogin).mockReturnValue({
+        mutateAsync: mockMutateAsync,
+        isPending: false,
+      });
 
       render(() => <LoginForm />);
 
