@@ -34,8 +34,8 @@ describe("RegisterForm", () => {
     it("should render registration form with all required fields", () => {
       render(() => <RegisterForm />);
 
-      // The title "Create Account" appears in both the heading and button
-      expect(screen.getAllByText("Create Account").length).toBeGreaterThan(0);
+      // "Create Account" appears exactly twice: in the heading and button
+      expect(screen.getAllByText("Create Account")).toHaveLength(2);
       expect(screen.getByLabelText("Full Name")).toBeInTheDocument();
       expect(screen.getByLabelText("Email Address")).toBeInTheDocument();
       expect(screen.getByLabelText("Password")).toBeInTheDocument();
