@@ -61,6 +61,10 @@ vi.mock("./AddItemDialog", () => ({
   AddItemDialog: (props: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onSubmit: (payload: unknown) => Promise<void> | void;
+    categories: unknown[];
+    initialCategoryId?: string | null;
+    submitting?: boolean;
   }) => (
     <Show when={props.open}>
       <div data-testid="add-item-dialog">Add Item Dialog</div>
@@ -72,6 +76,10 @@ vi.mock("./EditItemDialog", () => ({
   EditItemDialog: (props: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onSubmit: (payload: unknown) => Promise<void> | void;
+    categories: unknown[];
+    item: unknown;
+    submitting?: boolean;
   }) => (
     <Show when={props.open}>
       <div data-testid="edit-item-dialog">Edit Item Dialog</div>
@@ -83,6 +91,8 @@ vi.mock("./ViewItemDialog", () => ({
   ViewItemDialog: (props: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    item: unknown;
+    categories: unknown[];
   }) => (
     <Show when={props.open}>
       <div data-testid="view-item-dialog">View Item Dialog</div>
@@ -91,16 +101,27 @@ vi.mock("./ViewItemDialog", () => ({
 }));
 
 vi.mock("./CategoryManager", () => ({
-  CategoryManager: (props: { onClose: () => void }) => (
+  CategoryManager: (props: {
+    categories: unknown[];
+    onRefetch: () => Promise<void>;
+    onClose?: () => void;
+  }) => (
     <div data-testid="category-manager">
       Category Manager
-      <button onClick={() => props.onClose()}>Close</button>
+      <button onClick={() => props.onClose?.()}>Close</button>
     </div>
   ),
 }));
 
 vi.mock("./WishlistFilters", () => ({
-  WishlistFilters: (props: { categoryName: string; onAddItem: () => void }) => (
+  WishlistFilters: (props: {
+    categoryName: string;
+    searchQuery: () => string;
+    setSearchQuery: (value: string) => void;
+    sortBy: () => "date" | "title" | "custom";
+    setSortBy: (value: "date" | "title" | "custom") => void;
+    onAddItem: () => void;
+  }) => (
     <div data-testid="wishlist-filters">
       <h2>{props.categoryName}</h2>
       <button onClick={() => props.onAddItem()}>Add Item</button>
