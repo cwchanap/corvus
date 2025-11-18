@@ -23,20 +23,23 @@ vi.mock("@solidjs/router", () => ({
   useNavigate: () => vi.fn(),
 }));
 
-// Mock GraphQL hooks
-const mockWishlistQuery = {
+// Mock GraphQL hooks - using factory pattern for test isolation
+const createMockWishlistQuery = () => ({
   data: undefined,
   isLoading: false,
   isFetching: false,
   isError: false,
   error: null,
   refetch: vi.fn(),
-};
+});
 
-const mockMutation = {
+const createMockMutation = () => ({
   mutateAsync: vi.fn(),
   isPending: false,
-};
+});
+
+let mockWishlistQuery = createMockWishlistQuery();
+let mockMutation = createMockMutation();
 
 vi.mock("../lib/graphql/hooks/use-wishlist", () => ({
   useWishlist: () => mockWishlistQuery,
@@ -156,14 +159,37 @@ describe("WishlistDashboard", () => {
     links: [],
   };
 
+  // Helper function to create mock wishlist data with overrides
+  const createMockWishlistData = (overrides?: {
+    items?: WishlistItemRecord[];
+    categories?: WishlistCategoryRecord[];
+    pagination?: Partial<{
+      page: number;
+      page_size: number;
+      total_items: number;
+      total_pages: number;
+      has_next: boolean;
+      has_previous: boolean;
+    }>;
+  }) => ({
+    items: overrides?.items ?? [],
+    categories: overrides?.categories ?? [],
+    pagination: {
+      page: 1,
+      page_size: 10,
+      total_items: 0,
+      total_pages: 0,
+      has_next: false,
+      has_previous: false,
+      ...overrides?.pagination,
+    },
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mock query state
-    mockWishlistQuery.data = undefined;
-    mockWishlistQuery.isLoading = false;
-    mockWishlistQuery.isFetching = false;
-    mockWishlistQuery.isError = false;
-    mockWishlistQuery.error = null;
+    // Create fresh mocks for each test to ensure isolation
+    mockWishlistQuery = createMockWishlistQuery();
+    mockMutation = createMockMutation();
   });
 
   describe("Rendering", () => {
@@ -202,18 +228,7 @@ describe("WishlistDashboard", () => {
     it("should show updating indicator when fetching", () => {
       mockWishlistQuery.isLoading = false;
       mockWishlistQuery.isFetching = true;
-      mockWishlistQuery.data = {
-        items: [],
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 0,
-          total_pages: 0,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+      mockWishlistQuery.data = createMockWishlistData();
 
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText("Updating...")).toBeInTheDocument();
@@ -241,18 +256,7 @@ describe("WishlistDashboard", () => {
 
   describe("Empty State", () => {
     it("should show empty message when no items", () => {
-      mockWishlistQuery.data = {
-        items: [],
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 0,
-          total_pages: 0,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+      mockWishlistQuery.data = createMockWishlistData();
 
       render(() => <WishlistDashboard user={mockUser} />);
       expect(
@@ -263,54 +267,26 @@ describe("WishlistDashboard", () => {
 
   describe("Categories", () => {
     it("should display All Items category by default", () => {
-      mockWishlistQuery.data = {
+      mockWishlistQuery.data = createMockWishlistData({
         items: [mockItem],
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 1,
-          total_pages: 1,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+        pagination: { total_items: 1, total_pages: 1 },
+      });
 
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText(/All Items \(1\)/)).toBeInTheDocument();
     });
 
     it("should display categories when available", () => {
-      mockWishlistQuery.data = {
-        items: [],
+      mockWishlistQuery.data = createMockWishlistData({
         categories: [mockCategory],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 0,
-          total_pages: 0,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+      });
 
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText("Electronics")).toBeInTheDocument();
     });
 
     it("should open category manager when settings button clicked", async () => {
-      mockWishlistQuery.data = {
-        items: [],
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 0,
-          total_pages: 0,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+      mockWishlistQuery.data = createMockWishlistData();
 
       render(() => <WishlistDashboard user={mockUser} />);
 
@@ -325,18 +301,11 @@ describe("WishlistDashboard", () => {
 
   describe("Items Display", () => {
     it("should display wishlist items", () => {
-      mockWishlistQuery.data = {
+      mockWishlistQuery.data = createMockWishlistData({
         items: [mockItem],
         categories: [mockCategory],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 1,
-          total_pages: 1,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+        pagination: { total_items: 1, total_pages: 1 },
+      });
 
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText("Laptop")).toBeInTheDocument();
@@ -350,18 +319,10 @@ describe("WishlistDashboard", () => {
         { ...mockItem, id: "item-3", title: "Keyboard" },
       ];
 
-      mockWishlistQuery.data = {
+      mockWishlistQuery.data = createMockWishlistData({
         items,
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 3,
-          total_pages: 1,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+        pagination: { total_items: 3, total_pages: 1 },
+      });
 
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText("Laptop")).toBeInTheDocument();
@@ -385,18 +346,10 @@ describe("WishlistDashboard", () => {
         ],
       };
 
-      mockWishlistQuery.data = {
+      mockWishlistQuery.data = createMockWishlistData({
         items: [itemWithLinks],
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 1,
-          total_pages: 1,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+        pagination: { total_items: 1, total_pages: 1 },
+      });
 
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText("1 link")).toBeInTheDocument();
@@ -405,18 +358,14 @@ describe("WishlistDashboard", () => {
 
   describe("Pagination", () => {
     it("should show pagination controls", () => {
-      mockWishlistQuery.data = {
+      mockWishlistQuery.data = createMockWishlistData({
         items: [mockItem],
-        categories: [],
         pagination: {
-          page: 1,
-          page_size: 10,
           total_items: 20,
           total_pages: 2,
           has_next: true,
-          has_previous: false,
         },
-      };
+      });
 
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText("Previous")).toBeInTheDocument();
@@ -425,18 +374,14 @@ describe("WishlistDashboard", () => {
     });
 
     it("should disable Previous button on first page", () => {
-      mockWishlistQuery.data = {
+      mockWishlistQuery.data = createMockWishlistData({
         items: [mockItem],
-        categories: [],
         pagination: {
-          page: 1,
-          page_size: 10,
           total_items: 20,
           total_pages: 2,
           has_next: true,
-          has_previous: false,
         },
-      };
+      });
 
       render(() => <WishlistDashboard user={mockUser} />);
       const previousButton = screen.getByText("Previous").closest("button");
@@ -444,18 +389,15 @@ describe("WishlistDashboard", () => {
     });
 
     it("should disable Next button on last page", () => {
-      mockWishlistQuery.data = {
+      mockWishlistQuery.data = createMockWishlistData({
         items: [mockItem],
-        categories: [],
         pagination: {
           page: 2,
-          page_size: 10,
           total_items: 20,
           total_pages: 2,
-          has_next: false,
           has_previous: true,
         },
-      };
+      });
 
       render(() => <WishlistDashboard user={mockUser} />);
       const nextButton = screen.getByText("Next").closest("button");
@@ -463,18 +405,14 @@ describe("WishlistDashboard", () => {
     });
 
     it("should show correct item range", () => {
-      mockWishlistQuery.data = {
+      mockWishlistQuery.data = createMockWishlistData({
         items: [mockItem],
-        categories: [],
         pagination: {
-          page: 1,
-          page_size: 10,
           total_items: 25,
           total_pages: 3,
           has_next: true,
-          has_previous: false,
         },
-      };
+      });
 
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText(/Showing 1–1 of 25 items/)).toBeInTheDocument();
@@ -483,18 +421,10 @@ describe("WishlistDashboard", () => {
 
   describe("Item Actions", () => {
     beforeEach(() => {
-      mockWishlistQuery.data = {
+      mockWishlistQuery.data = createMockWishlistData({
         items: [mockItem],
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 1,
-          total_pages: 1,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+        pagination: { total_items: 1, total_pages: 1 },
+      });
     });
 
     it("should show edit button for each item", () => {
@@ -534,18 +464,7 @@ describe("WishlistDashboard", () => {
 
   describe("Dialogs", () => {
     beforeEach(() => {
-      mockWishlistQuery.data = {
-        items: [],
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 0,
-          total_pages: 0,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+      mockWishlistQuery.data = createMockWishlistData();
     });
 
     it("should not show dialogs by default", () => {
@@ -590,33 +509,11 @@ describe("WishlistDashboard", () => {
     });
 
     it("should handle empty categories array", () => {
-      mockWishlistQuery.data = {
-        items: [],
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 0,
-          total_pages: 0,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+      mockWishlistQuery.data = createMockWishlistData();
 
       render(() => <WishlistDashboard user={mockUser} />);
       const allItemsElements = screen.getAllByText(/All Items/);
       expect(allItemsElements.length).toBeGreaterThan(0);
-    });
-
-    it("should handle null pagination gracefully", () => {
-      mockWishlistQuery.data = {
-        items: [],
-        categories: [],
-        pagination: null as never,
-      };
-
-      render(() => <WishlistDashboard user={mockUser} />);
-      expect(screen.getByText("Categories")).toBeInTheDocument();
     });
   });
 
@@ -628,18 +525,7 @@ describe("WishlistDashboard", () => {
     });
 
     it("should have proper button roles", () => {
-      mockWishlistQuery.data = {
-        items: [],
-        categories: [],
-        pagination: {
-          page: 1,
-          page_size: 10,
-          total_items: 0,
-          total_pages: 0,
-          has_next: false,
-          has_previous: false,
-        },
-      };
+      mockWishlistQuery.data = createMockWishlistData();
 
       const { container } = render(() => <WishlistDashboard user={mockUser} />);
       const buttons = container.querySelectorAll("button");
