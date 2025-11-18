@@ -25,11 +25,11 @@ vi.mock("@solidjs/router", () => ({
 
 // Mock GraphQL hooks - using factory pattern for test isolation
 const createMockWishlistQuery = () => ({
-  data: undefined,
+  data: undefined as unknown,
   isLoading: false,
   isFetching: false,
   isError: false,
-  error: null,
+  error: null as unknown,
   refetch: vi.fn(),
 });
 
@@ -38,21 +38,30 @@ const createMockMutation = () => ({
   isPending: false,
 });
 
-let mockWishlistQuery = createMockWishlistQuery();
-let mockMutation = createMockMutation();
+// Create initial mock objects - these will be mutated in beforeEach
+// Note: vi.mock() creates a closure, so we must mutate these objects
+// rather than reassigning them to maintain test isolation
+const mockWishlistQuery = createMockWishlistQuery();
+const mockDeleteItem = createMockMutation();
+const mockCreateItem = createMockMutation();
+const mockUpdateItem = createMockMutation();
+const mockAddItemLink = createMockMutation();
+const mockUpdateItemLink = createMockMutation();
+const mockDeleteItemLink = createMockMutation();
+const mockLogout = createMockMutation();
 
 vi.mock("../lib/graphql/hooks/use-wishlist", () => ({
   useWishlist: () => mockWishlistQuery,
-  useDeleteItem: () => mockMutation,
-  useCreateItem: () => mockMutation,
-  useUpdateItem: () => mockMutation,
-  useAddItemLink: () => mockMutation,
-  useUpdateItemLink: () => mockMutation,
-  useDeleteItemLink: () => mockMutation,
+  useDeleteItem: () => mockDeleteItem,
+  useCreateItem: () => mockCreateItem,
+  useUpdateItem: () => mockUpdateItem,
+  useAddItemLink: () => mockAddItemLink,
+  useUpdateItemLink: () => mockUpdateItemLink,
+  useDeleteItemLink: () => mockDeleteItemLink,
 }));
 
 vi.mock("../lib/graphql/hooks/use-auth", () => ({
-  useLogout: () => mockMutation,
+  useLogout: () => mockLogout,
 }));
 
 vi.mock("../lib/graphql/adapters", () => ({
@@ -187,9 +196,17 @@ describe("WishlistDashboard", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Create fresh mocks for each test to ensure isolation
-    mockWishlistQuery = createMockWishlistQuery();
-    mockMutation = createMockMutation();
+    // Reset mock properties to default values for test isolation
+    // Using Object.assign() to mutate the original objects (not reassign)
+    // because vi.mock() creates closures that capture the original references
+    Object.assign(mockWishlistQuery, createMockWishlistQuery());
+    Object.assign(mockDeleteItem, createMockMutation());
+    Object.assign(mockCreateItem, createMockMutation());
+    Object.assign(mockUpdateItem, createMockMutation());
+    Object.assign(mockAddItemLink, createMockMutation());
+    Object.assign(mockUpdateItemLink, createMockMutation());
+    Object.assign(mockDeleteItemLink, createMockMutation());
+    Object.assign(mockLogout, createMockMutation());
   });
 
   describe("Rendering", () => {
@@ -493,7 +510,7 @@ describe("WishlistDashboard", () => {
       const signOutButton = screen.getByText("Sign Out");
       expect(signOutButton).toBeInTheDocument();
       fireEvent.click(signOutButton);
-      expect(mockMutation.mutateAsync).toHaveBeenCalled();
+      expect(mockLogout.mutateAsync).toHaveBeenCalled();
     });
   });
 
