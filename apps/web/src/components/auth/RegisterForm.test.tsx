@@ -30,6 +30,25 @@ describe("RegisterForm", () => {
     });
   });
 
+  // Helper function to fill and submit register form
+  const fillAndSubmitRegisterForm = (
+    name: string,
+    email: string,
+    password: string,
+  ) => {
+    const nameInput = screen.getByLabelText("Full Name");
+    const emailInput = screen.getByLabelText("Email Address");
+    const passwordInput = screen.getByLabelText("Password");
+    const submitButton = screen.getByRole("button", {
+      name: "Create Account",
+    });
+
+    fireEvent.input(nameInput, { target: { value: name } });
+    fireEvent.input(emailInput, { target: { value: email } });
+    fireEvent.input(passwordInput, { target: { value: password } });
+    fireEvent.click(submitButton);
+  };
+
   describe("Rendering", () => {
     it("should render registration form with all required fields", () => {
       render(() => <RegisterForm />);
@@ -101,18 +120,7 @@ describe("RegisterForm", () => {
       mockMutateAsync.mockResolvedValue({ success: true });
 
       render(() => <RegisterForm />);
-
-      const nameInput = screen.getByLabelText("Full Name");
-      const emailInput = screen.getByLabelText("Email Address");
-      const passwordInput = screen.getByLabelText("Password");
-      const submitButton = screen.getByRole("button", {
-        name: "Create Account",
-      });
-
-      fireEvent.input(nameInput, { target: { value: "John Doe" } });
-      fireEvent.input(emailInput, { target: { value: "john@example.com" } });
-      fireEvent.input(passwordInput, { target: { value: "password123" } });
-      fireEvent.click(submitButton);
+      fillAndSubmitRegisterForm("John Doe", "john@example.com", "password123");
 
       await waitFor(() => {
         expect(mockMutateAsync).toHaveBeenCalledWith({
@@ -127,18 +135,7 @@ describe("RegisterForm", () => {
       mockMutateAsync.mockResolvedValue({ success: true });
 
       render(() => <RegisterForm />);
-
-      const nameInput = screen.getByLabelText("Full Name");
-      const emailInput = screen.getByLabelText("Email Address");
-      const passwordInput = screen.getByLabelText("Password");
-      const submitButton = screen.getByRole("button", {
-        name: "Create Account",
-      });
-
-      fireEvent.input(nameInput, { target: { value: "John Doe" } });
-      fireEvent.input(emailInput, { target: { value: "john@example.com" } });
-      fireEvent.input(passwordInput, { target: { value: "password123" } });
-      fireEvent.click(submitButton);
+      fillAndSubmitRegisterForm("John Doe", "john@example.com", "password123");
 
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
@@ -152,20 +149,11 @@ describe("RegisterForm", () => {
       });
 
       render(() => <RegisterForm />);
-
-      const nameInput = screen.getByLabelText("Full Name");
-      const emailInput = screen.getByLabelText("Email Address");
-      const passwordInput = screen.getByLabelText("Password");
-      const submitButton = screen.getByRole("button", {
-        name: "Create Account",
-      });
-
-      fireEvent.input(nameInput, { target: { value: "John Doe" } });
-      fireEvent.input(emailInput, {
-        target: { value: "existing@example.com" },
-      });
-      fireEvent.input(passwordInput, { target: { value: "password123" } });
-      fireEvent.click(submitButton);
+      fillAndSubmitRegisterForm(
+        "John Doe",
+        "existing@example.com",
+        "password123",
+      );
 
       await waitFor(() => {
         expect(screen.getByText("Email already exists")).toBeInTheDocument();
@@ -178,18 +166,7 @@ describe("RegisterForm", () => {
       });
 
       render(() => <RegisterForm />);
-
-      const nameInput = screen.getByLabelText("Full Name");
-      const emailInput = screen.getByLabelText("Email Address");
-      const passwordInput = screen.getByLabelText("Password");
-      const submitButton = screen.getByRole("button", {
-        name: "Create Account",
-      });
-
-      fireEvent.input(nameInput, { target: { value: "John Doe" } });
-      fireEvent.input(emailInput, { target: { value: "john@example.com" } });
-      fireEvent.input(passwordInput, { target: { value: "password123" } });
-      fireEvent.click(submitButton);
+      fillAndSubmitRegisterForm("John Doe", "john@example.com", "password123");
 
       await waitFor(() => {
         expect(screen.getByText("Registration failed")).toBeInTheDocument();
@@ -200,18 +177,7 @@ describe("RegisterForm", () => {
       mockMutateAsync.mockRejectedValue(new Error("Network error"));
 
       render(() => <RegisterForm />);
-
-      const nameInput = screen.getByLabelText("Full Name");
-      const emailInput = screen.getByLabelText("Email Address");
-      const passwordInput = screen.getByLabelText("Password");
-      const submitButton = screen.getByRole("button", {
-        name: "Create Account",
-      });
-
-      fireEvent.input(nameInput, { target: { value: "John Doe" } });
-      fireEvent.input(emailInput, { target: { value: "john@example.com" } });
-      fireEvent.input(passwordInput, { target: { value: "password123" } });
-      fireEvent.click(submitButton);
+      fillAndSubmitRegisterForm("John Doe", "john@example.com", "password123");
 
       await waitFor(() => {
         expect(screen.getByText("Network error")).toBeInTheDocument();
@@ -222,18 +188,7 @@ describe("RegisterForm", () => {
       mockMutateAsync.mockRejectedValue("Something went wrong");
 
       render(() => <RegisterForm />);
-
-      const nameInput = screen.getByLabelText("Full Name");
-      const emailInput = screen.getByLabelText("Email Address");
-      const passwordInput = screen.getByLabelText("Password");
-      const submitButton = screen.getByRole("button", {
-        name: "Create Account",
-      });
-
-      fireEvent.input(nameInput, { target: { value: "John Doe" } });
-      fireEvent.input(emailInput, { target: { value: "john@example.com" } });
-      fireEvent.input(passwordInput, { target: { value: "password123" } });
-      fireEvent.click(submitButton);
+      fillAndSubmitRegisterForm("John Doe", "john@example.com", "password123");
 
       await waitFor(() => {
         expect(screen.getByText("An error occurred")).toBeInTheDocument();
@@ -248,20 +203,11 @@ describe("RegisterForm", () => {
       });
 
       render(() => <RegisterForm />);
-
-      const nameInput = screen.getByLabelText("Full Name");
-      const emailInput = screen.getByLabelText("Email Address");
-      const passwordInput = screen.getByLabelText("Password");
-      const submitButton = screen.getByRole("button", {
-        name: "Create Account",
-      });
-
-      fireEvent.input(nameInput, { target: { value: "John Doe" } });
-      fireEvent.input(emailInput, {
-        target: { value: "existing@example.com" },
-      });
-      fireEvent.input(passwordInput, { target: { value: "password123" } });
-      fireEvent.click(submitButton);
+      fillAndSubmitRegisterForm(
+        "John Doe",
+        "existing@example.com",
+        "password123",
+      );
 
       await waitFor(() => {
         expect(screen.getByText("Email already exists")).toBeInTheDocument();
@@ -269,9 +215,7 @@ describe("RegisterForm", () => {
 
       // Second submission succeeds
       mockMutateAsync.mockResolvedValueOnce({ success: true });
-
-      fireEvent.input(emailInput, { target: { value: "new@example.com" } });
-      fireEvent.click(submitButton);
+      fillAndSubmitRegisterForm("John Doe", "new@example.com", "password123");
 
       await waitFor(() => {
         expect(
