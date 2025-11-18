@@ -122,6 +122,9 @@ describe("WishlistFilters", () => {
 
       fireEvent.input(input, { target: { value: "test@#$%^&*()" } });
       expect(searchQuery()).toBe("test@#$%^&*()");
+      expect(input.value).toBe("test@#$%^&*()");
+      // Verify component still renders correctly with special characters
+      expect(screen.getByText("Add Item")).toBeInTheDocument();
     });
   });
 
@@ -134,29 +137,22 @@ describe("WishlistFilters", () => {
       expect(select).toBeInTheDocument();
     });
 
-    it("should update sort value when custom is selected", () => {
-      const { sortBy } = renderWishlistFilters({ initialSortBy: "date" });
-      const select = screen.getByRole("combobox") as HTMLSelectElement;
+    it.each([
+      ["custom", "date"],
+      ["date", "custom"],
+      ["title", "custom"],
+    ])(
+      "should update sort value when %s is selected",
+      (newValue, initialValue) => {
+        const { sortBy } = renderWishlistFilters({
+          initialSortBy: initialValue as "date" | "title" | "custom",
+        });
+        const select = screen.getByRole("combobox") as HTMLSelectElement;
 
-      fireEvent.change(select, { target: { value: "custom" } });
-      expect(sortBy()).toBe("custom");
-    });
-
-    it("should update sort value when date is selected", () => {
-      const { sortBy } = renderWishlistFilters();
-      const select = screen.getByRole("combobox") as HTMLSelectElement;
-
-      fireEvent.change(select, { target: { value: "date" } });
-      expect(sortBy()).toBe("date");
-    });
-
-    it("should update sort value when title is selected", () => {
-      const { sortBy } = renderWishlistFilters();
-      const select = screen.getByRole("combobox") as HTMLSelectElement;
-
-      fireEvent.change(select, { target: { value: "title" } });
-      expect(sortBy()).toBe("title");
-    });
+        fireEvent.change(select, { target: { value: newValue } });
+        expect(sortBy()).toBe(newValue);
+      },
+    );
   });
 
   describe("Add Item Button", () => {
