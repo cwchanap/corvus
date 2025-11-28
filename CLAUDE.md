@@ -162,3 +162,14 @@ cd apps/web && pnpm test:ui
 - Web app: `.vinxi/` and `.output/` directories (SolidStart build)
 - Extension: `.wxt/` and `dist/` directories (WXT build)
 - Turbo cache: `.turbo/` directory
+
+## Project Constitution
+
+For project-wide governance, architectural principles, and non-negotiable rules, refer to `.specify/memory/constitution.md`. The constitution defines:
+
+- **Core Principles**: Monorepo organization, type safety, component reusability, API-first architecture, testing discipline
+- **Technology Stack**: Mandatory technology choices and deviation policies
+- **Development Workflow**: Local development, pre-commit requirements, build & deployment, testing gates
+- **Governance**: Amendment process, compliance review, versioning policy
+
+When conflicts arise between development practices, the constitution supersedes all other guidance.

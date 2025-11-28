@@ -11,27 +11,57 @@
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: TypeScript 5.8.x (strict mode)
+**Primary Dependencies**: SolidJS 1.8.x, SolidStart 1.0.x, Hono 4.x, Drizzle ORM 0.36.x
+**Storage**: Cloudflare D1 (SQLite) with Drizzle migrations
+**Testing**: Playwright (E2E for web), Vitest (unit/integration for API)
+**Target Platform**: Cloudflare Workers (API), Cloudflare Pages (web), Browser extension (Chrome/Firefox)
+**Project Type**: Monorepo (Turborepo) - multi-app with shared packages
+**Performance Goals**: [Feature-specific, e.g., <200ms API response, 60fps UI, or N/A]
+**Constraints**: [Feature-specific, e.g., offline-capable, <100KB bundle size, or N/A]
+**Scale/Scope**: [Feature-specific, e.g., 1000 concurrent users, 10K wishlists, or NEEDS CLARIFICATION]
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-[Gates determined based on constitution file]
+### I. Monorepo Organization ✅/❌
+
+- [ ] New code placed in correct directory (`apps/` or `packages/`)
+- [ ] Shared code extracted to `@repo/common` or `@repo/ui-components`
+- [ ] Dependencies use workspace protocol (`workspace:*`)
+- [ ] Turbo orchestration configured for new tasks
+
+### II. Type Safety & Quality Gates ✅/❌
+
+- [ ] TypeScript strict mode enabled
+- [ ] ESLint configuration applied (zero errors, ≤25 warnings)
+- [ ] No `any` types (or justified in code comments)
+- [ ] Type checking passes (`pnpm check-types`)
+
+### III. Component Reusability ✅/❌
+
+- [ ] UI components in `@repo/ui-components` for cross-app reuse
+- [ ] class-variance-authority used for variants
+- [ ] Tailwind CSS for styling (no inline/CSS-in-JS)
+- [ ] Application-specific components in respective app directories
+
+### IV. API-First Architecture ✅/❌
+
+- [ ] Business logic in API backend (`apps/api`)
+- [ ] Drizzle ORM for database operations
+- [ ] API endpoints versioned and documented
+- [ ] Database migrations defined (`pnpm db:gen`)
+- [ ] GraphQL schema synced with resolvers (if applicable)
+
+### V. Testing Discipline ✅/❌
+
+- [ ] Critical user journeys have Playwright tests (web app)
+- [ ] API has Vitest unit/integration tests
+- [ ] Contract tests for API endpoints
+- [ ] Tests for happy path + primary error scenarios
+
+**Violations Requiring Justification**: [List any ❌ items and why they're necessary]
 
 ## Project Structure
 
@@ -47,58 +77,62 @@ specs/[###-feature]/
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
-### Source Code (repository root)
+### Source Code (Corvus Monorepo)
+
 <!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
+  ACTION REQUIRED: Specify which apps/packages are affected by this feature.
+  Delete sections that don't apply. Add file paths for new/modified files.
 -->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
+# Web Application (if feature touches web UI)
+apps/web/
 ├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
+│   ├── components/           # App-specific components
+│   ├── routes/               # SolidStart file-based routes
+│   ├── lib/                  # Web app utilities
+│   └── [feature files]
 └── tests/
+    └── e2e/                  # Playwright tests
 
-frontend/
+# API Backend (if feature touches backend logic)
+apps/api/
 ├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
+│   ├── db/                   # Drizzle schema & migrations
+│   ├── routes/               # Hono API routes
+│   ├── graphql/              # GraphQL schema & resolvers
+│   └── [feature files]
 └── tests/
+    ├── contract/             # API contract tests
+    ├── integration/          # Integration tests
+    └── unit/                 # Unit tests
 
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
+# Browser Extension (if feature touches extension)
+apps/extension/
+├── entrypoints/              # Extension entry points (popup, background, etc.)
+│   └── [feature files]
+└── components/               # Extension-specific components
 
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+# Shared UI Components (if creating reusable components)
+packages/ui-components/
+└── src/
+    └── [new component files]
+
+# Shared Utilities (if creating shared logic)
+packages/common/
+└── src/
+    └── [new utility files]
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Affected Apps**: [List which apps are impacted: web, api, extension]
+**New Shared Packages**: [List any new `@repo/*` packages or N/A]
+**Database Changes**: [Yes/No - if yes, migration files required]
 
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
+| -------------------------- | ------------------ | ------------------------------------ |
+| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |
