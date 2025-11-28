@@ -29,19 +29,9 @@
 
 ## Constitution Check
 
-_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-Verify compliance with [Corvus Constitution](../../.specify/memory/constitution.md):
-
-- [ ] **Monorepo Architecture**: Feature integrates into existing apps/ or packages/ structure
-- [ ] **TypeScript & SolidJS**: All code uses TypeScript strict mode, UI uses SolidJS patterns
-- [ ] **Test-Driven Development**: Playwright tests written before implementation
-- [ ] **Code Quality**: ESLint (<25 warnings), Prettier formatting, naming conventions
-- [ ] **Conventional Commits**: Commit messages follow `<type>(<scope>): <subject>` format
-- [ ] **Shared Components**: Reusable code in @repo packages, no duplication
-- [ ] **Cloudflare-First**: API uses Workers/D1, web uses cloudflare-pages preset
-
-**Violations Requiring Justification**: [List any NON-NEGOTIABLE principle violations with rationale or mark N/A]
+[Gates determined based on constitution file]
 
 ## Project Structure
 
@@ -58,7 +48,6 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
-
 <!--
   ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
   for this feature. Delete unused options and expand the chosen structure with
@@ -109,7 +98,7 @@ directories captured above]
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
-| -------------------------- | ------------------ | ------------------------------------ |
-| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
