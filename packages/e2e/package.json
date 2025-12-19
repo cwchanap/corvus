@@ -1,0 +1,21 @@
+{
+  "name": "e2e",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "eslint": "^9.31.0",
+    "typescript": "5.8.2"
+  }
+}
