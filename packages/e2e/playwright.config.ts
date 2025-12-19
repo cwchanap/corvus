@@ -41,7 +41,7 @@ export default defineConfig({
     /* Run local API and web servers before starting the tests */
     webServer: [
         {
-            command: "cd ../../apps/api && bun run dev",
+            command: "cd ../../apps/api && bun run dev -- --local",
             url: "http://localhost:5002",
             reuseExistingServer: !process.env.CI,
             timeout: 120 * 1000,
