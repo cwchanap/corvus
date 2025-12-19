@@ -12,8 +12,6 @@
     "start": "vinxi start",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
     "test:unit": "pnpm vitest run --config vitest.config.ts --passWithNoTests"
   },
   "dependencies": {
@@ -31,7 +29,6 @@
     "vinxi": "^0.5.7"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@solidjs/testing-library": "^0.8.10",
