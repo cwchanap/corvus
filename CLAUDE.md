@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a Turborepo monorepo built with SolidJS for wishlist management, featuring a web application, API backend, and browser extension. The project uses pnpm as the package manager and Turbo for build orchestration.
+This is a Turborepo monorepo built with SolidJS for wishlist management, featuring a web application, API backend, and browser extension. The project uses Bun as the package manager and Turbo for build orchestration.
 
 ## Key Applications
 
@@ -25,37 +25,37 @@ This is a Turborepo monorepo built with SolidJS for wishlist management, featuri
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Run API + web + extension in development mode
-pnpm dev
+bun dev
 
 # Run only web app development (with database setup)
-pnpm dev:web
+bun dev:web
 
 # Run web app with Cloudflare backend
-pnpm dev:web:cf
+bun dev:web:cf
 
 # Run web app with split frontend/backend
-pnpm dev:web:split
+bun dev:web:split
 
 # Run extension development
-pnpm dev:extension
+bun dev:extension
 
 # Build all apps and packages
-pnpm build
+bun build
 
 # Lint all packages
-pnpm lint
+bun lint
 
 # Fix linting issues
-pnpm lint:fix
+bun lint:fix
 
 # Type checking across all packages
-pnpm check-types
+bun check-types
 
 # Format code with Prettier
-pnpm format
+bun format
 ```
 
 ### App-Specific Development
@@ -80,16 +80,16 @@ turbo build --filter=extension
 
 ```bash
 # Generate migration files
-cd apps/api && pnpm db:gen
+cd apps/api && bun db:gen
 
 # Apply migrations to local D1 database
-cd apps/api && pnpm db:migrate
+cd apps/api && bun db:migrate
 
 # Generate Cloudflare types
-cd apps/api && pnpm cf-typegen
+cd apps/api && bun cf-typegen
 
 # Deploy API to Cloudflare Workers
-cd apps/api && pnpm deploy
+cd apps/api && bun deploy
 ```
 
 ### Extension Commands
@@ -111,11 +111,11 @@ cd apps/extension && npm run zip
 ### Testing Commands
 
 ```bash
-# Run Playwright tests for web app
-cd apps/web && pnpm test
+# Run Playwright E2E tests
+bun --cwd packages/e2e test
 
 # Run Playwright tests with UI
-cd apps/web && pnpm test:ui
+bun --cwd packages/e2e test:ui
 ```
 
 ## Architecture Notes
