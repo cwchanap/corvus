@@ -28,6 +28,11 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Build web assets
+        run: |
+          bun --cwd apps/web run build
+          bun --cwd apps/api run copy-assets
+
       - name: Setup local D1 database
         run: cd apps/api && bun run db:migrate
 
