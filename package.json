@@ -9,7 +9,7 @@
     "deploy": "turbo run deploy",
     "dev": "turbo run db:local dev --filter=api --filter=web --filter=extension",
     "dev:web": "turbo run dev --filter=web",
-    "dev:web:split": "pnpm -C apps/web dev:split",
+    "dev:web:split": "bun --cwd apps/web dev:split",
     "dev:web:cf": "turbo run build db:local dev:backend dev:ui --filter=web",
     "dev:extension": "turbo run dev --filter=extension",
     "lint": "turbo run lint",
@@ -29,7 +29,7 @@
     "turbo": "^2.5.5",
     "typescript": "5.8.3"
   },
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "bun@1.1.42",
   "engines": {
     "node": ">=20"
   },
