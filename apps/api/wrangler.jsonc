@@ -3,6 +3,12 @@
   "name": "corvus",
   "compatibility_date": "2025-08-03",
   "compatibility_flags": ["nodejs_compat"],
+  "rules": [
+    {
+      "type": "Text",
+      "globs": ["**/*.graphql"]
+    }
+  ],
   "main": "./src/index.tsx",
   "dev": {
     "port": 5002
