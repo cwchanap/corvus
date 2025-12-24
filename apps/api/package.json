@@ -2,7 +2,7 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "node -e \"require('node:fs').mkdirSync('dist/client', { recursive: true })\" && wrangler dev",
     "build": "vite build",
     "copy-assets": "rm -rf dist/client && mkdir -p dist/client && cp -r ../web/.output/public/. dist/client/",
     "build:api": "vite build",
