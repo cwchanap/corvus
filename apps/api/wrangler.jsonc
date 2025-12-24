@@ -6,7 +6,8 @@
   "rules": [
     {
       "type": "Text",
-      "globs": ["**/*.graphql"]
+      "globs": ["**/*.graphql"],
+      "fallthrough": true
     }
   ],
   "main": "./src/index.tsx",

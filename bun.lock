@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "corvus",
@@ -32,6 +33,7 @@
         "drizzle-kit": "^0.31.4",
         "unenv": "^1.10.0",
         "vite": "^6.3.5",
+        "vite-plugin-string": "^1.2.3",
         "vitest": "^3.2.4",
         "wrangler": "^4.36.0",
       },
@@ -2751,6 +2753,8 @@
     "vite-node": ["vite-node@3.2.4", "", { "dependencies": { "cac": "6.7.14", "debug": "4.4.1", "es-module-lexer": "1.7.0", "pathe": "2.0.3", "vite": "6.3.5" }, "bin": { "vite-node": "vite-node.mjs" } }, "sha512-EbKSKh+bh1E1IFxeO0pg1n4dvoOTt0UDiXMd/qn++r98+jPO1xtJilvXldeuQ8giIB5IkpjCgMleHMNEsGH6pg=="],
 
     "vite-plugin-solid": ["vite-plugin-solid@2.11.7", "", { "dependencies": { "@babel/core": "7.28.0", "@types/babel__core": "7.20.5", "babel-preset-solid": "1.9.6", "merge-anything": "5.1.7", "solid-refresh": "0.6.3", "vitefu": "1.1.1" }, "optionalDependencies": { "@testing-library/jest-dom": "6.9.1" }, "peerDependencies": { "solid-js": "1.9.7", "vite": "6.3.5" } }, "sha512-5TgK1RnE449g0Ryxb9BXqem89RSy7fE8XGVCo+Gw84IHgPuPVP7nYNP6WBVAaY/0xw+OqfdQee+kusL0y3XYNg=="],
+
+    "vite-plugin-string": ["vite-plugin-string@1.2.3", "", { "dependencies": { "@rollup/pluginutils": ">=4.1.0" }, "peerDependencies": { "vite": ">=2" } }, "sha512-zw2jL0c4B6CAvxO8PshX04494jTcqJjNH2kW1AugBH+fImRY0evdNtVgmeS1i1VFdua/OFhL7fMqIPh0uF21/Q=="],
 
     "vitefu": ["vitefu@1.1.1", "", { "optionalDependencies": { "vite": "6.3.5" } }, "sha512-B/Fegf3i8zh0yFbpzZ21amWzHmuNlLlmJT6n7bu5e+pCHUKQIfXSYokrqOBGEMMe9UG2sostKQF9mml/vYaWJQ=="],
 
