@@ -42,7 +42,7 @@ export default defineConfig({
     webServer: [
         {
             command: "cd ../../apps/api && bun run dev -- --local",
-            url: "http://localhost:5002",
+            url: "http://localhost:5002/graphql",
             reuseExistingServer: !process.env.CI,
             timeout: 120 * 1000,
             stdout: "pipe",
