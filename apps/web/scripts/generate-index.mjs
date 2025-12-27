@@ -10,7 +10,7 @@ const indexPath = resolve(distDir, "index.html");
 const clientKey = "virtual:$vinxi/handler/client";
 
 if (!existsSync(manifestPath)) {
-  console.error(`Missing manifest at ${manifestPath}. Run "pnpm build" first.`);
+  console.error(`Missing manifest at ${manifestPath}. Run "bun run build" first.`);
   process.exit(1);
 }
 
