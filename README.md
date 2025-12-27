@@ -22,20 +22,20 @@ Each package/app is 100% [TypeScript](https://www.typescriptlang.org/) and [Soli
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Run all apps in development
-pnpm dev
+bun dev
 
 # Run specific apps
-pnpm dev:web        # Web app only
-pnpm dev:extension  # Extension only
+bun dev:web        # Web app only
+bun dev:extension  # Extension only
 
 # Build for production
-pnpm build
+bun build
 
 # Deploy to Cloudflare
-pnpm deploy
+bun deploy
 ```
 
 ## Deployment
@@ -71,7 +71,7 @@ turbo build
 # Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
 npx turbo build
 yarn dlx turbo build
-pnpm exec turbo build
+bun run turbo build
 ```
 
 You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
@@ -97,7 +97,7 @@ turbo dev
 # Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
 npx turbo dev
 yarn exec turbo dev
-pnpm exec turbo dev
+bun run turbo dev
 ```
 
 You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
@@ -128,7 +128,7 @@ turbo login
 # Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
 npx turbo login
 yarn exec turbo login
-pnpm exec turbo login
+bun run turbo login
 ```
 
 This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
@@ -142,7 +142,7 @@ turbo link
 # Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
 npx turbo link
 yarn exec turbo link
-pnpm exec turbo link
+bun run turbo link
 ```
 
 ## Useful Links

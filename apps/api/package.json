@@ -2,7 +2,7 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "node -e \"require('node:fs').mkdirSync('dist/client', { recursive: true })\" && wrangler dev",
     "build": "vite build",
     "copy-assets": "rm -rf dist/client && mkdir -p dist/client && cp -r ../web/.output/public/. dist/client/",
     "build:api": "vite build",
@@ -34,6 +34,7 @@
     "drizzle-kit": "^0.31.4",
     "unenv": "^1.10.0",
     "vite": "^6.3.5",
+    "vite-plugin-string": "^1.2.3",
     "vitest": "^3.2.4",
     "wrangler": "^4.36.0"
   }

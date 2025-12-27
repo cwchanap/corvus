@@ -10,7 +10,7 @@ import { defineConfig, devices } from "@playwright/test";
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-    testDir: "./e2e",
+    testDir: "./tests",
     /* Run tests in files in parallel */
     fullyParallel: true,
     /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -41,16 +41,20 @@ export default defineConfig({
     /* Run local API and web servers before starting the tests */
     webServer: [
         {
-            command: "pnpm -C ../../apps/api dev -- --local",
-            url: "http://localhost:5002",
+            command: "cd ../../apps/api && bun run dev -- --local",
+            url: "http://localhost:5002/graphql",
             reuseExistingServer: !process.env.CI,
             timeout: 120 * 1000,
+            stdout: "pipe",
+            stderr: "pipe",
         },
         {
-            command: "pnpm -C ../../apps/web dev",
+            command: "cd ../../apps/web && bun run dev",
             url: "http://localhost:5000",
             reuseExistingServer: !process.env.CI,
             timeout: 120 * 1000,
+            stdout: "pipe",
+            stderr: "pipe",
         },
     ],
 });

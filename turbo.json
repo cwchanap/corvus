@@ -60,6 +60,14 @@
     "db:local": {
       "cache": false,
       "persistent": false
+    },
+    "test": {
+      "cache": false,
+      "dependsOn": []
+    },
+    "test:ui": {
+      "cache": false,
+      "persistent": true
     }
   }
 }
