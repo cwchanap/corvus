@@ -21,26 +21,26 @@ Corvus Web is the SolidStart front-end for the Corvus platform. It consumes the 
 
 1. **Install dependencies** at the repo root:
    ```bash
-   pnpm install
+   bun install
    ```
 2. **Run the full stack** (API, web, extension):
    ```bash
-   pnpm dev
+   bun dev
    ```
 3. **Run just the web app** when iterating on UI:
    ```bash
-   pnpm --filter web dev
+   bun dev:web
    ```
 
 ## Available Scripts (web)
 
 ```bash
-pnpm --filter web dev        # Start the SolidStart dev server
-pnpm --filter web build      # Build for production
-pnpm --filter web lint       # ESLint with repo rules
-pnpm --filter web check-types# TypeScript project check
-pnpm --filter web test       # Playwright headless tests
-pnpm --filter web test:ui    # Playwright in UI mode
+bun --cwd apps/web run dev         # Start the SolidStart dev server
+bun --cwd apps/web run build       # Build for production
+bun --cwd apps/web run lint        # ESLint with repo rules
+bun --cwd apps/web run check-types # TypeScript project check
+bun run test                       # Playwright headless tests
+bun run test:ui                    # Playwright in UI mode
 ```
 
 ## Project Highlights
@@ -62,7 +62,7 @@ src/
 
 ## Testing
 
-Playwright specs live in `apps/web/tests`. Run them with `pnpm --filter web test` or open the interactive runner using `pnpm --filter web test:ui`.
+Playwright specs live in `packages/e2e/tests`. Run them with `bun run test` or open the interactive runner using `bun run test:ui`.
 
 ## Deployment Notes
 

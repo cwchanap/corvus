@@ -39,22 +39,22 @@ A modern browser extension built with SolidJS and WXT that allows users to bookm
 ### Prerequisites
 
 - Node.js >= 18
-- pnpm package manager
+- Bun
 
 ### Setup
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Start development mode
-pnpm dev
+bun run dev
 
 # Build for production
-pnpm build
+bun run build
 
 # Build for Firefox
-pnpm build:firefox
+bun run build:firefox
 ```
 
 ### Loading in Browser
