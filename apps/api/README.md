@@ -7,7 +7,7 @@ This is the backend API server for the Corvus wishlist application, built with H
 ### Prerequisites
 
 - Node.js 18+
-- pnpm
+- Bun
 - Cloudflare account (for deployment)
 
 ### Development Setup
@@ -16,20 +16,20 @@ This is the backend API server for the Corvus wishlist application, built with H
 
    ```bash
    cd apps/api
-   pnpm install
+   bun install
    ```
 
 2. **Set up the database:**
 
    ```bash
    # Generate and apply database migrations
-   pnpm run db:gen
-   pnpm run db:migrate
+   bun run db:gen
+   bun run db:migrate
    ```
 
 3. **Start the development server:**
    ```bash
-   pnpm run dev
+   bun run dev
    ```
    The API will be available at `http://localhost:5002`
 
@@ -61,10 +61,10 @@ The API uses Cloudflare D1 database with the following schema:
 
 ```bash
 # Generate migration files from schema
-pnpm run db:gen
+bun run db:gen
 
 # Apply migrations to local database
-pnpm run db:migrate
+bun run db:migrate
 
 # List databases
 npx wrangler d1 list
@@ -95,7 +95,7 @@ npx wrangler d1 list
 
 ```bash
 # Build and deploy
-pnpm run deploy
+bun run deploy
 ```
 
 ### Environment Variables
@@ -108,7 +108,7 @@ The API automatically uses the D1 database binding configured in `wrangler.jsonc
 
 ```bash
 # Start the API server
-pnpm run dev
+bun run dev
 
 # Test endpoints with curl
 curl http://localhost:5002/api/wishlist
@@ -159,8 +159,8 @@ const response = await fetch(`${API_BASE}/api/wishlist`);
 
 ### Local Development
 
-1. Start the API server: `pnpm run dev`
-2. Start the web app: `cd ../web && pnpm run dev`
+1. Start the API server: `bun run dev`
+2. Start the web app: `cd ../web && bun run dev`
 3. Both will use the same local D1 database
 
 ### Debugging
@@ -171,7 +171,7 @@ const response = await fetch(`${API_BASE}/api/wishlist`);
 
 ### Common Issues
 
-- **"Mock database" errors**: Make sure to run `pnpm run dev` instead of `vite`
+- **"Mock database" errors**: Make sure to run `bun run dev` instead of `vite`
 - **Database connection**: Ensure D1 database is properly configured
 - **CORS issues**: The API includes CORS headers for cross-origin requests
 

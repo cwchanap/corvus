@@ -10,39 +10,39 @@ let building = false;
 let queued = false;
 
 function runBuild() {
-  if (building) {
-    queued = true;
-    return;
-  }
-  building = true;
-  const proc = spawn("pnpm", ["run", "build"], {
-    stdio: "inherit",
-    cwd: ROOT,
-    env: process.env,
-  });
-  proc.on("exit", (code) => {
-    building = false;
-    if (queued) {
-      queued = false;
-      runBuild();
+    if (building) {
+        queued = true;
+        return;
     }
-    if (code !== 0) {
-      console.error("build failed with code", code);
-    }
-  });
+    building = true;
+    const proc = spawn("bun", ["run", "build"], {
+        stdio: "inherit",
+        cwd: ROOT,
+        env: process.env,
+    });
+    proc.on("exit", (code) => {
+        building = false;
+        if (queued) {
+            queued = false;
+            runBuild();
+        }
+        if (code !== 0) {
+            console.error("build failed with code", code);
+        }
+    });
 }
 
 function startWatch(path: string) {
-  try {
-    watch(path, { recursive: true }, (_event, filename) => {
-      if (!filename) return;
-      // Debounce via queueing; multiple rapid events coalesce
-      runBuild();
-    });
-    console.log("Watching for changes:", path);
-  } catch (err) {
-    console.error("Failed to watch", path, err);
-  }
+    try {
+        watch(path, { recursive: true }, (_event, filename) => {
+            if (!filename) return;
+            // Debounce via queueing; multiple rapid events coalesce
+            runBuild();
+        });
+        console.log("Watching for changes:", path);
+    } catch (err) {
+        console.error("Failed to watch", path, err);
+    }
 }
 
 // Initial build to ensure dist exists
