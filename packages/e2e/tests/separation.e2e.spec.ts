@@ -2,14 +2,16 @@ import { test, expect } from "@playwright/test";
 
 // Test to verify GraphQL API works correctly
 test.describe("GraphQL API E2E", () => {
+    const API_ENDPOINT =
+        // eslint-disable-next-line turbo/no-undeclared-env-vars
+        process.env.VITE_API_URL ?? "http://localhost:5002/graphql";
+
     test("GraphQL endpoint responds correctly", async ({ page }) => {
         // Test direct GraphQL call to verify API server is running
         try {
-            const response = await page.request.post(
-                "http://localhost:8787/graphql",
-                {
-                    data: {
-                        query: `
+            const response = await page.request.post(API_ENDPOINT, {
+                data: {
+                    query: `
             query {
               wishlist {
                 categories {
@@ -23,9 +25,8 @@ test.describe("GraphQL API E2E", () => {
               }
             }
           `,
-                    },
                 },
-            );
+            });
 
             // Should get 200 with GraphQL error (unauthorized) or success if session exists
             expect(response.ok()).toBeTruthy();
@@ -67,11 +68,9 @@ test.describe("GraphQL API E2E", () => {
 
     test("Verify GraphQL endpoint configuration", async ({ page }) => {
         // Test that GraphQL mutations work (login mutation)
-        const response = await page.request.post(
-            "http://localhost:8787/graphql",
-            {
-                data: {
-                    query: `
+        const response = await page.request.post(API_ENDPOINT, {
+            data: {
+                query: `
           mutation {
             login(input: { email: "test@example.com", password: "test" }) {
               success
@@ -79,9 +78,8 @@ test.describe("GraphQL API E2E", () => {
             }
           }
         `,
-                },
             },
-        );
+        });
 
         expect(response.ok()).toBeTruthy();
         const json = await response.json();
