@@ -20,6 +20,14 @@ function runBuild() {
         cwd: ROOT,
         env: process.env,
     });
+    proc.on("error", (err) => {
+        building = false;
+        if (queued) {
+            queued = false;
+            runBuild();
+        }
+        console.error("failed to spawn build process:", err);
+    });
     proc.on("exit", (code) => {
         building = false;
         if (queued) {
