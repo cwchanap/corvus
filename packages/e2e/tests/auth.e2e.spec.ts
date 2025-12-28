@@ -7,6 +7,9 @@ test.describe("Auth E2E", () => {
     const EMAIL = "pwtester.20250808.001@example.com";
     const PASSWORD = "Password123!";
     const NAME = "Playwright Tester";
+    const API_ENDPOINT =
+        // eslint-disable-next-line turbo/no-undeclared-env-vars
+        process.env.VITE_API_URL ?? "http://localhost:5002/graphql";
 
     test("login or register, then see dashboard and authorized API", async ({
         page,
@@ -14,7 +17,7 @@ test.describe("Auth E2E", () => {
         // Try login first
         await test.step("Navigate to login and attempt to sign in", async () => {
             await page.goto("/login");
-            await page.getByLabel("Email").fill(EMAIL);
+            await page.getByLabel("Email Address").fill(EMAIL);
             await page.getByLabel("Password").fill(PASSWORD);
 
             const toDashboard = page
@@ -33,7 +36,7 @@ test.describe("Auth E2E", () => {
                 if (hasError) {
                     await page.goto("/register");
                     await page.getByLabel("Full Name").fill(NAME);
-                    await page.getByLabel("Email").fill(EMAIL);
+                    await page.getByLabel("Email Address").fill(EMAIL);
                     await page.getByLabel("Password").fill(PASSWORD);
 
                     await page
@@ -56,7 +59,8 @@ test.describe("Auth E2E", () => {
         // Verify wishlist GraphQL API is authorized and returns expected shape
         await test.step("Verify wishlist GraphQL API", async () => {
             // Use page.request so that session cookies from the browser context are sent
-            const res = await page.request.post("/graphql", {
+            // Use the API origin so we don't hit the web server.
+            const res = await page.request.post(API_ENDPOINT, {
                 data: {
                     query: `
             query {

@@ -2,10 +2,10 @@ import { test } from "@playwright/test";
 
 test("successful login flow", async ({ page }) => {
     // Navigate to login page
-    await page.goto("http://localhost:5000/login");
+    await page.goto("/login");
 
     // Fill in login form
-    await page.getByLabel("Email").fill("test@example.com");
+    await page.getByLabel("Email Address").fill("test@example.com");
     await page.getByLabel("Password").fill("password123");
 
     // Submit form
@@ -18,10 +18,10 @@ test("successful login flow", async ({ page }) => {
 
 test("failed login with invalid credentials", async ({ page }) => {
     // Navigate to login page
-    await page.goto("http://localhost:5000/login");
+    await page.goto("/login");
 
     // Fill in login form with invalid credentials
-    await page.getByLabel("Email").fill("invalid@example.com");
+    await page.getByLabel("Email Address").fill("invalid@example.com");
     await page.getByLabel("Password").fill("wrongpassword");
 
     // Submit form
