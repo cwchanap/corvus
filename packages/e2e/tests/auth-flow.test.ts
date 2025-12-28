@@ -1,8 +1,10 @@
-import { test } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 test("successful login flow", async ({ page }) => {
     // Navigate to login page
     await page.goto("/login");
+    await expect(page).toHaveURL(/\/login/);
+    await expect(page.getByText("Welcome Back")).toBeVisible();
 
     // Fill in login form
     await page.getByLabel("Email Address").fill("test@example.com");
@@ -19,6 +21,8 @@ test("successful login flow", async ({ page }) => {
 test("failed login with invalid credentials", async ({ page }) => {
     // Navigate to login page
     await page.goto("/login");
+    await expect(page).toHaveURL(/\/login/);
+    await expect(page.getByText("Welcome Back")).toBeVisible();
 
     // Fill in login form with invalid credentials
     await page.getByLabel("Email Address").fill("invalid@example.com");
