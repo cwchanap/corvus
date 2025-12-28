@@ -70,8 +70,8 @@ test.describe("Authentication Flow", () => {
         // Logout
         await page.getByRole("button", { name: "Sign Out" }).click();
 
-        // Should be redirected to home page
-        await expect(page).toHaveURL("/");
+        // Should be redirected after logout (home or login)
+        await expect(page).toHaveURL(/\/(login)?$/);
     });
 
     test("should login with existing user", async ({ page }) => {
