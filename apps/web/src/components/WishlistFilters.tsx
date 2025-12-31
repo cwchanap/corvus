@@ -1,4 +1,4 @@
-import { Accessor, Setter } from "solid-js";
+import { Accessor, Setter, Show } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
@@ -10,6 +10,9 @@ interface WishlistFiltersProps {
   sortBy: Accessor<"date" | "title" | "custom">;
   setSortBy: Setter<"date" | "title" | "custom">;
   onAddItem: () => void;
+  isSelectionMode?: Accessor<boolean>;
+  onToggleSelectionMode?: () => void;
+  hasItems?: boolean;
 }
 
 export function WishlistFilters(props: WishlistFiltersProps) {
@@ -17,12 +20,25 @@ export function WishlistFilters(props: WishlistFiltersProps) {
     <div class="mb-8 space-y-6">
       <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <h2 class="text-2xl font-bold text-foreground">{props.categoryName}</h2>
-        <Button
-          onClick={props.onAddItem}
-          class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-500 dark:to-pink-500 dark:hover:from-purple-600 dark:hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
-        >
-          Add Item
-        </Button>
+        <div class="flex gap-2">
+          <Show when={props.hasItems && props.onToggleSelectionMode}>
+            <Button
+              variant={props.isSelectionMode?.() ? "default" : "outline"}
+              onClick={props.onToggleSelectionMode}
+              class="px-4 py-2 rounded-xl font-medium transition-all duration-200"
+            >
+              {props.isSelectionMode?.() ? "Cancel" : "Select"}
+            </Button>
+          </Show>
+          <Show when={!props.isSelectionMode?.()}>
+            <Button
+              onClick={props.onAddItem}
+              class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-500 dark:to-pink-500 dark:hover:from-purple-600 dark:hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              Add Item
+            </Button>
+          </Show>
+        </div>
       </div>
 
       <div class="flex flex-col sm:flex-row gap-4">

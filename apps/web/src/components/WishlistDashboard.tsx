@@ -35,9 +35,13 @@ import {
   useAddItemLink,
   useUpdateItemLink,
   useDeleteItemLink,
+  useBatchDeleteItems,
+  useBatchMoveItems,
 } from "../lib/graphql/hooks/use-wishlist";
 import { useLogout } from "../lib/graphql/hooks/use-auth";
 import { adaptWishlistData } from "../lib/graphql/adapters";
+import { useSelectionManager } from "../hooks/useSelectionManager";
+import { BulkActionBar } from "./BulkActionBar";
 
 type WishlistCategory = WishlistCategoryRecord;
 type WishlistItem = WishlistItemRecord;
@@ -57,6 +61,9 @@ function SortableWishlistItem(props: {
   onDelete: (id: string) => void;
   onEdit: (item: WishlistItem) => void;
   onView: (item: WishlistItem) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   const style = {} as const;
   const createdAtLabel = () => {
@@ -66,56 +73,89 @@ function SortableWishlistItem(props: {
 
   const itemLinksCount = () => props.item.links?.length ?? 0;
 
+  const handleClick = () => {
+    if (props.isSelectionMode && props.onToggleSelect) {
+      props.onToggleSelect(props.item.id);
+    } else {
+      props.onView(props.item);
+    }
+  };
+
   return (
     <div style={style}>
-      <Card class="transition-all duration-200 hover:shadow-lg shadow-md border-0 bg-card/80 backdrop-blur-sm">
+      <Card
+        class={`transition-all duration-200 hover:shadow-lg shadow-md border-0 bg-card/80 backdrop-blur-sm ${
+          props.isSelected ? "ring-2 ring-primary" : ""
+        }`}
+      >
         <CardContent class="p-6">
           <div class="flex items-start justify-between">
             <button
               type="button"
-              onClick={() => props.onView(props.item)}
+              onClick={handleClick}
               class="flex-1 text-left bg-transparent border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg transition-colors"
             >
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center gap-2">
-                  <h3 class="font-semibold text-card-foreground text-lg hover:text-primary transition-colors">
-                    {props.item.title}
-                  </h3>
-                </div>
-
-                <Show when={props.item.description}>
-                  <p class="text-sm text-muted-foreground leading-relaxed">
-                    {props.item.description}
-                  </p>
+              <div class="flex items-start gap-3">
+                {/* Selection Checkbox */}
+                <Show when={props.isSelectionMode}>
+                  <div
+                    class={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                      props.isSelected
+                        ? "bg-primary border-primary"
+                        : "border-muted-foreground"
+                    }`}
+                  >
+                    <Show when={props.isSelected}>
+                      <span class="text-primary-foreground text-xs font-bold">
+                        ✓
+                      </span>
+                    </Show>
+                  </div>
                 </Show>
 
-                <div class="text-xs text-muted-foreground flex items-center justify-between pt-2">
-                  <div class="flex items-center">
-                    <span class="w-2 h-2 bg-primary rounded-full mr-2" />
-                    Added {createdAtLabel()}
+                <div class="flex flex-col gap-2 flex-1">
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-semibold text-card-foreground text-lg hover:text-primary transition-colors">
+                      {props.item.title}
+                    </h3>
                   </div>
-                  <div class="text-xs">
-                    {itemLinksCount()} link{itemLinksCount() !== 1 ? "s" : ""}
+
+                  <Show when={props.item.description}>
+                    <p class="text-sm text-muted-foreground leading-relaxed">
+                      {props.item.description}
+                    </p>
+                  </Show>
+
+                  <div class="text-xs text-muted-foreground flex items-center justify-between pt-2">
+                    <div class="flex items-center">
+                      <span class="w-2 h-2 bg-primary rounded-full mr-2" />
+                      Added {createdAtLabel()}
+                    </div>
+                    <div class="text-xs">
+                      {itemLinksCount()} link{itemLinksCount() !== 1 ? "s" : ""}
+                    </div>
                   </div>
                 </div>
               </div>
             </button>
-            <div class="flex gap-2">
-              <button
-                onClick={() => props.onEdit(props.item)}
-                class="text-muted-foreground hover:text-primary hover:bg-accent ml-2 p-2 rounded-lg transition-all duration-200"
-                title="Edit item"
-              >
-                ✏️
-              </button>
-              <button
-                onClick={() => props.onDelete(props.item.id)}
-                class="text-destructive hover:text-destructive/80 hover:bg-destructive/10 p-2 rounded-lg transition-all duration-200 font-bold text-lg"
-                title="Delete item"
-              >
-                ×
-              </button>
-            </div>
+            <Show when={!props.isSelectionMode}>
+              <div class="flex gap-2">
+                <button
+                  onClick={() => props.onEdit(props.item)}
+                  class="text-muted-foreground hover:text-primary hover:bg-accent ml-2 p-2 rounded-lg transition-all duration-200"
+                  title="Edit item"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => props.onDelete(props.item.id)}
+                  class="text-destructive hover:text-destructive/80 hover:bg-destructive/10 p-2 rounded-lg transition-all duration-200 font-bold text-lg"
+                  title="Delete item"
+                >
+                  ×
+                </button>
+              </div>
+            </Show>
           </div>
         </CardContent>
       </Card>
@@ -139,6 +179,9 @@ interface WishlistItemsSectionProps {
   onDelete: (id: string) => Promise<void> | void;
   onEdit: (item: WishlistItem) => void;
   onView: (item: WishlistItem) => void;
+  isSelectionMode?: boolean;
+  isSelected?: (id: string) => boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 function WishlistItemsSection(props: WishlistItemsSectionProps) {
@@ -186,6 +229,9 @@ function WishlistItemsSection(props: WishlistItemsSectionProps) {
                   onDelete={props.onDelete}
                   onEdit={props.onEdit}
                   onView={props.onView}
+                  isSelectionMode={props.isSelectionMode}
+                  isSelected={props.isSelected?.(item.id)}
+                  onToggleSelect={props.onToggleSelect}
                 />
               )}
             </For>
@@ -260,6 +306,8 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const addItemLinkMutation = useAddItemLink();
   const updateItemLinkMutation = useUpdateItemLink();
   const deleteItemLinkMutation = useDeleteItemLink();
+  const batchDeleteMutation = useBatchDeleteItems();
+  const batchMoveMutation = useBatchMoveItems();
 
   // Debounce search query
   createEffect(
@@ -315,6 +363,12 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const items = createMemo(() => wishlistData()?.items ?? []);
   const pagination = createMemo(() => wishlistData()?.pagination ?? null);
   const categories = createMemo(() => wishlistData()?.categories ?? []);
+
+  // Selection manager for bulk operations
+  const selection = useSelectionManager({
+    items,
+    getId: (item) => item.id,
+  });
 
   // Get current category name
   const currentCategoryName = createMemo(() => {
@@ -393,13 +447,6 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     }),
   );
 
-  // Reset page when sort changes
-  createEffect(
-    on(sortBy, () => {
-      setPage(1);
-    }),
-  );
-
   const deleteItem = async (itemId: string) => {
     try {
       await deleteItemMutation.mutateAsync(itemId);
@@ -410,6 +457,35 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       // TanStack Query automatically refetches
     } catch (err) {
       console.error("Error deleting item:", err);
+    }
+  };
+
+  // Bulk operation handlers
+  const handleToggleSelectionMode = () => {
+    if (selection.isSelectionMode()) {
+      selection.exitSelectionMode();
+    } else {
+      selection.enterSelectionMode();
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    try {
+      const itemIds = selection.selectedIds();
+      await batchDeleteMutation.mutateAsync(itemIds);
+      selection.exitSelectionMode();
+    } catch (err) {
+      console.error("Bulk delete error:", err);
+    }
+  };
+
+  const handleBatchMove = async (categoryId: string | null) => {
+    try {
+      const itemIds = selection.selectedIds();
+      await batchMoveMutation.mutateAsync({ itemIds, categoryId });
+      selection.exitSelectionMode();
+    } catch (err) {
+      console.error("Bulk move error:", err);
     }
   };
 
@@ -664,6 +740,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
               sortBy={sortBy}
               setSortBy={setSortBy}
               onAddItem={() => setAddOpen(true)}
+              isSelectionMode={selection.isSelectionMode}
+              onToggleSelectionMode={handleToggleSelectionMode}
+              hasItems={items().length > 0}
             />
 
             <WishlistItemsSection
@@ -690,6 +769,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
               onDelete={deleteItem}
               onEdit={openEditDialog}
               onView={openViewDialog}
+              isSelectionMode={selection.isSelectionMode()}
+              isSelected={selection.isSelected}
+              onToggleSelect={selection.toggleSelection}
             />
           </div>
         </div>
@@ -730,6 +812,30 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
             />
           </div>
         </div>
+      </Show>
+
+      {/* Bulk Action Bar */}
+      <Show when={selection.isSelectionMode()}>
+        <BulkActionBar
+          selectedCount={selection.selectedCount}
+          totalCount={() => items().length}
+          allSelected={selection.allSelected}
+          categories={categories}
+          isProcessing={
+            batchDeleteMutation.isPending || batchMoveMutation.isPending
+          }
+          onSelectAll={() => {
+            if (selection.allSelected()) {
+              selection.clearSelection();
+            } else {
+              selection.selectAll();
+            }
+          }}
+          onClearSelection={selection.clearSelection}
+          onCancel={selection.exitSelectionMode}
+          onDelete={handleBatchDelete}
+          onMove={handleBatchMove}
+        />
       </Show>
     </div>
   );

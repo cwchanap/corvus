@@ -924,4 +924,356 @@ describe("WishlistService", () => {
             expect(runMock2).toHaveBeenCalledTimes(1);
         });
     });
+
+    describe("Batch Operations", () => {
+        describe("batchDeleteItems", () => {
+            it("returns early for empty itemIds array", async () => {
+                const fakeDb: Partial<DB> = {
+                    select: vi.fn(() => {
+                        throw new Error("Should not be called");
+                    }),
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchDeleteItems([], 42);
+
+                expect(result).toEqual({
+                    processedCount: 0,
+                    failedCount: 0,
+                    errors: [],
+                });
+                expect(fakeDb.select).not.toHaveBeenCalled();
+            });
+
+            it("deletes valid items and reports invalid ones", async () => {
+                // Mock: user owns item-1 and item-2, but not item-3
+                const ownedItems = [{ id: "item-1" }, { id: "item-2" }];
+
+                const allMock = vi.fn().mockResolvedValue(ownedItems);
+                const selectWhereMock = vi.fn(() => ({ all: allMock }));
+                const selectFromMock = vi.fn(() => ({
+                    where: selectWhereMock,
+                }));
+                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+
+                const deleteRunMock = vi.fn().mockResolvedValue(undefined);
+                const deleteWhereMock = vi.fn(() => ({ run: deleteRunMock }));
+                const deleteMock = vi.fn(() => ({ where: deleteWhereMock }));
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    delete: deleteMock,
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchDeleteItems(
+                    ["item-1", "item-2", "item-3"],
+                    42,
+                );
+
+                expect(result).toEqual({
+                    processedCount: 2,
+                    failedCount: 1,
+                    errors: ["1 items not found or unauthorized"],
+                });
+                expect(selectMock).toHaveBeenCalledTimes(1);
+                expect(deleteMock).toHaveBeenCalledTimes(1);
+                expect(deleteRunMock).toHaveBeenCalledTimes(1);
+            });
+
+            it("returns error when no valid items found", async () => {
+                const allMock = vi.fn().mockResolvedValue([]);
+                const selectWhereMock = vi.fn(() => ({ all: allMock }));
+                const selectFromMock = vi.fn(() => ({
+                    where: selectWhereMock,
+                }));
+                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    delete: vi.fn(() => {
+                        throw new Error("Should not be called");
+                    }),
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchDeleteItems(
+                    ["non-existent-1", "non-existent-2"],
+                    42,
+                );
+
+                expect(result).toEqual({
+                    processedCount: 0,
+                    failedCount: 2,
+                    errors: ["No valid items to delete"],
+                });
+                expect(fakeDb.delete).not.toHaveBeenCalled();
+            });
+
+            it("deletes all items when all are valid", async () => {
+                const ownedItems = [
+                    { id: "item-1" },
+                    { id: "item-2" },
+                    { id: "item-3" },
+                ];
+
+                const allMock = vi.fn().mockResolvedValue(ownedItems);
+                const selectWhereMock = vi.fn(() => ({ all: allMock }));
+                const selectFromMock = vi.fn(() => ({
+                    where: selectWhereMock,
+                }));
+                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+
+                const deleteRunMock = vi.fn().mockResolvedValue(undefined);
+                const deleteWhereMock = vi.fn(() => ({ run: deleteRunMock }));
+                const deleteMock = vi.fn(() => ({ where: deleteWhereMock }));
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    delete: deleteMock,
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchDeleteItems(
+                    ["item-1", "item-2", "item-3"],
+                    42,
+                );
+
+                expect(result).toEqual({
+                    processedCount: 3,
+                    failedCount: 0,
+                    errors: [],
+                });
+            });
+        });
+
+        describe("batchMoveItems", () => {
+            it("returns early for empty itemIds array", async () => {
+                const fakeDb: Partial<DB> = {
+                    select: vi.fn(() => {
+                        throw new Error("Should not be called");
+                    }),
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchMoveItems([], 42, "cat-1");
+
+                expect(result).toEqual({
+                    processedCount: 0,
+                    failedCount: 0,
+                    errors: [],
+                });
+                expect(fakeDb.select).not.toHaveBeenCalled();
+            });
+
+            it("moves valid items to category", async () => {
+                const ownedItems = [{ id: "item-1" }, { id: "item-2" }];
+                const category = { id: "cat-1", user_id: 42, name: "Test" };
+
+                // First select returns owned items
+                const selectAllMock1 = vi.fn().mockResolvedValue(ownedItems);
+                const selectWhereMock1 = vi.fn(() => ({ all: selectAllMock1 }));
+                const selectFromMock1 = vi.fn(() => ({
+                    where: selectWhereMock1,
+                }));
+
+                // Second select returns category
+                const selectGetMock = vi.fn().mockResolvedValue(category);
+                const selectWhereMock2 = vi.fn(() => ({ get: selectGetMock }));
+                const selectFromMock2 = vi.fn(() => ({
+                    where: selectWhereMock2,
+                }));
+
+                const selectMock = vi
+                    .fn()
+                    .mockReturnValueOnce({ from: selectFromMock1 })
+                    .mockReturnValueOnce({ from: selectFromMock2 });
+
+                const updateRunMock = vi.fn().mockResolvedValue(undefined);
+                const updateWhereMock = vi.fn(() => ({ run: updateRunMock }));
+                const updateSetMock = vi.fn(() => ({ where: updateWhereMock }));
+                const updateMock = vi.fn(() => ({ set: updateSetMock }));
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    update: updateMock,
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchMoveItems(
+                    ["item-1", "item-2"],
+                    42,
+                    "cat-1",
+                );
+
+                expect(result).toEqual({
+                    processedCount: 2,
+                    failedCount: 0,
+                    errors: [],
+                });
+                expect(updateMock).toHaveBeenCalledTimes(1);
+                expect(updateSetMock).toHaveBeenCalledWith({
+                    category_id: "cat-1",
+                    updated_at: expect.any(String),
+                });
+            });
+
+            it("moves items to null category (uncategorized)", async () => {
+                const ownedItems = [{ id: "item-1" }];
+
+                const selectAllMock = vi.fn().mockResolvedValue(ownedItems);
+                const selectWhereMock = vi.fn(() => ({ all: selectAllMock }));
+                const selectFromMock = vi.fn(() => ({
+                    where: selectWhereMock,
+                }));
+                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+
+                const updateRunMock = vi.fn().mockResolvedValue(undefined);
+                const updateWhereMock = vi.fn(() => ({ run: updateRunMock }));
+                const updateSetMock = vi.fn(() => ({ where: updateWhereMock }));
+                const updateMock = vi.fn(() => ({ set: updateSetMock }));
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    update: updateMock,
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchMoveItems(
+                    ["item-1"],
+                    42,
+                    null,
+                );
+
+                expect(result).toEqual({
+                    processedCount: 1,
+                    failedCount: 0,
+                    errors: [],
+                });
+                expect(updateSetMock).toHaveBeenCalledWith({
+                    category_id: null,
+                    updated_at: expect.any(String),
+                });
+            });
+
+            it("returns error when category not found", async () => {
+                const ownedItems = [{ id: "item-1" }];
+
+                const selectAllMock = vi.fn().mockResolvedValue(ownedItems);
+                const selectWhereMock1 = vi.fn(() => ({ all: selectAllMock }));
+                const selectFromMock1 = vi.fn(() => ({
+                    where: selectWhereMock1,
+                }));
+
+                // Category not found
+                const selectGetMock = vi.fn().mockResolvedValue(undefined);
+                const selectWhereMock2 = vi.fn(() => ({ get: selectGetMock }));
+                const selectFromMock2 = vi.fn(() => ({
+                    where: selectWhereMock2,
+                }));
+
+                const selectMock = vi
+                    .fn()
+                    .mockReturnValueOnce({ from: selectFromMock1 })
+                    .mockReturnValueOnce({ from: selectFromMock2 });
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    update: vi.fn(() => {
+                        throw new Error("Should not be called");
+                    }),
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchMoveItems(
+                    ["item-1"],
+                    42,
+                    "non-existent-category",
+                );
+
+                expect(result).toEqual({
+                    processedCount: 0,
+                    failedCount: 1,
+                    errors: ["Category not found or unauthorized"],
+                });
+                expect(fakeDb.update).not.toHaveBeenCalled();
+            });
+
+            it("returns error when no valid items found", async () => {
+                const selectAllMock = vi.fn().mockResolvedValue([]);
+                const selectWhereMock = vi.fn(() => ({ all: selectAllMock }));
+                const selectFromMock = vi.fn(() => ({
+                    where: selectWhereMock,
+                }));
+                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    update: vi.fn(() => {
+                        throw new Error("Should not be called");
+                    }),
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchMoveItems(
+                    ["non-existent-1"],
+                    42,
+                    "cat-1",
+                );
+
+                expect(result).toEqual({
+                    processedCount: 0,
+                    failedCount: 1,
+                    errors: ["No valid items to move"],
+                });
+                expect(fakeDb.update).not.toHaveBeenCalled();
+            });
+
+            it("reports invalid items when moving partially owned items", async () => {
+                // User owns item-1 but not item-2
+                const ownedItems = [{ id: "item-1" }];
+                const category = { id: "cat-1", user_id: 42, name: "Test" };
+
+                const selectAllMock = vi.fn().mockResolvedValue(ownedItems);
+                const selectWhereMock1 = vi.fn(() => ({ all: selectAllMock }));
+                const selectFromMock1 = vi.fn(() => ({
+                    where: selectWhereMock1,
+                }));
+
+                const selectGetMock = vi.fn().mockResolvedValue(category);
+                const selectWhereMock2 = vi.fn(() => ({ get: selectGetMock }));
+                const selectFromMock2 = vi.fn(() => ({
+                    where: selectWhereMock2,
+                }));
+
+                const selectMock = vi
+                    .fn()
+                    .mockReturnValueOnce({ from: selectFromMock1 })
+                    .mockReturnValueOnce({ from: selectFromMock2 });
+
+                const updateRunMock = vi.fn().mockResolvedValue(undefined);
+                const updateWhereMock = vi.fn(() => ({ run: updateRunMock }));
+                const updateSetMock = vi.fn(() => ({ where: updateWhereMock }));
+                const updateMock = vi.fn(() => ({ set: updateSetMock }));
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    update: updateMock,
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchMoveItems(
+                    ["item-1", "item-2"],
+                    42,
+                    "cat-1",
+                );
+
+                expect(result).toEqual({
+                    processedCount: 1,
+                    failedCount: 1,
+                    errors: ["1 items not found or unauthorized"],
+                });
+            });
+        });
+    });
 });
