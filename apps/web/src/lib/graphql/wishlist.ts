@@ -17,6 +17,8 @@ import {
     UPDATE_ITEM_LINK_MUTATION,
     DELETE_ITEM_LINK_MUTATION,
     SET_PRIMARY_LINK_MUTATION,
+    BATCH_DELETE_ITEMS_MUTATION,
+    BATCH_MOVE_ITEMS_MUTATION,
 } from "@repo/common/graphql/operations/wishlist";
 import { graphqlRequest } from "./client";
 
@@ -170,29 +172,6 @@ export interface BatchOperationResult {
     failedCount: number;
     errors: string[] | null;
 }
-
-// Batch mutations
-const BATCH_DELETE_ITEMS_MUTATION = `
-  mutation BatchDeleteItems($input: BatchDeleteInput!) {
-    batchDeleteItems(input: $input) {
-      success
-      processedCount
-      failedCount
-      errors
-    }
-  }
-`;
-
-const BATCH_MOVE_ITEMS_MUTATION = `
-  mutation BatchMoveItems($input: BatchMoveInput!) {
-    batchMoveItems(input: $input) {
-      success
-      processedCount
-      failedCount
-      errors
-    }
-  }
-`;
 
 export async function batchDeleteItems(
     itemIds: string[],

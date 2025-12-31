@@ -21,6 +21,9 @@ export function BulkActionBar(props: BulkActionBarProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false);
   const [showMoveDropdown, setShowMoveDropdown] = createSignal(false);
 
+  let addOutsideClickListenerTimer: number | undefined;
+  let outsideClickListenerAttached = false;
+
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
   };
@@ -32,26 +35,65 @@ export function BulkActionBar(props: BulkActionBarProps) {
 
   const handleMoveClick = (categoryId: string | null) => {
     props.onMove(categoryId);
-    setShowMoveDropdown(false);
+    hideMoveDropdown();
   };
+
+  const clearAddOutsideClickListenerTimer = () => {
+    if (addOutsideClickListenerTimer !== undefined) {
+      clearTimeout(addOutsideClickListenerTimer);
+      addOutsideClickListenerTimer = undefined;
+    }
+  };
+
+  const detachOutsideClickListener = () => {
+    if (outsideClickListenerAttached) {
+      document.removeEventListener("click", handleClickOutside);
+      outsideClickListenerAttached = false;
+    }
+  };
+
+  function hideMoveDropdown() {
+    clearAddOutsideClickListenerTimer();
+    detachOutsideClickListener();
+    setShowMoveDropdown(false);
+  }
+
+  function handleClickOutside(e: MouseEvent) {
+    const target = e.target as Element;
+    if (!target.closest(".move-dropdown-container")) {
+      hideMoveDropdown();
+    }
+  }
 
   // Close dropdown when clicking outside
   createEffect(() => {
-    if (showMoveDropdown()) {
-      const handleClickOutside = (e: MouseEvent) => {
-        const target = e.target as Element;
-        if (!target.closest(".move-dropdown-container")) {
-          setShowMoveDropdown(false);
-        }
-      };
-      // Use setTimeout to avoid immediate close from the same click
-      setTimeout(() => {
-        document.addEventListener("click", handleClickOutside);
-      }, 0);
-      onCleanup(() =>
-        document.removeEventListener("click", handleClickOutside),
-      );
+    if (!showMoveDropdown()) {
+      clearAddOutsideClickListenerTimer();
+      detachOutsideClickListener();
+      return;
     }
+
+    clearAddOutsideClickListenerTimer();
+    addOutsideClickListenerTimer = window.setTimeout(() => {
+      if (!showMoveDropdown()) {
+        return;
+      }
+
+      if (!outsideClickListenerAttached) {
+        document.addEventListener("click", handleClickOutside);
+        outsideClickListenerAttached = true;
+      }
+    }, 0);
+
+    onCleanup(() => {
+      clearAddOutsideClickListenerTimer();
+      detachOutsideClickListener();
+    });
+  });
+
+  onCleanup(() => {
+    clearAddOutsideClickListenerTimer();
+    detachOutsideClickListener();
   });
 
   return (
@@ -89,7 +131,15 @@ export function BulkActionBar(props: BulkActionBarProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowMoveDropdown(!showMoveDropdown())}
+                    onClick={() => {
+                      if (showMoveDropdown()) {
+                        hideMoveDropdown();
+                        return;
+                      }
+
+                      clearAddOutsideClickListenerTimer();
+                      setShowMoveDropdown(true);
+                    }}
                     disabled={props.isProcessing}
                     class="whitespace-nowrap"
                   >
