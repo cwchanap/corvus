@@ -21,7 +21,12 @@ export function WishlistFilters(props: WishlistFiltersProps) {
       <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <h2 class="text-2xl font-bold text-foreground">{props.categoryName}</h2>
         <div class="flex gap-2">
-          <Show when={props.hasItems && props.onToggleSelectionMode}>
+          <Show
+            when={
+              props.onToggleSelectionMode &&
+              (props.hasItems || props.isSelectionMode?.())
+            }
+          >
             <Button
               variant={props.isSelectionMode?.() ? "default" : "outline"}
               onClick={props.onToggleSelectionMode}

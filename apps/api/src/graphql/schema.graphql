@@ -213,9 +213,21 @@ input BatchMoveInput {
 Result of a batch operation
 """
 type BatchOperationResult {
+  """
+  True when all requested items were processed successfully (i.e. failedCount is 0).
+  """
   success: Boolean!
+  """
+  Number of items successfully processed. May be less than the number of requested items.
+  """
   processedCount: Int!
+  """
+  Number of requested items that could not be processed (e.g. not found or unauthorized).
+  """
   failedCount: Int!
+  """
+  Optional list of human-readable error messages when one or more items failed.
+  """
   errors: [String!]
 }
 
@@ -311,12 +323,18 @@ type Mutation {
   setPrimaryLink(itemId: ID!, linkId: ID!): Boolean!
 
   """
-  Delete multiple wishlist items in a single transaction
+  Delete multiple wishlist items.
+
+  Items that are not found or not owned by the current user are reported as failures.
+  This operation may partially succeed.
   """
   batchDeleteItems(input: BatchDeleteInput!): BatchOperationResult!
 
   """
-  Move multiple wishlist items to a category in a single transaction
+  Move multiple wishlist items to a category.
+
+  Items that are not found or not owned by the current user are reported as failures.
+  This operation may partially succeed.
   """
   batchMoveItems(input: BatchMoveInput!): BatchOperationResult!
 }
