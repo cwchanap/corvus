@@ -194,6 +194,31 @@ input WishlistFilterInput {
   sortDir: SortDirection
 }
 
+"""
+Input for batch delete operation
+"""
+input BatchDeleteInput {
+  itemIds: [ID!]!
+}
+
+"""
+Input for batch move operation
+"""
+input BatchMoveInput {
+  itemIds: [ID!]!
+  categoryId: String
+}
+
+"""
+Result of a batch operation
+"""
+type BatchOperationResult {
+  success: Boolean!
+  processedCount: Int!
+  failedCount: Int!
+  errors: [String!]
+}
+
 type Query {
   """
   Get the current authenticated user
@@ -284,4 +309,14 @@ type Mutation {
   Set a link as the primary link for an item
   """
   setPrimaryLink(itemId: ID!, linkId: ID!): Boolean!
+
+  """
+  Delete multiple wishlist items in a single transaction
+  """
+  batchDeleteItems(input: BatchDeleteInput!): BatchOperationResult!
+
+  """
+  Move multiple wishlist items to a category in a single transaction
+  """
+  batchMoveItems(input: BatchMoveInput!): BatchOperationResult!
 }
