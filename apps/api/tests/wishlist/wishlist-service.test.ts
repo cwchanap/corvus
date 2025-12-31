@@ -755,24 +755,49 @@ describe("WishlistService", () => {
                 },
             ];
 
+            const itemGetMock = vi.fn().mockResolvedValue({ user_id: 42 });
+            const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
+            const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
+
             const allMock = vi.fn().mockResolvedValue(links);
             const orderByMock = vi.fn(() => ({ all: allMock }));
             const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi
+                .fn()
+                .mockReturnValueOnce({ from: itemFromMock })
+                .mockReturnValueOnce({ from: fromMock });
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getItemLinks("item-1");
+            const result = await service.getItemLinks(42, "item-1");
 
             expect(result).toEqual(links);
-            expect(selectMock).toHaveBeenCalledTimes(1);
+            expect(selectMock).toHaveBeenCalledTimes(2);
+            expect(itemWhereMock).toHaveBeenCalledTimes(1);
+            expect(itemGetMock).toHaveBeenCalledTimes(1);
             expect(whereMock).toHaveBeenCalledTimes(1);
             expect(orderByMock).toHaveBeenCalledTimes(1);
             expect(allMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("getItemLinks throws when item is not owned by user", async () => {
+            const itemGetMock = vi.fn().mockResolvedValue({ user_id: 999 });
+            const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
+            const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
+            const selectMock = vi.fn(() => ({ from: itemFromMock }));
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await expect(service.getItemLinks(42, "item-1")).rejects.toThrow(
+                "Not authorized",
+            );
         });
 
         it("createItemLink inserts a new link with generated UUID", async () => {
@@ -791,12 +816,18 @@ describe("WishlistService", () => {
             const valuesMock = vi.fn(() => ({ returning: returningMock }));
             const insertMock = vi.fn(() => ({ values: valuesMock }));
 
+            const itemGetMock = vi.fn().mockResolvedValue({ user_id: 42 });
+            const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
+            const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
+            const selectMock = vi.fn(() => ({ from: itemFromMock }));
+
             const fakeDb: Partial<DB> = {
+                select: selectMock,
                 insert: insertMock,
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.createItemLink({
+            const result = await service.createItemLink(42, {
                 item_id: "item-1",
                 url: "https://example.com/new",
                 description: "New Link",
@@ -804,6 +835,7 @@ describe("WishlistService", () => {
             });
 
             expect(result).toEqual(newLink);
+            expect(selectMock).toHaveBeenCalledTimes(1);
             expect(insertMock).toHaveBeenCalledTimes(1);
             expect(valuesMock).toHaveBeenCalledTimes(1);
             expect(returningMock).toHaveBeenCalledTimes(1);
@@ -832,7 +864,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.updateItemLink("link-1", {
+            const result = await service.updateItemLink(42, "link-1", {
                 url: "https://example.com/updated",
                 description: "Updated Link",
             });
@@ -857,7 +889,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.updateItemLink("non-existent", {
+            const result = await service.updateItemLink(42, "non-existent", {
                 url: "https://example.com/updated",
             });
 
@@ -865,23 +897,62 @@ describe("WishlistService", () => {
         });
 
         it("deleteItemLink removes a link", async () => {
+            const linkGetMock = vi.fn().mockResolvedValue({ id: "link-1" });
+            const linkWhereMock = vi.fn(() => ({ get: linkGetMock }));
+            const linkFromMock = vi.fn(() => ({ where: linkWhereMock }));
+            const selectMock = vi.fn(() => ({ from: linkFromMock }));
+
             const runMock = vi.fn().mockResolvedValue(undefined);
             const whereMock = vi.fn(() => ({ run: runMock }));
             const deleteMock = vi.fn(() => ({ where: whereMock }));
 
             const fakeDb: Partial<DB> = {
+                select: selectMock,
                 delete: deleteMock,
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await service.deleteItemLink("link-1");
+            await service.deleteItemLink(42, "link-1");
 
+            expect(selectMock).toHaveBeenCalledTimes(1);
             expect(deleteMock).toHaveBeenCalledTimes(1);
             expect(whereMock).toHaveBeenCalledTimes(1);
             expect(runMock).toHaveBeenCalledTimes(1);
         });
 
+        it("deleteItemLink throws when link is not owned by user", async () => {
+            const linkGetMock = vi.fn().mockResolvedValue(undefined);
+            const linkWhereMock = vi.fn(() => ({ get: linkGetMock }));
+            const linkFromMock = vi.fn(() => ({ where: linkWhereMock }));
+            const selectMock = vi.fn(() => ({ from: linkFromMock }));
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+                delete: vi.fn(() => {
+                    throw new Error("Should not be called");
+                }),
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await expect(service.deleteItemLink(42, "link-1")).rejects.toThrow(
+                "Not authorized",
+            );
+        });
+
         it("setPrimaryLink unsets all primary flags then sets new primary", async () => {
+            const itemGetMock = vi.fn().mockResolvedValue({ user_id: 42 });
+            const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
+            const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
+
+            const linkGetMock = vi.fn().mockResolvedValue({ id: "link-2" });
+            const linkWhereMock = vi.fn(() => ({ get: linkGetMock }));
+            const linkFromMock = vi.fn(() => ({ where: linkWhereMock }));
+
+            const selectMock = vi
+                .fn()
+                .mockReturnValueOnce({ from: itemFromMock })
+                .mockReturnValueOnce({ from: linkFromMock });
+
             const runMock1 = vi.fn().mockResolvedValue(undefined);
             const runMock2 = vi.fn().mockResolvedValue(undefined);
 
@@ -897,11 +968,12 @@ describe("WishlistService", () => {
                 .mockReturnValueOnce({ set: setMock2 });
 
             const fakeDb: Partial<DB> = {
+                select: selectMock,
                 update: updateMock,
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await service.setPrimaryLink("item-1", "link-2");
+            await service.setPrimaryLink(42, "item-1", "link-2");
 
             expect(updateMock).toHaveBeenCalledTimes(2);
 

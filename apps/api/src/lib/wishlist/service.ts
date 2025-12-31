@@ -19,6 +19,13 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { WishlistSortKey, SortDirection } from "../../graphql/types";
 
+export class WishlistAuthorizationError extends Error {
+    constructor(message = "Not authorized") {
+        super(message);
+        this.name = "WishlistAuthorizationError";
+    }
+}
+
 type ItemQueryOptions = {
     limit?: number;
     offset?: number;
@@ -30,6 +37,21 @@ type ItemQueryOptions = {
 
 export class WishlistService {
     constructor(private db: DB) {}
+
+    private async assertItemOwnedByUser(
+        requesterUserId: number,
+        itemId: string,
+    ): Promise<void> {
+        const item = await this.db
+            .select({ user_id: wishlistItems.user_id })
+            .from(wishlistItems)
+            .where(eq(wishlistItems.id, itemId))
+            .get();
+
+        if (!item || item.user_id !== requesterUserId) {
+            throw new WishlistAuthorizationError();
+        }
+    }
 
     // Category operations
     async getUserCategories(userId: number): Promise<WishlistCategory[]> {
@@ -102,6 +124,13 @@ export class WishlistService {
     }
 
     // Item operations
+    private escapeLikePattern(pattern: string): string {
+        return pattern
+            .replaceAll("\\", "\\\\")
+            .replaceAll("%", "\\%")
+            .replaceAll("_", "\\_");
+    }
+
     private buildItemFilters(
         userId: number,
         options: ItemQueryOptions = {},
@@ -113,9 +142,10 @@ export class WishlistService {
         }
 
         if (options.search) {
-            const pattern = `%${options.search}%`;
+            const escaped = this.escapeLikePattern(options.search);
+            const pattern = `%${escaped}%`;
             filters.push(
-                sql`(${wishlistItems.title} LIKE ${pattern} COLLATE NOCASE OR coalesce(${wishlistItems.description}, '') LIKE ${pattern} COLLATE NOCASE)`,
+                sql`(${wishlistItems.title} LIKE ${pattern} COLLATE NOCASE ESCAPE '\\' OR coalesce(${wishlistItems.description}, '') LIKE ${pattern} COLLATE NOCASE ESCAPE '\\')`,
             );
         }
 
@@ -255,7 +285,9 @@ export class WishlistService {
     }
 
     /**
-     * Delete multiple items in a single transaction
+     * Delete multiple items.
+     *
+     * Note: this operation may partially succeed.
      */
     async batchDeleteItems(
         itemIds: string[],
@@ -309,7 +341,9 @@ export class WishlistService {
     }
 
     /**
-     * Move multiple items to a category in a single transaction
+     * Move multiple items to a category.
+     *
+     * Note: this operation may partially succeed.
      */
     async batchMoveItems(
         itemIds: string[],
@@ -390,7 +424,11 @@ export class WishlistService {
     }
 
     // Item link operations
-    async getItemLinks(itemId: string): Promise<WishlistItemLink[]> {
+    async getItemLinks(
+        requesterUserId: number,
+        itemId: string,
+    ): Promise<WishlistItemLink[]> {
+        await this.assertItemOwnedByUser(requesterUserId, itemId);
         return await this.db
             .select()
             .from(wishlistItemLinks)
@@ -403,8 +441,10 @@ export class WishlistService {
     }
 
     async createItemLink(
+        requesterUserId: number,
         linkData: Omit<NewWishlistItemLink, "id" | "created_at" | "updated_at">,
     ): Promise<WishlistItemLink> {
+        await this.assertItemOwnedByUser(requesterUserId, linkData.item_id);
         return await this.db
             .insert(wishlistItemLinks)
             .values({ id: crypto.randomUUID(), ...linkData })
@@ -413,26 +453,71 @@ export class WishlistService {
     }
 
     async updateItemLink(
+        requesterUserId: number,
         linkId: string,
         updates: WishlistItemLinkUpdate,
     ): Promise<WishlistItemLink | null> {
         const row = await this.db
             .update(wishlistItemLinks)
             .set({ ...updates, updated_at: new Date().toISOString() })
-            .where(eq(wishlistItemLinks.id, linkId))
+            .where(
+                and(
+                    eq(wishlistItemLinks.id, linkId),
+                    sql`exists(select 1 from ${wishlistItems} where ${wishlistItems.id} = ${wishlistItemLinks.item_id} and ${wishlistItems.user_id} = ${requesterUserId})`,
+                ),
+            )
             .returning()
             .get();
         return row || null;
     }
 
-    async deleteItemLink(linkId: string): Promise<void> {
+    async deleteItemLink(
+        requesterUserId: number,
+        linkId: string,
+    ): Promise<void> {
+        const link = await this.db
+            .select({ id: wishlistItemLinks.id })
+            .from(wishlistItemLinks)
+            .where(
+                and(
+                    eq(wishlistItemLinks.id, linkId),
+                    sql`exists(select 1 from ${wishlistItems} where ${wishlistItems.id} = ${wishlistItemLinks.item_id} and ${wishlistItems.user_id} = ${requesterUserId})`,
+                ),
+            )
+            .get();
+
+        if (!link) {
+            throw new WishlistAuthorizationError();
+        }
+
         await this.db
             .delete(wishlistItemLinks)
             .where(eq(wishlistItemLinks.id, linkId))
             .run();
     }
 
-    async setPrimaryLink(itemId: string, linkId: string): Promise<void> {
+    async setPrimaryLink(
+        requesterUserId: number,
+        itemId: string,
+        linkId: string,
+    ): Promise<void> {
+        await this.assertItemOwnedByUser(requesterUserId, itemId);
+
+        const link = await this.db
+            .select({ id: wishlistItemLinks.id })
+            .from(wishlistItemLinks)
+            .where(
+                and(
+                    eq(wishlistItemLinks.id, linkId),
+                    eq(wishlistItemLinks.item_id, itemId),
+                ),
+            )
+            .get();
+
+        if (!link) {
+            throw new WishlistAuthorizationError();
+        }
+
         // First, unset all primary flags for this item
         await this.db
             .update(wishlistItemLinks)
@@ -444,7 +529,12 @@ export class WishlistService {
         await this.db
             .update(wishlistItemLinks)
             .set({ is_primary: true, updated_at: new Date().toISOString() })
-            .where(eq(wishlistItemLinks.id, linkId))
+            .where(
+                and(
+                    eq(wishlistItemLinks.id, linkId),
+                    eq(wishlistItemLinks.item_id, itemId),
+                ),
+            )
             .run();
     }
 

@@ -81,6 +81,13 @@ function SortableWishlistItem(props: {
     }
   };
 
+  const handleCheckboxChange = (e: Event) => {
+    e.stopPropagation();
+    if (props.onToggleSelect) {
+      props.onToggleSelect(props.item.id);
+    }
+  };
+
   return (
     <div style={style}>
       <Card
@@ -98,19 +105,14 @@ function SortableWishlistItem(props: {
               <div class="flex items-start gap-3">
                 {/* Selection Checkbox */}
                 <Show when={props.isSelectionMode}>
-                  <div
-                    class={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                      props.isSelected
-                        ? "bg-primary border-primary"
-                        : "border-muted-foreground"
-                    }`}
-                  >
-                    <Show when={props.isSelected}>
-                      <span class="text-primary-foreground text-xs font-bold">
-                        ✓
-                      </span>
-                    </Show>
-                  </div>
+                  <input
+                    type="checkbox"
+                    checked={props.isSelected}
+                    onChange={handleCheckboxChange}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Select ${props.item.title}`}
+                    class="mt-1 w-5 h-5 rounded border-2 cursor-pointer accent-primary flex-shrink-0"
+                  />
                 </Show>
 
                 <div class="flex flex-col gap-2 flex-1">

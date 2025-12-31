@@ -5,18 +5,18 @@
 
 import { graphqlRequest, type GraphQLClientOptions } from "../client";
 import type {
-  GraphQLWishlistPayload,
-  GraphQLWishlistCategory,
-  GraphQLWishlistItem,
-  GraphQLWishlistItemLink,
-  WishlistFilterInput,
-  PaginationInput,
-  CategoryInput,
-  CategoryUpdateInput,
-  ItemInput,
-  ItemUpdateInput,
-  ItemLinkInput,
-  ItemLinkUpdateInput,
+    GraphQLWishlistPayload,
+    GraphQLWishlistCategory,
+    GraphQLWishlistItem,
+    GraphQLWishlistItemLink,
+    WishlistFilterInput,
+    PaginationInput,
+    CategoryInput,
+    CategoryUpdateInput,
+    ItemInput,
+    ItemUpdateInput,
+    ItemLinkInput,
+    ItemLinkUpdateInput,
 } from "../types";
 
 // Query strings
@@ -226,161 +226,179 @@ export const SET_PRIMARY_LINK_MUTATION = `
   }
 `;
 
+export const BATCH_DELETE_ITEMS_MUTATION = `
+  mutation BatchDeleteItems($input: BatchDeleteInput!) {
+    batchDeleteItems(input: $input) {
+      success
+      processedCount
+      failedCount
+      errors
+    }
+  }
+`;
+
+export const BATCH_MOVE_ITEMS_MUTATION = `
+  mutation BatchMoveItems($input: BatchMoveInput!) {
+    batchMoveItems(input: $input) {
+      success
+      processedCount
+      failedCount
+      errors
+    }
+  }
+`;
+
 // Query operations
 export async function getWishlist(
-  filter?: WishlistFilterInput,
-  pagination?: PaginationInput,
-  options?: Partial<GraphQLClientOptions>,
+    filter?: WishlistFilterInput,
+    pagination?: PaginationInput,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLWishlistPayload> {
-  const data = await graphqlRequest<{ wishlist: GraphQLWishlistPayload }>(
-    WISHLIST_QUERY,
-    { filter, pagination },
-    options,
-  );
-  return data.wishlist;
+    const data = await graphqlRequest<{ wishlist: GraphQLWishlistPayload }>(
+        WISHLIST_QUERY,
+        { filter, pagination },
+        options,
+    );
+    return data.wishlist;
 }
 
 export async function getCategories(
-  options?: Partial<GraphQLClientOptions>,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLWishlistCategory[]> {
-  const data = await graphqlRequest<{ categories: GraphQLWishlistCategory[] }>(
-    CATEGORIES_QUERY,
-    undefined,
-    options,
-  );
-  return data.categories;
+    const data = await graphqlRequest<{
+        categories: GraphQLWishlistCategory[];
+    }>(CATEGORIES_QUERY, undefined, options);
+    return data.categories;
 }
 
 export async function getItem(
-  id: string,
-  options?: Partial<GraphQLClientOptions>,
+    id: string,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLWishlistItem | null> {
-  const data = await graphqlRequest<{ item: GraphQLWishlistItem | null }>(
-    ITEM_QUERY,
-    { id },
-    options,
-  );
-  return data.item;
+    const data = await graphqlRequest<{ item: GraphQLWishlistItem | null }>(
+        ITEM_QUERY,
+        { id },
+        options,
+    );
+    return data.item;
 }
 
 // Category mutations
 export async function createCategory(
-  input: CategoryInput,
-  options?: Partial<GraphQLClientOptions>,
+    input: CategoryInput,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLWishlistCategory> {
-  const data = await graphqlRequest<{
-    createCategory: GraphQLWishlistCategory;
-  }>(CREATE_CATEGORY_MUTATION, { input }, options);
-  return data.createCategory;
+    const data = await graphqlRequest<{
+        createCategory: GraphQLWishlistCategory;
+    }>(CREATE_CATEGORY_MUTATION, { input }, options);
+    return data.createCategory;
 }
 
 export async function updateCategory(
-  id: string,
-  input: CategoryUpdateInput,
-  options?: Partial<GraphQLClientOptions>,
+    id: string,
+    input: CategoryUpdateInput,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLWishlistCategory | null> {
-  const data = await graphqlRequest<{
-    updateCategory: GraphQLWishlistCategory | null;
-  }>(UPDATE_CATEGORY_MUTATION, { id, input }, options);
-  return data.updateCategory;
+    const data = await graphqlRequest<{
+        updateCategory: GraphQLWishlistCategory | null;
+    }>(UPDATE_CATEGORY_MUTATION, { id, input }, options);
+    return data.updateCategory;
 }
 
 export async function deleteCategory(
-  id: string,
-  options?: Partial<GraphQLClientOptions>,
+    id: string,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<boolean> {
-  const data = await graphqlRequest<{ deleteCategory: boolean }>(
-    DELETE_CATEGORY_MUTATION,
-    { id },
-    options,
-  );
-  return data.deleteCategory;
+    const data = await graphqlRequest<{ deleteCategory: boolean }>(
+        DELETE_CATEGORY_MUTATION,
+        { id },
+        options,
+    );
+    return data.deleteCategory;
 }
 
 // Item mutations
 export async function createItem(
-  input: ItemInput,
-  options?: Partial<GraphQLClientOptions>,
+    input: ItemInput,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLWishlistItem> {
-  const data = await graphqlRequest<{ createItem: GraphQLWishlistItem }>(
-    CREATE_ITEM_MUTATION,
-    { input },
-    options,
-  );
-  return data.createItem;
+    const data = await graphqlRequest<{ createItem: GraphQLWishlistItem }>(
+        CREATE_ITEM_MUTATION,
+        { input },
+        options,
+    );
+    return data.createItem;
 }
 
 export async function updateItem(
-  id: string,
-  input: ItemUpdateInput,
-  options?: Partial<GraphQLClientOptions>,
+    id: string,
+    input: ItemUpdateInput,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLWishlistItem | null> {
-  const data = await graphqlRequest<{ updateItem: GraphQLWishlistItem | null }>(
-    UPDATE_ITEM_MUTATION,
-    { id, input },
-    options,
-  );
-  return data.updateItem;
+    const data = await graphqlRequest<{
+        updateItem: GraphQLWishlistItem | null;
+    }>(UPDATE_ITEM_MUTATION, { id, input }, options);
+    return data.updateItem;
 }
 
 export async function deleteItem(
-  id: string,
-  options?: Partial<GraphQLClientOptions>,
+    id: string,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<boolean> {
-  const data = await graphqlRequest<{ deleteItem: boolean }>(
-    DELETE_ITEM_MUTATION,
-    { id },
-    options,
-  );
-  return data.deleteItem;
+    const data = await graphqlRequest<{ deleteItem: boolean }>(
+        DELETE_ITEM_MUTATION,
+        { id },
+        options,
+    );
+    return data.deleteItem;
 }
 
 // Link mutations
 export async function addItemLink(
-  itemId: string,
-  input: ItemLinkInput,
-  options?: Partial<GraphQLClientOptions>,
+    itemId: string,
+    input: ItemLinkInput,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLWishlistItemLink> {
-  const data = await graphqlRequest<{ addItemLink: GraphQLWishlistItemLink }>(
-    ADD_ITEM_LINK_MUTATION,
-    { itemId, input },
-    options,
-  );
-  return data.addItemLink;
+    const data = await graphqlRequest<{ addItemLink: GraphQLWishlistItemLink }>(
+        ADD_ITEM_LINK_MUTATION,
+        { itemId, input },
+        options,
+    );
+    return data.addItemLink;
 }
 
 export async function updateItemLink(
-  id: string,
-  input: ItemLinkUpdateInput,
-  options?: Partial<GraphQLClientOptions>,
+    id: string,
+    input: ItemLinkUpdateInput,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLWishlistItemLink | null> {
-  const data = await graphqlRequest<{
-    updateItemLink: GraphQLWishlistItemLink | null;
-  }>(UPDATE_ITEM_LINK_MUTATION, { id, input }, options);
-  return data.updateItemLink;
+    const data = await graphqlRequest<{
+        updateItemLink: GraphQLWishlistItemLink | null;
+    }>(UPDATE_ITEM_LINK_MUTATION, { id, input }, options);
+    return data.updateItemLink;
 }
 
 export async function deleteItemLink(
-  id: string,
-  options?: Partial<GraphQLClientOptions>,
+    id: string,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<boolean> {
-  const data = await graphqlRequest<{ deleteItemLink: boolean }>(
-    DELETE_ITEM_LINK_MUTATION,
-    { id },
-    options,
-  );
-  return data.deleteItemLink;
+    const data = await graphqlRequest<{ deleteItemLink: boolean }>(
+        DELETE_ITEM_LINK_MUTATION,
+        { id },
+        options,
+    );
+    return data.deleteItemLink;
 }
 
 export async function setPrimaryLink(
-  itemId: string,
-  linkId: string,
-  options?: Partial<GraphQLClientOptions>,
+    itemId: string,
+    linkId: string,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<boolean> {
-  const data = await graphqlRequest<{ setPrimaryLink: boolean }>(
-    SET_PRIMARY_LINK_MUTATION,
-    { itemId, linkId },
-    options,
-  );
-  return data.setPrimaryLink;
+    const data = await graphqlRequest<{ setPrimaryLink: boolean }>(
+        SET_PRIMARY_LINK_MUTATION,
+        { itemId, linkId },
+        options,
+    );
+    return data.setPrimaryLink;
 }

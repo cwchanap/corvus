@@ -1,7 +1,10 @@
 import { GraphQLError } from "graphql";
 import type { Resolvers } from "./types";
 import { AuthService } from "../lib/auth/service";
-import { WishlistService } from "../lib/wishlist/service";
+import {
+    WishlistService,
+    WishlistAuthorizationError,
+} from "../lib/wishlist/service";
 import { setSessionCookie, clearSessionCookie } from "../lib/auth/session";
 import { mapUser, mapCategory, mapItem, mapLink } from "./mappers";
 
@@ -24,8 +27,11 @@ export const resolvers: Resolvers = {
             const wishlistService = new WishlistService(context.db);
 
             // Parse pagination
-            const page = args.pagination?.page ?? 1;
-            const pageSize = Math.min(args.pagination?.pageSize ?? 10, 50);
+            const rawPage = args.pagination?.page ?? 1;
+            const page = Math.max(1, Math.trunc(rawPage));
+
+            const rawPageSize = args.pagination?.pageSize ?? 10;
+            const pageSize = Math.min(Math.max(Math.trunc(rawPageSize), 1), 50);
             const offset = (page - 1) * pageSize;
 
             // Parse filters
@@ -88,8 +94,20 @@ export const resolvers: Resolvers = {
             }
 
             // Load links for the item
-            const links = await wishlistService.getItemLinks(item.id);
-            return mapItem(item, links);
+            try {
+                const links = await wishlistService.getItemLinks(
+                    context.user.id,
+                    item.id,
+                );
+                return mapItem(item, links);
+            } catch (error) {
+                if (error instanceof WishlistAuthorizationError) {
+                    throw new GraphQLError(error.message, {
+                        extensions: { code: "FORBIDDEN" },
+                    });
+                }
+                throw error;
+            }
         },
     },
     Mutation: {
@@ -222,13 +240,25 @@ export const resolvers: Resolvers = {
 
             // If URL is provided, create a primary link
             if (args.input.url) {
-                const link = await wishlistService.createItemLink({
-                    item_id: item.id,
-                    url: args.input.url,
-                    description: args.input.linkDescription ?? null,
-                    is_primary: true,
-                });
-                return mapItem(item, [link]);
+                try {
+                    const link = await wishlistService.createItemLink(
+                        context.user.id,
+                        {
+                            item_id: item.id,
+                            url: args.input.url,
+                            description: args.input.linkDescription ?? null,
+                            is_primary: true,
+                        },
+                    );
+                    return mapItem(item, [link]);
+                } catch (error) {
+                    if (error instanceof WishlistAuthorizationError) {
+                        throw new GraphQLError(error.message, {
+                            extensions: { code: "FORBIDDEN" },
+                        });
+                    }
+                    throw error;
+                }
             }
 
             return mapItem(item, []);
@@ -263,8 +293,20 @@ export const resolvers: Resolvers = {
             }
 
             // Load links for the item
-            const links = await wishlistService.getItemLinks(item.id);
-            return mapItem(item, links);
+            try {
+                const links = await wishlistService.getItemLinks(
+                    context.user.id,
+                    item.id,
+                );
+                return mapItem(item, links);
+            } catch (error) {
+                if (error instanceof WishlistAuthorizationError) {
+                    throw new GraphQLError(error.message, {
+                        extensions: { code: "FORBIDDEN" },
+                    });
+                }
+                throw error;
+            }
         },
         deleteItem: async (_parent, args, context) => {
             if (!context.user) {
@@ -285,13 +327,25 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
-            const link = await wishlistService.createItemLink({
-                item_id: args.itemId,
-                url: args.input.url,
-                description: args.input.description ?? null,
-                is_primary: args.input.isPrimary ?? false,
-            });
-            return mapLink(link);
+            try {
+                const link = await wishlistService.createItemLink(
+                    context.user.id,
+                    {
+                        item_id: args.itemId,
+                        url: args.input.url,
+                        description: args.input.description ?? null,
+                        is_primary: args.input.isPrimary ?? false,
+                    },
+                );
+                return mapLink(link);
+            } catch (error) {
+                if (error instanceof WishlistAuthorizationError) {
+                    throw new GraphQLError(error.message, {
+                        extensions: { code: "FORBIDDEN" },
+                    });
+                }
+                throw error;
+            }
         },
         updateItemLink: async (_parent, args, context) => {
             if (!context.user) {
@@ -301,11 +355,15 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
-            const link = await wishlistService.updateItemLink(args.id, {
-                url: args.input.url ?? undefined,
-                description: args.input.description ?? undefined,
-                is_primary: args.input.isPrimary ?? undefined,
-            });
+            const link = await wishlistService.updateItemLink(
+                context.user.id,
+                args.id,
+                {
+                    url: args.input.url ?? undefined,
+                    description: args.input.description ?? undefined,
+                    is_primary: args.input.isPrimary ?? undefined,
+                },
+            );
 
             return link ? mapLink(link) : null;
         },
@@ -317,8 +375,17 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
-            await wishlistService.deleteItemLink(args.id);
-            return true;
+            try {
+                await wishlistService.deleteItemLink(context.user.id, args.id);
+                return true;
+            } catch (error) {
+                if (error instanceof WishlistAuthorizationError) {
+                    throw new GraphQLError(error.message, {
+                        extensions: { code: "FORBIDDEN" },
+                    });
+                }
+                throw error;
+            }
         },
         setPrimaryLink: async (_parent, args, context) => {
             if (!context.user) {
@@ -328,8 +395,21 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
-            await wishlistService.setPrimaryLink(args.itemId, args.linkId);
-            return true;
+            try {
+                await wishlistService.setPrimaryLink(
+                    context.user.id,
+                    args.itemId,
+                    args.linkId,
+                );
+                return true;
+            } catch (error) {
+                if (error instanceof WishlistAuthorizationError) {
+                    throw new GraphQLError(error.message, {
+                        extensions: { code: "FORBIDDEN" },
+                    });
+                }
+                throw error;
+            }
         },
         batchDeleteItems: async (_parent, args, context) => {
             if (!context.user) {
@@ -407,6 +487,12 @@ export const resolvers: Resolvers = {
     },
     WishlistItem: {
         links: async (parent, _args, context) => {
+            if (!context.user) {
+                throw new GraphQLError("Not authenticated", {
+                    extensions: { code: "UNAUTHENTICATED" },
+                });
+            }
+
             // If links are already loaded, return them
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if ((parent as any).links) {
@@ -416,8 +502,20 @@ export const resolvers: Resolvers = {
 
             // Otherwise, lazy-load links
             const wishlistService = new WishlistService(context.db);
-            const links = await wishlistService.getItemLinks(parent.id);
-            return links.map(mapLink);
+            try {
+                const links = await wishlistService.getItemLinks(
+                    context.user.id,
+                    parent.id,
+                );
+                return links.map(mapLink);
+            } catch (error) {
+                if (error instanceof WishlistAuthorizationError) {
+                    throw new GraphQLError(error.message, {
+                        extensions: { code: "FORBIDDEN" },
+                    });
+                }
+                throw error;
+            }
         },
     },
 };
