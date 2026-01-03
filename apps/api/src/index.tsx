@@ -48,7 +48,8 @@ app.all("/graphql", createGraphQLHandler());
 
 // Catch-all for serving static assets (web app)
 app.get("*", async (c) => {
-  const assetResponse = await c.env.ASSETS.fetch(c.req.raw);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const assetResponse = await c.env.ASSETS.fetch(c.req.raw as any);
 
   if (assetResponse.status === 404) {
     const acceptHeader = c.req.header("accept") ?? "";
@@ -60,15 +61,18 @@ app.get("*", async (c) => {
         headers: c.req.raw.headers,
       });
 
-      const fallbackResponse = await c.env.ASSETS.fetch(fallbackRequest);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fallbackResponse = await c.env.ASSETS.fetch(fallbackRequest as any);
 
       if (fallbackResponse.status !== 404) {
-        return fallbackResponse;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return fallbackResponse as any;
       }
     }
   }
 
-  return assetResponse;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return assetResponse as any;
 });
 
 export default app;

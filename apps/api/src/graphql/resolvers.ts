@@ -230,26 +230,25 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
-            const item = await wishlistService.createItem({
-                user_id: context.user.id,
-                category_id: args.input.categoryId,
-                title: args.input.title,
-                description: args.input.description ?? null,
-                favicon: args.input.favicon ?? null,
-            });
 
-            // If URL is provided, create a primary link
+            // If URL is provided, use transactional method to create item and link atomically
             if (args.input.url) {
                 try {
-                    const link = await wishlistService.createItemLink(
-                        context.user.id,
-                        {
-                            item_id: item.id,
-                            url: args.input.url,
-                            description: args.input.linkDescription ?? null,
-                            is_primary: true,
-                        },
-                    );
+                    const { item, link } =
+                        await wishlistService.createItemWithPrimaryLink(
+                            {
+                                user_id: context.user.id,
+                                category_id: args.input.categoryId,
+                                title: args.input.title,
+                                description: args.input.description ?? null,
+                                favicon: args.input.favicon ?? null,
+                            },
+                            {
+                                url: args.input.url,
+                                description: args.input.linkDescription ?? null,
+                                is_primary: true,
+                            },
+                        );
                     return mapItem(item, [link]);
                 } catch (error) {
                     if (error instanceof WishlistAuthorizationError) {
@@ -260,6 +259,15 @@ export const resolvers: Resolvers = {
                     throw error;
                 }
             }
+
+            // If no URL, create item without link
+            const item = await wishlistService.createItem({
+                user_id: context.user.id,
+                category_id: args.input.categoryId,
+                title: args.input.title,
+                description: args.input.description ?? null,
+                favicon: args.input.favicon ?? null,
+            });
 
             return mapItem(item, []);
         },

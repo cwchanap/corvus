@@ -253,6 +253,38 @@ export class WishlistService {
             .get();
     }
 
+    /**
+     * Create an item with its primary link in a single atomic transaction.
+     * If the link creation fails, the item is also rolled back.
+     */
+    async createItemWithPrimaryLink(
+        itemData: Omit<NewWishlistItem, "id" | "created_at" | "updated_at">,
+        linkData: Omit<
+            NewWishlistItemLink,
+            "id" | "item_id" | "created_at" | "updated_at"
+        >,
+    ): Promise<{ item: WishlistItem; link: WishlistItemLink }> {
+        const itemId = crypto.randomUUID();
+        const linkId = crypto.randomUUID();
+
+        // Use db.batch() for atomic transaction
+        const [itemResult, linkResult] = await this.db.batch([
+            this.db
+                .insert(wishlistItems)
+                .values({ id: itemId, ...itemData })
+                .returning(),
+            this.db
+                .insert(wishlistItemLinks)
+                .values({ id: linkId, item_id: itemId, ...linkData })
+                .returning(),
+        ]);
+
+        const item = itemResult[0];
+        const link = linkResult[0];
+
+        return { item, link };
+    }
+
     async updateItem(
         itemId: string,
         userId: number,

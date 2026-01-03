@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, Mock, vi } from "vitest";
 import type { DB } from "../../src/lib/db";
 import type {
     WishlistCategory,
@@ -79,7 +79,7 @@ describe("WishlistService", () => {
         };
 
         const fakeDb: Partial<DB> = {
-            select: vi.fn(() => selectChain),
+            select: vi.fn(() => selectChain) as Mock,
         };
 
         let receivedOptions: Record<string, unknown> | undefined;
@@ -141,7 +141,7 @@ describe("WishlistService", () => {
                 throw new Error(
                     "Links should not be queried when there are no items",
                 );
-            }),
+            }) as Mock,
         };
 
         class EmptyWishlistService extends WishlistService {
@@ -210,7 +210,7 @@ describe("WishlistService", () => {
         };
 
         const fakeDb: Partial<DB> = {
-            select: vi.fn(() => selectChain),
+            select: vi.fn(() => selectChain) as Mock,
         };
 
         class TestWishlistService extends WishlistService {
@@ -270,7 +270,7 @@ describe("WishlistService", () => {
             const orderByMock = vi.fn(() => ({ all: allMock }));
             const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -300,7 +300,7 @@ describe("WishlistService", () => {
             const getMock = vi.fn().mockResolvedValue(newCategory);
             const returningMock = vi.fn(() => ({ get: getMock }));
             const valuesMock = vi.fn(() => ({ returning: returningMock }));
-            const insertMock = vi.fn(() => ({ values: valuesMock }));
+            const insertMock = vi.fn(() => ({ values: valuesMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 insert: insertMock,
@@ -334,7 +334,7 @@ describe("WishlistService", () => {
             const returningMock = vi.fn(() => ({ get: getMock }));
             const whereMock = vi.fn(() => ({ returning: returningMock }));
             const setMock = vi.fn(() => ({ where: whereMock }));
-            const updateMock = vi.fn(() => ({ set: setMock }));
+            const updateMock = vi.fn(() => ({ set: setMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 update: updateMock,
@@ -359,7 +359,7 @@ describe("WishlistService", () => {
             const returningMock = vi.fn(() => ({ get: getMock }));
             const whereMock = vi.fn(() => ({ returning: returningMock }));
             const setMock = vi.fn(() => ({ where: whereMock }));
-            const updateMock = vi.fn(() => ({ set: setMock }));
+            const updateMock = vi.fn(() => ({ set: setMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 update: updateMock,
@@ -379,10 +379,10 @@ describe("WishlistService", () => {
 
             const whereMock1 = vi.fn(() => ({ run: runMock1 }));
             const setMock = vi.fn(() => ({ where: whereMock1 }));
-            const updateMock = vi.fn(() => ({ set: setMock }));
+            const updateMock = vi.fn(() => ({ set: setMock })) as Mock;
 
             const whereMock2 = vi.fn(() => ({ run: runMock2 }));
-            const deleteMock = vi.fn(() => ({ where: whereMock2 }));
+            const deleteMock = vi.fn(() => ({ where: whereMock2 })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 update: updateMock,
@@ -421,7 +421,7 @@ describe("WishlistService", () => {
             const orderByMock = vi.fn(() => ({ all: allMock }));
             const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -455,7 +455,7 @@ describe("WishlistService", () => {
             const orderByMock = vi.fn(() => ({ limit: limitMock }));
             const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -479,7 +479,7 @@ describe("WishlistService", () => {
             const orderByMock = vi.fn(() => ({ all: allMock }));
             const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -501,7 +501,7 @@ describe("WishlistService", () => {
             const orderByMock = vi.fn(() => ({ all: allMock }));
             const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -523,7 +523,7 @@ describe("WishlistService", () => {
             const orderByMock = vi.fn(() => ({ all: allMock }));
             const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -542,7 +542,7 @@ describe("WishlistService", () => {
             const orderByMock = vi.fn(() => ({ all: allMock }));
             const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -575,7 +575,7 @@ describe("WishlistService", () => {
             const orderByMock = vi.fn(() => ({ all: allMock }));
             const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -592,7 +592,7 @@ describe("WishlistService", () => {
             const getMock = vi.fn().mockResolvedValue({ value: 5 });
             const whereMock = vi.fn(() => ({ get: getMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -611,7 +611,7 @@ describe("WishlistService", () => {
             const getMock = vi.fn().mockResolvedValue(null);
             const whereMock = vi.fn(() => ({ get: getMock }));
             const fromMock = vi.fn(() => ({ where: whereMock }));
-            const selectMock = vi.fn(() => ({ from: fromMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -638,7 +638,7 @@ describe("WishlistService", () => {
             const getMock = vi.fn().mockResolvedValue(newItem);
             const returningMock = vi.fn(() => ({ get: getMock }));
             const valuesMock = vi.fn(() => ({ returning: returningMock }));
-            const insertMock = vi.fn(() => ({ values: valuesMock }));
+            const insertMock = vi.fn(() => ({ values: valuesMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 insert: insertMock,
@@ -675,7 +675,7 @@ describe("WishlistService", () => {
             const returningMock = vi.fn(() => ({ get: getMock }));
             const whereMock = vi.fn(() => ({ returning: returningMock }));
             const setMock = vi.fn(() => ({ where: whereMock }));
-            const updateMock = vi.fn(() => ({ set: setMock }));
+            const updateMock = vi.fn(() => ({ set: setMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 update: updateMock,
@@ -700,7 +700,7 @@ describe("WishlistService", () => {
             const returningMock = vi.fn(() => ({ get: getMock }));
             const whereMock = vi.fn(() => ({ returning: returningMock }));
             const setMock = vi.fn(() => ({ where: whereMock }));
-            const updateMock = vi.fn(() => ({ set: setMock }));
+            const updateMock = vi.fn(() => ({ set: setMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 update: updateMock,
@@ -717,7 +717,7 @@ describe("WishlistService", () => {
         it("deleteItem removes an item", async () => {
             const runMock = vi.fn().mockResolvedValue(undefined);
             const whereMock = vi.fn(() => ({ run: runMock }));
-            const deleteMock = vi.fn(() => ({ where: whereMock }));
+            const deleteMock = vi.fn(() => ({ where: whereMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 delete: deleteMock,
@@ -766,7 +766,7 @@ describe("WishlistService", () => {
             const selectMock = vi
                 .fn()
                 .mockReturnValueOnce({ from: itemFromMock })
-                .mockReturnValueOnce({ from: fromMock });
+                .mockReturnValueOnce({ from: fromMock }) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -788,7 +788,7 @@ describe("WishlistService", () => {
             const itemGetMock = vi.fn().mockResolvedValue({ user_id: 999 });
             const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
             const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
-            const selectMock = vi.fn(() => ({ from: itemFromMock }));
+            const selectMock = vi.fn(() => ({ from: itemFromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -814,12 +814,12 @@ describe("WishlistService", () => {
             const getMock = vi.fn().mockResolvedValue(newLink);
             const returningMock = vi.fn(() => ({ get: getMock }));
             const valuesMock = vi.fn(() => ({ returning: returningMock }));
-            const insertMock = vi.fn(() => ({ values: valuesMock }));
+            const insertMock = vi.fn(() => ({ values: valuesMock })) as Mock;
 
             const itemGetMock = vi.fn().mockResolvedValue({ user_id: 42 });
             const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
             const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
-            const selectMock = vi.fn(() => ({ from: itemFromMock }));
+            const selectMock = vi.fn(() => ({ from: itemFromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -857,7 +857,7 @@ describe("WishlistService", () => {
             const returningMock = vi.fn(() => ({ get: getMock }));
             const whereMock = vi.fn(() => ({ returning: returningMock }));
             const setMock = vi.fn(() => ({ where: whereMock }));
-            const updateMock = vi.fn(() => ({ set: setMock }));
+            const updateMock = vi.fn(() => ({ set: setMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 update: updateMock,
@@ -882,7 +882,7 @@ describe("WishlistService", () => {
             const returningMock = vi.fn(() => ({ get: getMock }));
             const whereMock = vi.fn(() => ({ returning: returningMock }));
             const setMock = vi.fn(() => ({ where: whereMock }));
-            const updateMock = vi.fn(() => ({ set: setMock }));
+            const updateMock = vi.fn(() => ({ set: setMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 update: updateMock,
@@ -900,11 +900,11 @@ describe("WishlistService", () => {
             const linkGetMock = vi.fn().mockResolvedValue({ id: "link-1" });
             const linkWhereMock = vi.fn(() => ({ get: linkGetMock }));
             const linkFromMock = vi.fn(() => ({ where: linkWhereMock }));
-            const selectMock = vi.fn(() => ({ from: linkFromMock }));
+            const selectMock = vi.fn(() => ({ from: linkFromMock })) as Mock;
 
             const runMock = vi.fn().mockResolvedValue(undefined);
             const whereMock = vi.fn(() => ({ run: runMock }));
-            const deleteMock = vi.fn(() => ({ where: whereMock }));
+            const deleteMock = vi.fn(() => ({ where: whereMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -924,13 +924,13 @@ describe("WishlistService", () => {
             const linkGetMock = vi.fn().mockResolvedValue(undefined);
             const linkWhereMock = vi.fn(() => ({ get: linkGetMock }));
             const linkFromMock = vi.fn(() => ({ where: linkWhereMock }));
-            const selectMock = vi.fn(() => ({ from: linkFromMock }));
+            const selectMock = vi.fn(() => ({ from: linkFromMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
                 delete: vi.fn(() => {
                     throw new Error("Should not be called");
-                }),
+                }) as Mock,
             };
 
             const service = new WishlistService(fakeDb as DB);
@@ -951,7 +951,7 @@ describe("WishlistService", () => {
             const selectMock = vi
                 .fn()
                 .mockReturnValueOnce({ from: itemFromMock })
-                .mockReturnValueOnce({ from: linkFromMock });
+                .mockReturnValueOnce({ from: linkFromMock }) as Mock;
 
             const runMock1 = vi.fn().mockResolvedValue(undefined);
             const runMock2 = vi.fn().mockResolvedValue(undefined);
@@ -965,7 +965,7 @@ describe("WishlistService", () => {
             const updateMock = vi
                 .fn()
                 .mockReturnValueOnce({ set: setMock1 })
-                .mockReturnValueOnce({ set: setMock2 });
+                .mockReturnValueOnce({ set: setMock2 }) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -986,7 +986,7 @@ describe("WishlistService", () => {
             expect(whereMock1).toHaveBeenCalledTimes(1);
             expect(runMock1).toHaveBeenCalledTimes(1);
 
-            // Second update should set the specific link as primary
+            // Second update should set specific link as primary
             expect(setMock2).toHaveBeenCalledTimes(1);
             expect(setMock2).toHaveBeenCalledWith({
                 is_primary: true,
@@ -1003,7 +1003,7 @@ describe("WishlistService", () => {
                 const fakeDb: Partial<DB> = {
                     select: vi.fn(() => {
                         throw new Error("Should not be called");
-                    }),
+                    }) as Mock,
                 };
 
                 const service = new WishlistService(fakeDb as DB);
@@ -1026,11 +1026,15 @@ describe("WishlistService", () => {
                 const selectFromMock = vi.fn(() => ({
                     where: selectWhereMock,
                 }));
-                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+                const selectMock = vi.fn(() => ({
+                    from: selectFromMock,
+                })) as Mock;
 
                 const deleteRunMock = vi.fn().mockResolvedValue(undefined);
                 const deleteWhereMock = vi.fn(() => ({ run: deleteRunMock }));
-                const deleteMock = vi.fn(() => ({ where: deleteWhereMock }));
+                const deleteMock = vi.fn(() => ({
+                    where: deleteWhereMock,
+                })) as Mock;
 
                 const fakeDb: Partial<DB> = {
                     select: selectMock,
@@ -1059,13 +1063,15 @@ describe("WishlistService", () => {
                 const selectFromMock = vi.fn(() => ({
                     where: selectWhereMock,
                 }));
-                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+                const selectMock = vi.fn(() => ({
+                    from: selectFromMock,
+                })) as Mock;
 
                 const fakeDb: Partial<DB> = {
                     select: selectMock,
                     delete: vi.fn(() => {
                         throw new Error("Should not be called");
-                    }),
+                    }) as Mock,
                 };
 
                 const service = new WishlistService(fakeDb as DB);
@@ -1094,11 +1100,15 @@ describe("WishlistService", () => {
                 const selectFromMock = vi.fn(() => ({
                     where: selectWhereMock,
                 }));
-                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+                const selectMock = vi.fn(() => ({
+                    from: selectFromMock,
+                })) as Mock;
 
                 const deleteRunMock = vi.fn().mockResolvedValue(undefined);
                 const deleteWhereMock = vi.fn(() => ({ run: deleteRunMock }));
-                const deleteMock = vi.fn(() => ({ where: deleteWhereMock }));
+                const deleteMock = vi.fn(() => ({
+                    where: deleteWhereMock,
+                })) as Mock;
 
                 const fakeDb: Partial<DB> = {
                     select: selectMock,
@@ -1124,7 +1134,7 @@ describe("WishlistService", () => {
                 const fakeDb: Partial<DB> = {
                     select: vi.fn(() => {
                         throw new Error("Should not be called");
-                    }),
+                    }) as Mock,
                 };
 
                 const service = new WishlistService(fakeDb as DB);
@@ -1159,12 +1169,14 @@ describe("WishlistService", () => {
                 const selectMock = vi
                     .fn()
                     .mockReturnValueOnce({ from: selectFromMock1 })
-                    .mockReturnValueOnce({ from: selectFromMock2 });
+                    .mockReturnValueOnce({ from: selectFromMock2 }) as Mock;
 
                 const updateRunMock = vi.fn().mockResolvedValue(undefined);
                 const updateWhereMock = vi.fn(() => ({ run: updateRunMock }));
                 const updateSetMock = vi.fn(() => ({ where: updateWhereMock }));
-                const updateMock = vi.fn(() => ({ set: updateSetMock }));
+                const updateMock = vi.fn(() => ({
+                    set: updateSetMock,
+                })) as Mock;
 
                 const fakeDb: Partial<DB> = {
                     select: selectMock,
@@ -1198,12 +1210,16 @@ describe("WishlistService", () => {
                 const selectFromMock = vi.fn(() => ({
                     where: selectWhereMock,
                 }));
-                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+                const selectMock = vi.fn(() => ({
+                    from: selectFromMock,
+                })) as Mock;
 
                 const updateRunMock = vi.fn().mockResolvedValue(undefined);
                 const updateWhereMock = vi.fn(() => ({ run: updateRunMock }));
                 const updateSetMock = vi.fn(() => ({ where: updateWhereMock }));
-                const updateMock = vi.fn(() => ({ set: updateSetMock }));
+                const updateMock = vi.fn(() => ({
+                    set: updateSetMock,
+                })) as Mock;
 
                 const fakeDb: Partial<DB> = {
                     select: selectMock,
@@ -1247,13 +1263,13 @@ describe("WishlistService", () => {
                 const selectMock = vi
                     .fn()
                     .mockReturnValueOnce({ from: selectFromMock1 })
-                    .mockReturnValueOnce({ from: selectFromMock2 });
+                    .mockReturnValueOnce({ from: selectFromMock2 }) as Mock;
 
                 const fakeDb: Partial<DB> = {
                     select: selectMock,
                     update: vi.fn(() => {
                         throw new Error("Should not be called");
-                    }),
+                    }) as Mock,
                 };
 
                 const service = new WishlistService(fakeDb as DB);
@@ -1277,13 +1293,15 @@ describe("WishlistService", () => {
                 const selectFromMock = vi.fn(() => ({
                     where: selectWhereMock,
                 }));
-                const selectMock = vi.fn(() => ({ from: selectFromMock }));
+                const selectMock = vi.fn(() => ({
+                    from: selectFromMock,
+                })) as Mock;
 
                 const fakeDb: Partial<DB> = {
                     select: selectMock,
                     update: vi.fn(() => {
                         throw new Error("Should not be called");
-                    }),
+                    }) as Mock,
                 };
 
                 const service = new WishlistService(fakeDb as DB);
@@ -1321,12 +1339,14 @@ describe("WishlistService", () => {
                 const selectMock = vi
                     .fn()
                     .mockReturnValueOnce({ from: selectFromMock1 })
-                    .mockReturnValueOnce({ from: selectFromMock2 });
+                    .mockReturnValueOnce({ from: selectFromMock2 }) as Mock;
 
                 const updateRunMock = vi.fn().mockResolvedValue(undefined);
                 const updateWhereMock = vi.fn(() => ({ run: updateRunMock }));
                 const updateSetMock = vi.fn(() => ({ where: updateWhereMock }));
-                const updateMock = vi.fn(() => ({ set: updateSetMock }));
+                const updateMock = vi.fn(() => ({
+                    set: updateSetMock,
+                })) as Mock;
 
                 const fakeDb: Partial<DB> = {
                     select: selectMock,
