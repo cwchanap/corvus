@@ -3,30 +3,39 @@ import type { DB } from "../../src/lib/db";
 import { createDefaultCategories } from "../../src/lib/db/migrations";
 
 describe("createDefaultCategories", () => {
-  it("inserts the default categories for a user", async () => {
-    const runMock = vi.fn().mockResolvedValue(undefined);
-    const valuesMock = vi.fn(() => ({ run: runMock }));
-    const insertMock = vi.fn(() => ({ values: valuesMock }));
+    it("inserts the default categories for a user", async () => {
+        const runMock = vi.fn().mockResolvedValue(undefined);
+        const valuesMock = vi.fn(() => ({ run: runMock }));
+        const insertMock = vi.fn(() => ({ values: valuesMock }));
 
-    const db = {
-      insert: insertMock,
-    } as unknown as DB;
+        const db = {
+            insert: insertMock,
+        } as unknown as DB;
 
-    await createDefaultCategories(db, 123);
+        await createDefaultCategories(db, 123);
 
-    expect(insertMock).toHaveBeenCalledTimes(3);
-    expect(valuesMock).toHaveBeenCalledTimes(3);
-    expect(runMock).toHaveBeenCalledTimes(3);
+        expect(insertMock).toHaveBeenCalledTimes(3);
+        expect(valuesMock).toHaveBeenCalledTimes(3);
+        expect(runMock).toHaveBeenCalledTimes(3);
 
-    const payloads = valuesMock.mock.calls.map(([payload]) => payload);
-    expect(payloads.map((item) => item.name)).toEqual([
-      "General",
-      "Work",
-      "Personal",
-    ]);
-    payloads.forEach((payload) => {
-      expect(payload.user_id).toBe(123);
-      expect(typeof payload.id).toBe("string");
+        const payloads = valuesMock.mock.calls.map(
+            (call) =>
+                (call as unknown[])[0] as {
+                    name: string;
+                    user_id: number;
+                    id: string;
+                },
+        );
+        expect(payloads.map((item) => item?.name)).toEqual([
+            "General",
+            "Work",
+            "Personal",
+        ]);
+        payloads.forEach((payload) => {
+            if (payload) {
+                expect(payload.user_id).toBe(123);
+                expect(typeof payload.id).toBe("string");
+            }
+        });
     });
-  });
 });
