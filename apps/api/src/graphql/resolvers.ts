@@ -363,17 +363,26 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
-            const link = await wishlistService.updateItemLink(
-                context.user.id,
-                args.id,
-                {
-                    url: args.input.url ?? undefined,
-                    description: args.input.description ?? undefined,
-                    is_primary: args.input.isPrimary ?? undefined,
-                },
-            );
+            try {
+                const link = await wishlistService.updateItemLink(
+                    context.user.id,
+                    args.id,
+                    {
+                        url: args.input.url ?? undefined,
+                        description: args.input.description ?? undefined,
+                        is_primary: args.input.isPrimary ?? undefined,
+                    },
+                );
 
-            return link ? mapLink(link) : null;
+                return link ? mapLink(link) : null;
+            } catch (error) {
+                if (error instanceof WishlistAuthorizationError) {
+                    throw new GraphQLError(error.message, {
+                        extensions: { code: "FORBIDDEN" },
+                    });
+                }
+                throw error;
+            }
         },
         deleteItemLink: async (_parent, args, context) => {
             if (!context.user) {

@@ -17,6 +17,9 @@ import type {
     ItemUpdateInput,
     ItemLinkInput,
     ItemLinkUpdateInput,
+    BatchDeleteInput,
+    BatchMoveInput,
+    BatchOperationResult,
 } from "../types";
 
 // Query strings
@@ -401,4 +404,25 @@ export async function setPrimaryLink(
         options,
     );
     return data.setPrimaryLink;
+}
+
+// Batch operations
+export async function batchDeleteItems(
+    input: BatchDeleteInput,
+    options?: Partial<GraphQLClientOptions>,
+): Promise<BatchOperationResult> {
+    const data = await graphqlRequest<{
+        batchDeleteItems: BatchOperationResult;
+    }>(BATCH_DELETE_ITEMS_MUTATION, { input }, options);
+    return data.batchDeleteItems;
+}
+
+export async function batchMoveItems(
+    input: BatchMoveInput,
+    options?: Partial<GraphQLClientOptions>,
+): Promise<BatchOperationResult> {
+    const data = await graphqlRequest<{
+        batchMoveItems: BatchOperationResult;
+    }>(BATCH_MOVE_ITEMS_MUTATION, { input }, options);
+    return data.batchMoveItems;
 }
