@@ -48,6 +48,8 @@ const mockUpdateItem = createMockMutation();
 const mockAddItemLink = createMockMutation();
 const mockUpdateItemLink = createMockMutation();
 const mockDeleteItemLink = createMockMutation();
+const mockBatchDeleteItems = createMockMutation();
+const mockBatchMoveItems = createMockMutation();
 const mockLogout = createMockMutation();
 
 vi.mock("../lib/graphql/hooks/use-wishlist", () => ({
@@ -58,6 +60,8 @@ vi.mock("../lib/graphql/hooks/use-wishlist", () => ({
   useAddItemLink: () => mockAddItemLink,
   useUpdateItemLink: () => mockUpdateItemLink,
   useDeleteItemLink: () => mockDeleteItemLink,
+  useBatchDeleteItems: () => mockBatchDeleteItems,
+  useBatchMoveItems: () => mockBatchMoveItems,
 }));
 
 vi.mock("../lib/graphql/hooks/use-auth", () => ({
@@ -206,6 +210,8 @@ describe("WishlistDashboard", () => {
     Object.assign(mockAddItemLink, createMockMutation());
     Object.assign(mockUpdateItemLink, createMockMutation());
     Object.assign(mockDeleteItemLink, createMockMutation());
+    Object.assign(mockBatchDeleteItems, createMockMutation());
+    Object.assign(mockBatchMoveItems, createMockMutation());
     Object.assign(mockLogout, createMockMutation());
   });
 
