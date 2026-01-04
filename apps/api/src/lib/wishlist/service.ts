@@ -327,10 +327,16 @@ export class WishlistService {
     ): Promise<{
         processedCount: number;
         failedCount: number;
+        success: boolean;
         errors: string[];
     }> {
         if (itemIds.length === 0) {
-            return { processedCount: 0, failedCount: 0, errors: [] };
+            return {
+                processedCount: 0,
+                failedCount: 0,
+                success: false,
+                errors: [],
+            };
         }
 
         // Verify ownership - only delete items belonging to the user
@@ -352,6 +358,7 @@ export class WishlistService {
             return {
                 processedCount: 0,
                 failedCount: itemIds.length,
+                success: false,
                 errors: ["No valid items to delete"],
             };
         }
@@ -365,9 +372,14 @@ export class WishlistService {
         return {
             processedCount: validItemIds.length,
             failedCount: invalidCount,
+            success: validItemIds.length > 0,
             errors:
                 invalidCount > 0
-                    ? [`${invalidCount} items not found or unauthorized`]
+                    ? [
+                          `${invalidCount} ${
+                              invalidCount === 1 ? "item" : "items"
+                          } not found or unauthorized`,
+                      ]
                     : [],
         };
     }
@@ -384,10 +396,16 @@ export class WishlistService {
     ): Promise<{
         processedCount: number;
         failedCount: number;
+        success: boolean;
         errors: string[];
     }> {
         if (itemIds.length === 0) {
-            return { processedCount: 0, failedCount: 0, errors: [] };
+            return {
+                processedCount: 0,
+                failedCount: 0,
+                success: false,
+                errors: [],
+            };
         }
 
         // Verify ownership of items
@@ -409,6 +427,7 @@ export class WishlistService {
             return {
                 processedCount: 0,
                 failedCount: itemIds.length,
+                success: false,
                 errors: ["No valid items to move"],
             };
         }
@@ -430,6 +449,7 @@ export class WishlistService {
                 return {
                     processedCount: 0,
                     failedCount: itemIds.length,
+                    success: false,
                     errors: ["Category not found or unauthorized"],
                 };
             }
@@ -448,9 +468,14 @@ export class WishlistService {
         return {
             processedCount: validItemIds.length,
             failedCount: invalidCount,
+            success: validItemIds.length > 0,
             errors:
                 invalidCount > 0
-                    ? [`${invalidCount} items not found or unauthorized`]
+                    ? [
+                          `${invalidCount} ${
+                              invalidCount === 1 ? "item" : "items"
+                          } not found or unauthorized`,
+                      ]
                     : [],
         };
     }

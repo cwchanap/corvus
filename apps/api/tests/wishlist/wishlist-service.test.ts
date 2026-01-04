@@ -1012,6 +1012,7 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 0,
                     failedCount: 0,
+                    success: false,
                     errors: [],
                 });
                 expect(fakeDb.select).not.toHaveBeenCalled();
@@ -1050,7 +1051,8 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 2,
                     failedCount: 1,
-                    errors: ["1 items not found or unauthorized"],
+                    success: true,
+                    errors: ["1 item not found or unauthorized"],
                 });
                 expect(selectMock).toHaveBeenCalledTimes(1);
                 expect(deleteMock).toHaveBeenCalledTimes(1);
@@ -1083,6 +1085,7 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 0,
                     failedCount: 2,
+                    success: false,
                     errors: ["No valid items to delete"],
                 });
                 expect(fakeDb.delete).not.toHaveBeenCalled();
@@ -1124,6 +1127,7 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 3,
                     failedCount: 0,
+                    success: true,
                     errors: [],
                 });
             });
@@ -1143,6 +1147,7 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 0,
                     failedCount: 0,
+                    success: false,
                     errors: [],
                 });
                 expect(fakeDb.select).not.toHaveBeenCalled();
@@ -1193,6 +1198,7 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 2,
                     failedCount: 0,
+                    success: true,
                     errors: [],
                 });
                 expect(updateMock).toHaveBeenCalledTimes(1);
@@ -1236,6 +1242,7 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 1,
                     failedCount: 0,
+                    success: true,
                     errors: [],
                 });
                 expect(updateSetMock).toHaveBeenCalledWith({
@@ -1282,6 +1289,7 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 0,
                     failedCount: 1,
+                    success: false,
                     errors: ["Category not found or unauthorized"],
                 });
                 expect(fakeDb.update).not.toHaveBeenCalled();
@@ -1314,6 +1322,7 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 0,
                     failedCount: 1,
+                    success: false,
                     errors: ["No valid items to move"],
                 });
                 expect(fakeDb.update).not.toHaveBeenCalled();
@@ -1363,7 +1372,8 @@ describe("WishlistService", () => {
                 expect(result).toEqual({
                     processedCount: 1,
                     failedCount: 1,
-                    errors: ["1 items not found or unauthorized"],
+                    success: true,
+                    errors: ["1 item not found or unauthorized"],
                 });
             });
         });

@@ -37,6 +37,7 @@ export type {
     ItemUpdateInput,
     ItemLinkInput,
     ItemLinkUpdateInput,
+    BatchOperationResult,
 } from "@repo/common/graphql/types";
 
 // Query operations
@@ -165,19 +166,11 @@ export async function setPrimaryLink(itemId: string, linkId: string) {
     return data.setPrimaryLink;
 }
 
-// Batch operation types
-export interface BatchOperationResult {
-    success: boolean;
-    processedCount: number;
-    failedCount: number;
-    errors: string[] | null;
-}
-
 export async function batchDeleteItems(
     itemIds: string[],
-): Promise<BatchOperationResult> {
+): Promise<import("@repo/common/graphql/types").BatchOperationResult> {
     const data = await graphqlRequest<{
-        batchDeleteItems: BatchOperationResult;
+        batchDeleteItems: import("@repo/common/graphql/types").BatchOperationResult;
     }>(BATCH_DELETE_ITEMS_MUTATION, { input: { itemIds } });
     return data.batchDeleteItems;
 }
@@ -185,9 +178,9 @@ export async function batchDeleteItems(
 export async function batchMoveItems(
     itemIds: string[],
     categoryId: string | null,
-): Promise<BatchOperationResult> {
+): Promise<import("@repo/common/graphql/types").BatchOperationResult> {
     const data = await graphqlRequest<{
-        batchMoveItems: BatchOperationResult;
+        batchMoveItems: import("@repo/common/graphql/types").BatchOperationResult;
     }>(BATCH_MOVE_ITEMS_MUTATION, { input: { itemIds, categoryId } });
     return data.batchMoveItems;
 }
