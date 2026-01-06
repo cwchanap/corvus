@@ -75,10 +75,6 @@ export function BulkActionBar(props: BulkActionBarProps) {
 
     clearAddOutsideClickListenerTimer();
     addOutsideClickListenerTimer = window.setTimeout(() => {
-      if (!showMoveDropdown()) {
-        return;
-      }
-
       if (!outsideClickListenerAttached) {
         document.addEventListener("click", handleClickOutside);
         outsideClickListenerAttached = true;

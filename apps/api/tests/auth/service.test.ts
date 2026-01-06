@@ -6,17 +6,11 @@ import * as crypto from "../../src/lib/auth/crypto";
 import * as migrations from "../../src/lib/db/migrations";
 
 // Mock the crypto module
-vi.mock("../../src/lib/auth/crypto", async () => {
-    const actual = await vi.importActual<typeof crypto>(
-        "../../src/lib/auth/crypto",
-    );
-    return {
-        ...actual,
-        hashPassword: vi.fn(),
-        verifyPassword: vi.fn(),
-        generateSessionId: vi.fn(),
-    };
-});
+vi.mock("../../src/lib/auth/crypto", () => ({
+    hashPassword: vi.fn(),
+    verifyPassword: vi.fn(),
+    generateSessionId: vi.fn(),
+}));
 
 // Mock the migrations module
 vi.mock("../../src/lib/db/migrations", () => ({
