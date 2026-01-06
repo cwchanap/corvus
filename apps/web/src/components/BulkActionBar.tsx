@@ -1,4 +1,11 @@
-import { Show, createSignal, createEffect, onCleanup, For } from "solid-js";
+import {
+  Show,
+  createSignal,
+  createEffect,
+  onCleanup,
+  For,
+  untrack,
+} from "solid-js";
 import type { Accessor } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { ConfirmDialog } from "@repo/ui-components/confirm-dialog";
@@ -75,10 +82,12 @@ export function BulkActionBar(props: BulkActionBarProps) {
 
     clearAddOutsideClickListenerTimer();
     addOutsideClickListenerTimer = window.setTimeout(() => {
-      if (!outsideClickListenerAttached) {
-        document.addEventListener("click", handleClickOutside);
-        outsideClickListenerAttached = true;
-      }
+      untrack(() => {
+        if (!outsideClickListenerAttached) {
+          document.addEventListener("click", handleClickOutside);
+          outsideClickListenerAttached = true;
+        }
+      });
     }, 0);
 
     onCleanup(() => {
