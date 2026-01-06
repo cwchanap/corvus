@@ -575,23 +575,16 @@ export class WishlistService {
             throw new WishlistAuthorizationError();
         }
 
-        // First, unset all primary flags for this item
-        await this.db
-            .update(wishlistItemLinks)
-            .set({ is_primary: false, updated_at: new Date().toISOString() })
-            .where(eq(wishlistItemLinks.item_id, itemId))
-            .run();
+        // Single atomic UPDATE using CASE statement to prevent race conditions
+        const now = new Date().toISOString();
 
-        // Then set the specific link as primary
         await this.db
             .update(wishlistItemLinks)
-            .set({ is_primary: true, updated_at: new Date().toISOString() })
-            .where(
-                and(
-                    eq(wishlistItemLinks.id, linkId),
-                    eq(wishlistItemLinks.item_id, itemId),
-                ),
-            )
+            .set({
+                is_primary: sql`CASE WHEN ${wishlistItemLinks.id} = ${linkId} THEN 1 ELSE 0 END`,
+                updated_at: now,
+            })
+            .where(eq(wishlistItemLinks.item_id, itemId))
             .run();
     }
 

@@ -939,7 +939,7 @@ describe("WishlistService", () => {
             );
         });
 
-        it("setPrimaryLink unsets all primary flags then sets new primary", async () => {
+        it("setPrimaryLink uses single atomic UPDATE with CASE statement", async () => {
             const itemGetMock = vi.fn().mockResolvedValue({ user_id: 42 });
             const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
             const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
@@ -953,19 +953,10 @@ describe("WishlistService", () => {
                 .mockReturnValueOnce({ from: itemFromMock })
                 .mockReturnValueOnce({ from: linkFromMock }) as Mock;
 
-            const runMock1 = vi.fn().mockResolvedValue(undefined);
-            const runMock2 = vi.fn().mockResolvedValue(undefined);
-
-            const whereMock1 = vi.fn(() => ({ run: runMock1 }));
-            const setMock1 = vi.fn(() => ({ where: whereMock1 }));
-
-            const whereMock2 = vi.fn(() => ({ run: runMock2 }));
-            const setMock2 = vi.fn(() => ({ where: whereMock2 }));
-
-            const updateMock = vi
-                .fn()
-                .mockReturnValueOnce({ set: setMock1 })
-                .mockReturnValueOnce({ set: setMock2 }) as Mock;
+            const runMock = vi.fn().mockResolvedValue(undefined);
+            const whereMock = vi.fn(() => ({ run: runMock }));
+            const setMock = vi.fn(() => ({ where: whereMock }));
+            const updateMock = vi.fn(() => ({ set: setMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
                 select: selectMock,
@@ -975,25 +966,19 @@ describe("WishlistService", () => {
             const service = new WishlistService(fakeDb as DB);
             await service.setPrimaryLink(42, "item-1", "link-2");
 
-            expect(updateMock).toHaveBeenCalledTimes(2);
+            // Should only call update once with atomic CASE statement
+            expect(updateMock).toHaveBeenCalledTimes(1);
+            expect(setMock).toHaveBeenCalledTimes(1);
 
-            // First update should unset all primary flags
-            expect(setMock1).toHaveBeenCalledTimes(1);
-            expect(setMock1).toHaveBeenCalledWith({
-                is_primary: false,
+            // Verify the set call includes the CASE expression for is_primary
+            expect(setMock).toHaveBeenCalledWith({
+                is_primary: expect.objectContaining({
+                    // CASE expression will be an SQL object
+                }),
                 updated_at: expect.any(String),
             });
-            expect(whereMock1).toHaveBeenCalledTimes(1);
-            expect(runMock1).toHaveBeenCalledTimes(1);
-
-            // Second update should set specific link as primary
-            expect(setMock2).toHaveBeenCalledTimes(1);
-            expect(setMock2).toHaveBeenCalledWith({
-                is_primary: true,
-                updated_at: expect.any(String),
-            });
-            expect(whereMock2).toHaveBeenCalledTimes(1);
-            expect(runMock2).toHaveBeenCalledTimes(1);
+            expect(whereMock).toHaveBeenCalledTimes(1);
+            expect(runMock).toHaveBeenCalledTimes(1);
         });
     });
 

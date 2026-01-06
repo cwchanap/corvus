@@ -116,6 +116,9 @@ bun --cwd packages/e2e test
 
 # Run Playwright tests with UI
 bun --cwd packages/e2e test:ui
+
+# Run API unit tests (Vitest)
+cd apps/api && bun run test
 ```
 
 ## Architecture Notes

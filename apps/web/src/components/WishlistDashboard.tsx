@@ -296,6 +296,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const [viewOpen, setViewOpen] = createSignal(false);
   const [viewingItem, setViewingItem] = createSignal<WishlistItem | null>(null);
   const [categoryManagerOpen, setCategoryManagerOpen] = createSignal(false);
+  const [bulkActionError, setBulkActionError] = createSignal<string | null>(
+    null,
+  );
 
   // Store timeout ID in a variable outside the effect
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -464,6 +467,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
 
   // Bulk operation handlers
   const handleToggleSelectionMode = () => {
+    setBulkActionError(null);
     if (selection.isSelectionMode()) {
       selection.exitSelectionMode();
     } else {
@@ -473,20 +477,26 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
 
   const handleBatchDelete = async () => {
     try {
+      setBulkActionError(null);
       const itemIds = selection.selectedIds();
       await batchDeleteMutation.mutateAsync(itemIds);
       selection.exitSelectionMode();
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setBulkActionError(message);
       console.error("Bulk delete error:", err);
     }
   };
 
   const handleBatchMove = async (categoryId: string | null) => {
     try {
+      setBulkActionError(null);
       const itemIds = selection.selectedIds();
       await batchMoveMutation.mutateAsync({ itemIds, categoryId });
       selection.exitSelectionMode();
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setBulkActionError(message);
       console.error("Bulk move error:", err);
     }
   };
@@ -746,6 +756,14 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
               onToggleSelectionMode={handleToggleSelectionMode}
               hasItems={items().length > 0}
             />
+
+            <Show when={bulkActionError()}>
+              <div class="text-center py-3">
+                <div class="text-destructive text-sm">
+                  Bulk action failed: {bulkActionError()}
+                </div>
+              </div>
+            </Show>
 
             <WishlistItemsSection
               wishlistQuery={wishlistQuery}
