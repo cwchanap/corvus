@@ -5,7 +5,7 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "main": "./dist/corvus/index.js",
+  "main": "./src/index.tsx",
   "dev": {
     "port": 5002
   },
