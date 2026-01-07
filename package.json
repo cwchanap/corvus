@@ -3,8 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "build:deploy": "turbo run build:web build:api",
+    "build": "turbo run build && bun run copy-assets",
     "copy-assets": "rm -rf apps/api/dist/client && mkdir -p apps/api/dist/client && cp -r apps/web/.output/public/. apps/api/dist/client/",
     "deploy": "turbo run deploy",
     "dev": "turbo run db:local dev --filter=api --filter=web --filter=extension",
