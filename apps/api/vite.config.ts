@@ -13,6 +13,8 @@ export default defineConfig({
         }),
     ],
     build: {
+        outDir: "dist/corvus",
+        emptyOutDir: true,
         rollupOptions: {
             input: "src/index.tsx",
         },
