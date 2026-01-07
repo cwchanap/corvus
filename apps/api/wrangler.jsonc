@@ -2,15 +2,10 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "corvus",
   "compatibility_date": "2025-08-03",
-  "compatibility_flags": ["nodejs_compat"],
-  "rules": [
-    {
-      "type": "Text",
-      "globs": ["**/*.graphql"],
-      "fallthrough": true
-    }
+  "compatibility_flags": [
+    "nodejs_compat"
   ],
-  "main": "./src/index.tsx",
+  "main": "./dist/corvus/index.js",
   "dev": {
     "port": 5002
   },
