@@ -20,5 +20,14 @@
   "assets": {
     "directory": "./dist/client",
     "binding": "ASSETS"
-  }
+  },
+  "rules": [
+    {
+      "type": "Text",
+      "globs": [
+        "**/*.graphql",
+        "**/*.gql"
+      ]
+    }
+  ]
 }
