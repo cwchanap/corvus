@@ -1,33 +1,28 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "corvus",
-  "compatibility_date": "2025-08-03",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_date": "2025-11-17",
+  "compatibility_flags": ["nodejs_compat"],
   "main": "./src/index.tsx",
   "dev": {
-    "port": 5002
+    "port": 5002,
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "corvus",
       "database_id": "21169276-f379-475f-99d3-54fd1dbb2d20",
-      "migrations_dir": "drizzle"
-    }
+      "migrations_dir": "drizzle",
+    },
   ],
   "assets": {
     "directory": "./dist/client",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   "rules": [
     {
       "type": "Text",
-      "globs": [
-        "**/*.graphql",
-        "**/*.gql"
-      ]
-    }
-  ]
+      "globs": ["**/*.graphql", "**/*.gql"],
+    },
+  ],
 }
