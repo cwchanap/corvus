@@ -74,7 +74,7 @@ test.describe("Bulk Operations E2E", () => {
     test("batch delete via GraphQL API works correctly", async ({ page }) => {
         // First create test items via API
         const createItemMutation = `
-            mutation CreateItem($input: CreateItemInput!) {
+            mutation CreateItem($input: ItemInput!) {
                 createItem(input: $input) {
                     id
                     title
@@ -149,7 +149,7 @@ test.describe("Bulk Operations E2E", () => {
     test("batch move via GraphQL API works correctly", async ({ page }) => {
         // First create a category
         const createCategoryMutation = `
-            mutation CreateCategory($input: CreateCategoryInput!) {
+            mutation CreateCategory($input: CategoryInput!) {
                 createCategory(input: $input) {
                     id
                     name
@@ -174,7 +174,7 @@ test.describe("Bulk Operations E2E", () => {
 
         // Create test items
         const createItemMutation = `
-            mutation CreateItem($input: CreateItemInput!) {
+            mutation CreateItem($input: ItemInput!) {
                 createItem(input: $input) {
                     id
                     title
@@ -343,7 +343,7 @@ test.describe("Bulk Operations E2E", () => {
     }) => {
         // Create a category first
         const createCategoryMutation = `
-            mutation CreateCategory($input: CreateCategoryInput!) {
+            mutation CreateCategory($input: CategoryInput!) {
                 createCategory(input: $input) { id }
             }
         `;
@@ -361,7 +361,7 @@ test.describe("Bulk Operations E2E", () => {
 
         // Create an item in that category
         const createItemMutation = `
-            mutation CreateItem($input: CreateItemInput!) {
+            mutation CreateItem($input: ItemInput!) {
                 createItem(input: $input) { id }
             }
         `;
