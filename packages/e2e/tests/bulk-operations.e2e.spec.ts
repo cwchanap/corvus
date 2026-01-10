@@ -134,6 +134,7 @@ test.describe("Bulk Operations E2E", () => {
             data?: { createItem?: { id?: string } };
         };
         const item1Id = item1Json.data?.createItem?.id;
+        expect(item1Id).toBeTruthy();
 
         const item2Res = await graphqlRequest(page, createItemMutation, {
             input: {
@@ -146,6 +147,7 @@ test.describe("Bulk Operations E2E", () => {
             data?: { createItem?: { id?: string } };
         };
         const item2Id = item2Json.data?.createItem?.id;
+        expect(item2Id).toBeTruthy();
 
         // Now test batch delete
         const batchDeleteMutation = `
@@ -199,6 +201,7 @@ test.describe("Bulk Operations E2E", () => {
             data?: { createCategory?: { id?: string } };
         };
         const categoryId = categoryJson.data?.createCategory?.id;
+        expect(categoryId).toBeTruthy();
 
         // Create test items
         const createItemMutation = `
@@ -220,6 +223,7 @@ test.describe("Bulk Operations E2E", () => {
             data?: { createItem?: { id?: string } };
         };
         const item1Id = item1Json.data?.createItem?.id;
+        expect(item1Id).toBeTruthy();
 
         const item2Res = await graphqlRequest(page, createItemMutation, {
             input: {
@@ -231,6 +235,7 @@ test.describe("Bulk Operations E2E", () => {
             data?: { createItem?: { id?: string } };
         };
         const item2Id = item2Json.data?.createItem?.id;
+        expect(item2Id).toBeTruthy();
 
         // Test batch move to category
         const batchMoveMutation = `
@@ -309,7 +314,8 @@ test.describe("Bulk Operations E2E", () => {
 
         // Should have GraphQL error for empty array
         expect(deleteJson.errors).toBeDefined();
-        expect(deleteJson.errors[0].message).toContain(
+        expect(deleteJson.errors?.length).toBeGreaterThan(0);
+        expect(deleteJson.errors?.[0]?.message).toContain(
             "At least one item ID required",
         );
     });
@@ -370,6 +376,7 @@ test.describe("Bulk Operations E2E", () => {
             data?: { createCategory?: { id?: string } };
         };
         const categoryId = categoryJson.data?.createCategory?.id;
+        expect(categoryId).toBeTruthy();
 
         // Create an item in that category
         const createItemMutation = `
@@ -388,6 +395,7 @@ test.describe("Bulk Operations E2E", () => {
             data?: { createItem?: { id?: string } };
         };
         const itemId = itemJson.data?.createItem?.id;
+        expect(itemId).toBeTruthy();
 
         // Move to null category (uncategorized)
         const batchMoveMutation = `
@@ -416,10 +424,23 @@ test.describe("Bulk Operations E2E", () => {
         expect(moveJson.data.batchMoveItems.processedCount).toBe(1);
 
         // Cleanup
-        await graphqlRequest(page, `mutation { deleteItem(id: "${itemId}") }`);
         await graphqlRequest(
             page,
-            `mutation { deleteCategory(id: "${categoryId}") }`,
+            `
+                mutation DeleteItem($id: ID!) {
+                    deleteItem(id: $id)
+                }
+            `,
+            { id: itemId },
+        );
+        await graphqlRequest(
+            page,
+            `
+                mutation DeleteCategory($id: ID!) {
+                    deleteCategory(id: $id)
+                }
+            `,
+            { id: categoryId },
         );
     });
 });
