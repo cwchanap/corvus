@@ -23,7 +23,11 @@ export function getSessionCookie(c?: Context): string | undefined {
 }
 
 export function setSessionCookie(c: Context, sessionId: string): void {
-    const isDev = Boolean(c.env.DEV) || isInsecureRequest(c);
+    const isDev = Boolean(c.env.DEV) || Boolean(c.env.INSECURE_COOKIES);
+
+    // URL-encode the sessionId to safely escape special characters
+    const encodedSessionId = encodeURIComponent(sessionId);
+
     const cookieOptions = [
         `HttpOnly`,
         isDev ? `SameSite=Lax` : `SameSite=None`,
@@ -36,17 +40,18 @@ export function setSessionCookie(c: Context, sessionId: string): void {
 
     c.header(
         "Set-Cookie",
-        `${SESSION_COOKIE_NAME}=${sessionId}; ${cookieOptions}`,
+        `${SESSION_COOKIE_NAME}=${encodedSessionId}; ${cookieOptions}`,
     );
 }
 
 export function clearSessionCookie(c: Context): void {
-    const isDev = Boolean(c.env.DEV) || isInsecureRequest(c);
+    const isDev = Boolean(c.env.DEV) || Boolean(c.env.INSECURE_COOKIES);
     const cookieOptions = [
         `HttpOnly`,
         isDev ? `SameSite=Lax` : `SameSite=None`,
         isDev ? "" : `Secure`,
         `Max-Age=0`,
+        `Expires=0`,
         `Path=/`,
     ]
         .filter(Boolean)
@@ -54,19 +59,6 @@ export function clearSessionCookie(c: Context): void {
 
     // Must match the same attributes (at least path) used when setting the cookie
     c.header("Set-Cookie", `${SESSION_COOKIE_NAME}=; ${cookieOptions}`);
-}
-
-function isInsecureRequest(c: Context): boolean {
-    const url = c.req.url ?? c.req.raw?.url;
-    if (!url) {
-        return false;
-    }
-
-    try {
-        return new URL(url).protocol !== "https:";
-    } catch {
-        return false;
-    }
 }
 
 export function requireAuth(user: PublicUser | null): PublicUser {
