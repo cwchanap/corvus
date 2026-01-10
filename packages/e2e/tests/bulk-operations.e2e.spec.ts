@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 // E2E tests for bulk operations: batch delete and batch move
 // Uses baseURL from playwright.config.ts (http://localhost:5000)
@@ -13,19 +13,37 @@ test.describe("Bulk Operations E2E", () => {
     const SESSION_COOKIE_NAME = "corvus-session";
 
     async function graphqlRequest(
-        page: import("@playwright/test").Page,
+        page: Page,
         query: string,
         variables?: Record<string, unknown>,
-    ) {
-        const cookies = await page.context().cookies(API_ENDPOINT);
-        const cookieHeader = cookies
-            .map((cookie) => `${cookie.name}=${cookie.value}`)
-            .join("; ");
+    ): Promise<{ ok: boolean; status: number; json: unknown | null }> {
+        return page.evaluate(
+            async ({ endpoint, query, variables }) => {
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({ query, variables }),
+                });
 
-        return page.request.post(API_ENDPOINT, {
-            data: { query, variables },
-            headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-        });
+                const text = await response.text();
+                let json: unknown | null = null;
+                try {
+                    json = text ? JSON.parse(text) : null;
+                } catch {
+                    json = null;
+                }
+
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    json,
+                };
+            },
+            { endpoint: API_ENDPOINT, query, variables },
+        );
     }
 
     test.beforeEach(async ({ page }) => {
@@ -111,8 +129,10 @@ test.describe("Bulk Operations E2E", () => {
                 description: "Test item for bulk delete",
             },
         });
-        expect(item1Res.ok()).toBeTruthy();
-        const item1Json = await item1Res.json();
+        expect(item1Res.ok).toBeTruthy();
+        const item1Json = item1Res.json as {
+            data?: { createItem?: { id?: string } };
+        };
         const item1Id = item1Json.data?.createItem?.id;
 
         const item2Res = await graphqlRequest(page, createItemMutation, {
@@ -121,8 +141,10 @@ test.describe("Bulk Operations E2E", () => {
                 description: "Test item for bulk delete",
             },
         });
-        expect(item2Res.ok()).toBeTruthy();
-        const item2Json = await item2Res.json();
+        expect(item2Res.ok).toBeTruthy();
+        const item2Json = item2Res.json as {
+            data?: { createItem?: { id?: string } };
+        };
         const item2Id = item2Json.data?.createItem?.id;
 
         // Now test batch delete
@@ -143,8 +165,10 @@ test.describe("Bulk Operations E2E", () => {
             },
         });
 
-        expect(deleteRes.ok()).toBeTruthy();
-        const deleteJson = await deleteRes.json();
+        expect(deleteRes.ok).toBeTruthy();
+        const deleteJson = deleteRes.json as {
+            data: { batchDeleteItems: unknown };
+        };
 
         expect(deleteJson.data.batchDeleteItems).toMatchObject({
             success: true,
@@ -170,8 +194,10 @@ test.describe("Bulk Operations E2E", () => {
                 color: "#FF5733",
             },
         });
-        expect(categoryRes.ok()).toBeTruthy();
-        const categoryJson = await categoryRes.json();
+        expect(categoryRes.ok).toBeTruthy();
+        const categoryJson = categoryRes.json as {
+            data?: { createCategory?: { id?: string } };
+        };
         const categoryId = categoryJson.data?.createCategory?.id;
 
         // Create test items
@@ -189,8 +215,10 @@ test.describe("Bulk Operations E2E", () => {
                 title: "Bulk Move Test Item 1",
             },
         });
-        expect(item1Res.ok()).toBeTruthy();
-        const item1Json = await item1Res.json();
+        expect(item1Res.ok).toBeTruthy();
+        const item1Json = item1Res.json as {
+            data?: { createItem?: { id?: string } };
+        };
         const item1Id = item1Json.data?.createItem?.id;
 
         const item2Res = await graphqlRequest(page, createItemMutation, {
@@ -198,8 +226,10 @@ test.describe("Bulk Operations E2E", () => {
                 title: "Bulk Move Test Item 2",
             },
         });
-        expect(item2Res.ok()).toBeTruthy();
-        const item2Json = await item2Res.json();
+        expect(item2Res.ok).toBeTruthy();
+        const item2Json = item2Res.json as {
+            data?: { createItem?: { id?: string } };
+        };
         const item2Id = item2Json.data?.createItem?.id;
 
         // Test batch move to category
@@ -221,8 +251,10 @@ test.describe("Bulk Operations E2E", () => {
             },
         });
 
-        expect(moveRes.ok()).toBeTruthy();
-        const moveJson = await moveRes.json();
+        expect(moveRes.ok).toBeTruthy();
+        const moveJson = moveRes.json as {
+            data: { batchMoveItems: unknown };
+        };
 
         expect(moveJson.data.batchMoveItems).toMatchObject({
             success: true,
@@ -270,8 +302,10 @@ test.describe("Bulk Operations E2E", () => {
             },
         });
 
-        expect(deleteRes.ok()).toBeTruthy();
-        const deleteJson = await deleteRes.json();
+        expect(deleteRes.ok).toBeTruthy();
+        const deleteJson = deleteRes.json as {
+            errors?: Array<{ message: string }>;
+        };
 
         // Should have GraphQL error for empty array
         expect(deleteJson.errors).toBeDefined();
@@ -300,8 +334,14 @@ test.describe("Bulk Operations E2E", () => {
             },
         });
 
-        expect(deleteRes.ok()).toBeTruthy();
-        const deleteJson = await deleteRes.json();
+        expect(deleteRes.ok).toBeTruthy();
+        const deleteJson = deleteRes.json as {
+            data: {
+                batchDeleteItems: {
+                    errors: string[];
+                };
+            };
+        };
 
         expect(deleteJson.data.batchDeleteItems).toMatchObject({
             success: false,
@@ -326,7 +366,9 @@ test.describe("Bulk Operations E2E", () => {
         const categoryRes = await graphqlRequest(page, createCategoryMutation, {
             input: { name: "Temp Category", color: "#000000" },
         });
-        const categoryJson = await categoryRes.json();
+        const categoryJson = categoryRes.json as {
+            data?: { createCategory?: { id?: string } };
+        };
         const categoryId = categoryJson.data?.createCategory?.id;
 
         // Create an item in that category
@@ -342,7 +384,9 @@ test.describe("Bulk Operations E2E", () => {
                 categoryId: categoryId,
             },
         });
-        const itemJson = await itemRes.json();
+        const itemJson = itemRes.json as {
+            data?: { createItem?: { id?: string } };
+        };
         const itemId = itemJson.data?.createItem?.id;
 
         // Move to null category (uncategorized)
@@ -362,8 +406,12 @@ test.describe("Bulk Operations E2E", () => {
             },
         });
 
-        expect(moveRes.ok()).toBeTruthy();
-        const moveJson = await moveRes.json();
+        expect(moveRes.ok).toBeTruthy();
+        const moveJson = moveRes.json as {
+            data: {
+                batchMoveItems: { success: boolean; processedCount: number };
+            };
+        };
         expect(moveJson.data.batchMoveItems.success).toBe(true);
         expect(moveJson.data.batchMoveItems.processedCount).toBe(1);
 
