@@ -10,6 +10,23 @@ test.describe("Bulk Operations E2E", () => {
     const API_ENDPOINT =
         // eslint-disable-next-line turbo/no-undeclared-env-vars
         process.env.VITE_API_URL ?? "http://localhost:5002/graphql";
+    const SESSION_COOKIE_NAME = "corvus-session";
+
+    async function graphqlRequest(
+        page: import("@playwright/test").Page,
+        query: string,
+        variables?: Record<string, unknown>,
+    ) {
+        const cookies = await page.context().cookies(API_ENDPOINT);
+        const cookieHeader = cookies
+            .map((cookie) => `${cookie.name}=${cookie.value}`)
+            .join("; ");
+
+        return page.request.post(API_ENDPOINT, {
+            data: { query, variables },
+            headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+        });
+    }
 
     test.beforeEach(async ({ page }) => {
         // Login or register before each test
@@ -43,6 +60,11 @@ test.describe("Bulk Operations E2E", () => {
         }
 
         await expect(page).toHaveURL(/\/dashboard/);
+        const cookies = await page.context().cookies(API_ENDPOINT);
+        const sessionCookie = cookies.find(
+            (cookie) => cookie.name === SESSION_COOKIE_NAME,
+        );
+        expect(sessionCookie).toBeTruthy();
     });
 
     test("can enter and exit selection mode", async ({ page }) => {
@@ -83,30 +105,20 @@ test.describe("Bulk Operations E2E", () => {
         `;
 
         // Create 2 test items
-        const item1Res = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: createItemMutation,
-                variables: {
-                    input: {
-                        title: "Bulk Delete Test Item 1",
-                        description: "Test item for bulk delete",
-                    },
-                },
+        const item1Res = await graphqlRequest(page, createItemMutation, {
+            input: {
+                title: "Bulk Delete Test Item 1",
+                description: "Test item for bulk delete",
             },
         });
         expect(item1Res.ok()).toBeTruthy();
         const item1Json = await item1Res.json();
         const item1Id = item1Json.data?.createItem?.id;
 
-        const item2Res = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: createItemMutation,
-                variables: {
-                    input: {
-                        title: "Bulk Delete Test Item 2",
-                        description: "Test item for bulk delete",
-                    },
-                },
+        const item2Res = await graphqlRequest(page, createItemMutation, {
+            input: {
+                title: "Bulk Delete Test Item 2",
+                description: "Test item for bulk delete",
             },
         });
         expect(item2Res.ok()).toBeTruthy();
@@ -125,14 +137,9 @@ test.describe("Bulk Operations E2E", () => {
             }
         `;
 
-        const deleteRes = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: batchDeleteMutation,
-                variables: {
-                    input: {
-                        itemIds: [item1Id, item2Id],
-                    },
-                },
+        const deleteRes = await graphqlRequest(page, batchDeleteMutation, {
+            input: {
+                itemIds: [item1Id, item2Id],
             },
         });
 
@@ -157,15 +164,10 @@ test.describe("Bulk Operations E2E", () => {
             }
         `;
 
-        const categoryRes = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: createCategoryMutation,
-                variables: {
-                    input: {
-                        name: "Bulk Move Test Category",
-                        color: "#FF5733",
-                    },
-                },
+        const categoryRes = await graphqlRequest(page, createCategoryMutation, {
+            input: {
+                name: "Bulk Move Test Category",
+                color: "#FF5733",
             },
         });
         expect(categoryRes.ok()).toBeTruthy();
@@ -182,28 +184,18 @@ test.describe("Bulk Operations E2E", () => {
             }
         `;
 
-        const item1Res = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: createItemMutation,
-                variables: {
-                    input: {
-                        title: "Bulk Move Test Item 1",
-                    },
-                },
+        const item1Res = await graphqlRequest(page, createItemMutation, {
+            input: {
+                title: "Bulk Move Test Item 1",
             },
         });
         expect(item1Res.ok()).toBeTruthy();
         const item1Json = await item1Res.json();
         const item1Id = item1Json.data?.createItem?.id;
 
-        const item2Res = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: createItemMutation,
-                variables: {
-                    input: {
-                        title: "Bulk Move Test Item 2",
-                    },
-                },
+        const item2Res = await graphqlRequest(page, createItemMutation, {
+            input: {
+                title: "Bulk Move Test Item 2",
             },
         });
         expect(item2Res.ok()).toBeTruthy();
@@ -222,15 +214,10 @@ test.describe("Bulk Operations E2E", () => {
             }
         `;
 
-        const moveRes = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: batchMoveMutation,
-                variables: {
-                    input: {
-                        itemIds: [item1Id, item2Id],
-                        categoryId: categoryId,
-                    },
-                },
+        const moveRes = await graphqlRequest(page, batchMoveMutation, {
+            input: {
+                itemIds: [item1Id, item2Id],
+                categoryId: categoryId,
             },
         });
 
@@ -244,27 +231,25 @@ test.describe("Bulk Operations E2E", () => {
         });
 
         // Cleanup: delete items and category
-        await page.request.post(API_ENDPOINT, {
-            data: {
-                query: `
+        await graphqlRequest(
+            page,
+            `
                     mutation BatchDeleteItems($input: BatchDeleteInput!) {
                         batchDeleteItems(input: $input) { success }
                     }
                 `,
-                variables: { input: { itemIds: [item1Id, item2Id] } },
-            },
-        });
+            { input: { itemIds: [item1Id, item2Id] } },
+        );
 
-        await page.request.post(API_ENDPOINT, {
-            data: {
-                query: `
+        await graphqlRequest(
+            page,
+            `
                     mutation DeleteCategory($id: ID!) {
                         deleteCategory(id: $id)
                     }
                 `,
-                variables: { id: categoryId },
-            },
-        });
+            { id: categoryId },
+        );
     });
 
     test("batch delete rejects empty itemIds array", async ({ page }) => {
@@ -279,14 +264,9 @@ test.describe("Bulk Operations E2E", () => {
             }
         `;
 
-        const deleteRes = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: batchDeleteMutation,
-                variables: {
-                    input: {
-                        itemIds: [],
-                    },
-                },
+        const deleteRes = await graphqlRequest(page, batchDeleteMutation, {
+            input: {
+                itemIds: [],
             },
         });
 
@@ -314,14 +294,9 @@ test.describe("Bulk Operations E2E", () => {
             }
         `;
 
-        const deleteRes = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: batchDeleteMutation,
-                variables: {
-                    input: {
-                        itemIds: ["non-existent-id-1", "non-existent-id-2"],
-                    },
-                },
+        const deleteRes = await graphqlRequest(page, batchDeleteMutation, {
+            input: {
+                itemIds: ["non-existent-id-1", "non-existent-id-2"],
             },
         });
 
@@ -348,13 +323,8 @@ test.describe("Bulk Operations E2E", () => {
             }
         `;
 
-        const categoryRes = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: createCategoryMutation,
-                variables: {
-                    input: { name: "Temp Category", color: "#000000" },
-                },
-            },
+        const categoryRes = await graphqlRequest(page, createCategoryMutation, {
+            input: { name: "Temp Category", color: "#000000" },
         });
         const categoryJson = await categoryRes.json();
         const categoryId = categoryJson.data?.createCategory?.id;
@@ -366,15 +336,10 @@ test.describe("Bulk Operations E2E", () => {
             }
         `;
 
-        const itemRes = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: createItemMutation,
-                variables: {
-                    input: {
-                        title: "Item with category",
-                        categoryId: categoryId,
-                    },
-                },
+        const itemRes = await graphqlRequest(page, createItemMutation, {
+            input: {
+                title: "Item with category",
+                categoryId: categoryId,
             },
         });
         const itemJson = await itemRes.json();
@@ -390,15 +355,10 @@ test.describe("Bulk Operations E2E", () => {
             }
         `;
 
-        const moveRes = await page.request.post(API_ENDPOINT, {
-            data: {
-                query: batchMoveMutation,
-                variables: {
-                    input: {
-                        itemIds: [itemId],
-                        categoryId: null,
-                    },
-                },
+        const moveRes = await graphqlRequest(page, batchMoveMutation, {
+            input: {
+                itemIds: [itemId],
+                categoryId: null,
             },
         });
 
@@ -408,15 +368,10 @@ test.describe("Bulk Operations E2E", () => {
         expect(moveJson.data.batchMoveItems.processedCount).toBe(1);
 
         // Cleanup
-        await page.request.post(API_ENDPOINT, {
-            data: {
-                query: `mutation { deleteItem(id: "${itemId}") }`,
-            },
-        });
-        await page.request.post(API_ENDPOINT, {
-            data: {
-                query: `mutation { deleteCategory(id: "${categoryId}") }`,
-            },
-        });
+        await graphqlRequest(page, `mutation { deleteItem(id: "${itemId}") }`);
+        await graphqlRequest(
+            page,
+            `mutation { deleteCategory(id: "${categoryId}") }`,
+        );
     });
 });
