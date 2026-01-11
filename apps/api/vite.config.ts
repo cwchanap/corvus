@@ -6,6 +6,7 @@ export default defineConfig({
     plugins: [
         vitePluginString({
             include: "**/*.graphql",
+            compress: false,
         }),
         cloudflare({
             // Enable Node.js compatibility for Workers
