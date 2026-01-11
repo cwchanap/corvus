@@ -180,113 +180,132 @@ test.describe("Bulk Operations E2E", () => {
     });
 
     test("batch move via GraphQL API works correctly", async ({ page }) => {
-        // First create a category
-        const createCategoryMutation = `
-            mutation CreateCategory($input: CategoryInput!) {
-                createCategory(input: $input) {
-                    id
-                    name
-                }
-            }
-        `;
-
-        const categoryRes = await graphqlRequest(page, createCategoryMutation, {
-            input: {
-                name: "Bulk Move Test Category",
-                color: "#FF5733",
-            },
-        });
-        expect(categoryRes.ok).toBeTruthy();
-        const categoryJson = categoryRes.json as {
-            data?: { createCategory?: { id?: string } };
-        };
-        const categoryId = categoryJson.data?.createCategory?.id;
-        expect(categoryId).toBeTruthy();
-
-        // Create test items
-        const createItemMutation = `
-            mutation CreateItem($input: ItemInput!) {
-                createItem(input: $input) {
-                    id
-                    title
-                }
-            }
-        `;
-
-        const item1Res = await graphqlRequest(page, createItemMutation, {
-            input: {
-                title: "Bulk Move Test Item 1",
-            },
-        });
-        expect(item1Res.ok).toBeTruthy();
-        const item1Json = item1Res.json as {
-            data?: { createItem?: { id?: string } };
-        };
-        const item1Id = item1Json.data?.createItem?.id;
-        expect(item1Id).toBeTruthy();
-
-        const item2Res = await graphqlRequest(page, createItemMutation, {
-            input: {
-                title: "Bulk Move Test Item 2",
-            },
-        });
-        expect(item2Res.ok).toBeTruthy();
-        const item2Json = item2Res.json as {
-            data?: { createItem?: { id?: string } };
-        };
-        const item2Id = item2Json.data?.createItem?.id;
-        expect(item2Id).toBeTruthy();
-
-        // Test batch move to category
-        const batchMoveMutation = `
-            mutation BatchMoveItems($input: BatchMoveInput!) {
-                batchMoveItems(input: $input) {
-                    success
-                    processedCount
-                    failedCount
-                    errors
-                }
-            }
-        `;
-
-        const moveRes = await graphqlRequest(page, batchMoveMutation, {
-            input: {
-                itemIds: [item1Id, item2Id],
-                categoryId: categoryId,
-            },
-        });
-
-        expect(moveRes.ok).toBeTruthy();
-        const moveJson = moveRes.json as {
-            data: { batchMoveItems: unknown };
+        // Track created resources for cleanup
+        const createdIds = {
+            items: [] as string[],
+            category: null as string | null,
         };
 
-        expect(moveJson.data.batchMoveItems).toMatchObject({
-            success: true,
-            processedCount: 2,
-            failedCount: 0,
-        });
-
-        // Cleanup: delete items and category
-        await graphqlRequest(
-            page,
-            `
-                    mutation BatchDeleteItems($input: BatchDeleteInput!) {
-                        batchDeleteItems(input: $input) { success }
+        try {
+            // First create a category
+            const createCategoryMutation = `
+                mutation CreateCategory($input: CategoryInput!) {
+                    createCategory(input: $input) {
+                        id
+                        name
                     }
-                `,
-            { input: { itemIds: [item1Id, item2Id] } },
-        );
+                }
+            `;
 
-        await graphqlRequest(
-            page,
-            `
-                    mutation DeleteCategory($id: ID!) {
-                        deleteCategory(id: $id)
+            const categoryRes = await graphqlRequest(
+                page,
+                createCategoryMutation,
+                {
+                    input: {
+                        name: "Bulk Move Test Category",
+                        color: "#FF5733",
+                    },
+                },
+            );
+            expect(categoryRes.ok).toBeTruthy();
+            const categoryJson = categoryRes.json as {
+                data?: { createCategory?: { id?: string } };
+            };
+            const categoryId = categoryJson.data?.createCategory?.id;
+            expect(categoryId).toBeTruthy();
+            createdIds.category = categoryId!;
+
+            // Create test items
+            const createItemMutation = `
+                mutation CreateItem($input: ItemInput!) {
+                    createItem(input: $input) {
+                        id
+                        title
                     }
-                `,
-            { id: categoryId },
-        );
+                }
+            `;
+
+            const item1Res = await graphqlRequest(page, createItemMutation, {
+                input: {
+                    title: "Bulk Move Test Item 1",
+                },
+            });
+            expect(item1Res.ok).toBeTruthy();
+            const item1Json = item1Res.json as {
+                data?: { createItem?: { id?: string } };
+            };
+            const item1Id = item1Json.data?.createItem?.id;
+            expect(item1Id).toBeTruthy();
+            createdIds.items.push(item1Id!);
+
+            const item2Res = await graphqlRequest(page, createItemMutation, {
+                input: {
+                    title: "Bulk Move Test Item 2",
+                },
+            });
+            expect(item2Res.ok).toBeTruthy();
+            const item2Json = item2Res.json as {
+                data?: { createItem?: { id?: string } };
+            };
+            const item2Id = item2Json.data?.createItem?.id;
+            expect(item2Id).toBeTruthy();
+            createdIds.items.push(item2Id!);
+
+            // Test batch move to category
+            const batchMoveMutation = `
+                mutation BatchMoveItems($input: BatchMoveInput!) {
+                    batchMoveItems(input: $input) {
+                        success
+                        processedCount
+                        failedCount
+                        errors
+                    }
+                }
+            `;
+
+            const moveRes = await graphqlRequest(page, batchMoveMutation, {
+                input: {
+                    itemIds: [item1Id, item2Id],
+                    categoryId: categoryId,
+                },
+            });
+
+            expect(moveRes.ok).toBeTruthy();
+            const moveJson = moveRes.json as {
+                data: { batchMoveItems: unknown };
+            };
+
+            expect(moveJson.data.batchMoveItems).toMatchObject({
+                success: true,
+                processedCount: 2,
+                failedCount: 0,
+            });
+        } finally {
+            // Cleanup: delete items and category
+            if (createdIds.items.length > 0) {
+                await graphqlRequest(
+                    page,
+                    `
+                        mutation BatchDeleteItems($input: BatchDeleteInput!) {
+                            batchDeleteItems(input: $input) { success }
+                        }
+                    `,
+                    { input: { itemIds: createdIds.items } },
+                );
+            }
+
+            if (createdIds.category) {
+                await graphqlRequest(
+                    page,
+                    `
+                        mutation DeleteCategory($id: ID!) {
+                            deleteCategory(id: $id)
+                        }
+                    `,
+                    { id: createdIds.category },
+                );
+            }
+        }
     });
 
     test("batch delete rejects empty itemIds array", async ({ page }) => {
@@ -362,85 +381,106 @@ test.describe("Bulk Operations E2E", () => {
     test("batch move to null categoryId removes category from items", async ({
         page,
     }) => {
-        // Create a category first
-        const createCategoryMutation = `
-            mutation CreateCategory($input: CategoryInput!) {
-                createCategory(input: $input) { id }
-            }
-        `;
-
-        const categoryRes = await graphqlRequest(page, createCategoryMutation, {
-            input: { name: "Temp Category", color: "#000000" },
-        });
-        const categoryJson = categoryRes.json as {
-            data?: { createCategory?: { id?: string } };
+        // Track created resources for cleanup
+        const createdIds = {
+            item: null as string | null,
+            category: null as string | null,
         };
-        const categoryId = categoryJson.data?.createCategory?.id;
-        expect(categoryId).toBeTruthy();
 
-        // Create an item in that category
-        const createItemMutation = `
-            mutation CreateItem($input: ItemInput!) {
-                createItem(input: $input) { id }
-            }
-        `;
-
-        const itemRes = await graphqlRequest(page, createItemMutation, {
-            input: {
-                title: "Item with category",
-                categoryId: categoryId,
-            },
-        });
-        const itemJson = itemRes.json as {
-            data?: { createItem?: { id?: string } };
-        };
-        const itemId = itemJson.data?.createItem?.id;
-        expect(itemId).toBeTruthy();
-
-        // Move to null category (uncategorized)
-        const batchMoveMutation = `
-            mutation BatchMoveItems($input: BatchMoveInput!) {
-                batchMoveItems(input: $input) {
-                    success
-                    processedCount
+        try {
+            // Create a category first
+            const createCategoryMutation = `
+                mutation CreateCategory($input: CategoryInput!) {
+                    createCategory(input: $input) { id }
                 }
-            }
-        `;
+            `;
 
-        const moveRes = await graphqlRequest(page, batchMoveMutation, {
-            input: {
-                itemIds: [itemId],
-                categoryId: null,
-            },
-        });
-
-        expect(moveRes.ok).toBeTruthy();
-        const moveJson = moveRes.json as {
-            data: {
-                batchMoveItems: { success: boolean; processedCount: number };
+            const categoryRes = await graphqlRequest(
+                page,
+                createCategoryMutation,
+                {
+                    input: { name: "Temp Category", color: "#000000" },
+                },
+            );
+            const categoryJson = categoryRes.json as {
+                data?: { createCategory?: { id?: string } };
             };
-        };
-        expect(moveJson.data.batchMoveItems.success).toBe(true);
-        expect(moveJson.data.batchMoveItems.processedCount).toBe(1);
+            const categoryId = categoryJson.data?.createCategory?.id;
+            expect(categoryId).toBeTruthy();
+            createdIds.category = categoryId!;
 
-        // Cleanup
-        await graphqlRequest(
-            page,
-            `
-                mutation DeleteItem($id: ID!) {
-                    deleteItem(id: $id)
+            // Create an item in that category
+            const createItemMutation = `
+                mutation CreateItem($input: ItemInput!) {
+                    createItem(input: $input) { id }
                 }
-            `,
-            { id: itemId },
-        );
-        await graphqlRequest(
-            page,
-            `
-                mutation DeleteCategory($id: ID!) {
-                    deleteCategory(id: $id)
+            `;
+
+            const itemRes = await graphqlRequest(page, createItemMutation, {
+                input: {
+                    title: "Item with category",
+                    categoryId: categoryId,
+                },
+            });
+            const itemJson = itemRes.json as {
+                data?: { createItem?: { id?: string } };
+            };
+            const itemId = itemJson.data?.createItem?.id;
+            expect(itemId).toBeTruthy();
+            createdIds.item = itemId!;
+
+            // Move to null category (uncategorized)
+            const batchMoveMutation = `
+                mutation BatchMoveItems($input: BatchMoveInput!) {
+                    batchMoveItems(input: $input) {
+                        success
+                        processedCount
+                    }
                 }
-            `,
-            { id: categoryId },
-        );
+            `;
+
+            const moveRes = await graphqlRequest(page, batchMoveMutation, {
+                input: {
+                    itemIds: [itemId],
+                    categoryId: null,
+                },
+            });
+
+            expect(moveRes.ok).toBeTruthy();
+            const moveJson = moveRes.json as {
+                data: {
+                    batchMoveItems: {
+                        success: boolean;
+                        processedCount: number;
+                    };
+                };
+            };
+            expect(moveJson.data.batchMoveItems.success).toBe(true);
+            expect(moveJson.data.batchMoveItems.processedCount).toBe(1);
+        } finally {
+            // Cleanup: delete item and category
+            if (createdIds.item) {
+                await graphqlRequest(
+                    page,
+                    `
+                        mutation DeleteItem($id: ID!) {
+                            deleteItem(id: $id)
+                        }
+                    `,
+                    { id: createdIds.item },
+                );
+            }
+            if (createdIds.category) {
+                await graphqlRequest(
+                    page,
+                    `
+                        mutation DeleteCategory($id: ID!) {
+                            deleteCategory(id: $id)
+                        }
+                    `,
+                    { id: createdIds.category },
+                );
+            }
+        }
     });
 });
