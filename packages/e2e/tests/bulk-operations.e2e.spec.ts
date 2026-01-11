@@ -112,71 +112,93 @@ test.describe("Bulk Operations E2E", () => {
     });
 
     test("batch delete via GraphQL API works correctly", async ({ page }) => {
-        // First create test items via API
-        const createItemMutation = `
-            mutation CreateItem($input: ItemInput!) {
-                createItem(input: $input) {
-                    id
-                    title
+        // Track created item IDs for cleanup
+        let item1Id: string | null = null;
+        let item2Id: string | null = null;
+
+        try {
+            // First create test items via API
+            const createItemMutation = `
+                mutation CreateItem($input: ItemInput!) {
+                    createItem(input: $input) {
+                        id
+                        title
+                    }
                 }
-            }
-        `;
+            `;
 
-        // Create 2 test items
-        const item1Res = await graphqlRequest(page, createItemMutation, {
-            input: {
-                title: "Bulk Delete Test Item 1",
-                description: "Test item for bulk delete",
-            },
-        });
-        expect(item1Res.ok).toBeTruthy();
-        const item1Json = item1Res.json as {
-            data?: { createItem?: { id?: string } };
-        };
-        const item1Id = item1Json.data?.createItem?.id;
-        expect(item1Id).toBeTruthy();
+            // Create 2 test items
+            const item1Res = await graphqlRequest(page, createItemMutation, {
+                input: {
+                    title: "Bulk Delete Test Item 1",
+                    description: "Test item for bulk delete",
+                },
+            });
+            expect(item1Res.ok).toBeTruthy();
+            const item1Json = item1Res.json as {
+                data?: { createItem?: { id?: string } };
+            };
+            item1Id = item1Json.data?.createItem?.id ?? null;
+            expect(item1Id).toBeTruthy();
 
-        const item2Res = await graphqlRequest(page, createItemMutation, {
-            input: {
-                title: "Bulk Delete Test Item 2",
-                description: "Test item for bulk delete",
-            },
-        });
-        expect(item2Res.ok).toBeTruthy();
-        const item2Json = item2Res.json as {
-            data?: { createItem?: { id?: string } };
-        };
-        const item2Id = item2Json.data?.createItem?.id;
-        expect(item2Id).toBeTruthy();
+            const item2Res = await graphqlRequest(page, createItemMutation, {
+                input: {
+                    title: "Bulk Delete Test Item 2",
+                    description: "Test item for bulk delete",
+                },
+            });
+            expect(item2Res.ok).toBeTruthy();
+            const item2Json = item2Res.json as {
+                data?: { createItem?: { id?: string } };
+            };
+            item2Id = item2Json.data?.createItem?.id ?? null;
+            expect(item2Id).toBeTruthy();
 
-        // Now test batch delete
-        const batchDeleteMutation = `
-            mutation BatchDeleteItems($input: BatchDeleteInput!) {
-                batchDeleteItems(input: $input) {
-                    success
-                    processedCount
-                    failedCount
-                    errors
+            // Now test batch delete
+            const batchDeleteMutation = `
+                mutation BatchDeleteItems($input: BatchDeleteInput!) {
+                    batchDeleteItems(input: $input) {
+                        success
+                        processedCount
+                        failedCount
+                        errors
+                    }
                 }
+            `;
+
+            const deleteRes = await graphqlRequest(page, batchDeleteMutation, {
+                input: {
+                    itemIds: [item1Id, item2Id],
+                },
+            });
+
+            expect(deleteRes.ok).toBeTruthy();
+            const deleteJson = deleteRes.json as {
+                data: { batchDeleteItems: unknown };
+            };
+
+            expect(deleteJson.data.batchDeleteItems).toMatchObject({
+                success: true,
+                processedCount: 2,
+                failedCount: 0,
+            });
+        } finally {
+            // Cleanup: delete any orphaned items if test failed mid-way
+            const itemIdsToDelete = [item1Id, item2Id].filter(
+                Boolean,
+            ) as string[];
+            if (itemIdsToDelete.length > 0) {
+                await graphqlRequest(
+                    page,
+                    `
+                        mutation BatchDeleteItems($input: BatchDeleteInput!) {
+                            batchDeleteItems(input: $input) { success }
+                        }
+                    `,
+                    { input: { itemIds: itemIdsToDelete } },
+                );
             }
-        `;
-
-        const deleteRes = await graphqlRequest(page, batchDeleteMutation, {
-            input: {
-                itemIds: [item1Id, item2Id],
-            },
-        });
-
-        expect(deleteRes.ok).toBeTruthy();
-        const deleteJson = deleteRes.json as {
-            data: { batchDeleteItems: unknown };
-        };
-
-        expect(deleteJson.data.batchDeleteItems).toMatchObject({
-            success: true,
-            processedCount: 2,
-            failedCount: 0,
-        });
+        }
     });
 
     test("batch move via GraphQL API works correctly", async ({ page }) => {
