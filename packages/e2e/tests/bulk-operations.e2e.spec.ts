@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type TestInfo } from "@playwright/test";
 
 // E2E tests for bulk operations: batch delete and batch move
 // Uses baseURL from playwright.config.ts (http://localhost:5000)
@@ -184,7 +184,7 @@ test.describe("Bulk Operations E2E", () => {
         });
     });
 
-    test.afterEach(async (_page, testInfo) => {
+    test.afterEach(async (_: { page: Page }, testInfo: TestInfo) => {
         // Skip cleanup if test passed - items were already deleted by the test
         if (testInfo.status === "passed") {
             return;
