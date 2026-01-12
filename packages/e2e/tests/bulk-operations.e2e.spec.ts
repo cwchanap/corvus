@@ -184,7 +184,8 @@ test.describe("Bulk Operations E2E", () => {
         });
     });
 
-    test.afterEach(async (_: { page: Page }, testInfo: TestInfo) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    test.afterEach(async ({ page }, testInfo: TestInfo) => {
         // Skip cleanup if test passed - items were already deleted by the test
         if (testInfo.status === "passed") {
             return;
