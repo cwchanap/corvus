@@ -5,21 +5,11 @@ export default defineConfig({
     plugins: [solid()],
     test: {
         environment: "jsdom",
-        include: ["src/**/*.{test,spec}.{ts,tsx}"],
         globals: true,
-        setupFiles: ["./src/test-setup.ts"],
-        clearMocks: true,
         coverage: {
             provider: "v8",
             reporter: ["text", "json-summary", "html", "lcov"],
             reportsDirectory: "./tests/.coverage",
         },
-        typecheck: {
-            enabled: false,
-        },
-    },
-    resolve: {
-        conditions: ["development", "browser"],
-        extensions: [".ts", ".tsx", ".js", ".jsx"],
     },
 });
