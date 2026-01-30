@@ -12,7 +12,8 @@
     "start": "vinxi start",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "test:unit": "vitest run --config vitest.config.ts --passWithNoTests"
+    "test:unit": "vitest run --config vitest.config.ts --passWithNoTests",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage --passWithNoTests"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

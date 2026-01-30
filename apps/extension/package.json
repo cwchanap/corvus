@@ -12,7 +12,8 @@
     "zip:firefox": "wxt zip -b firefox",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "test:unit": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --config vitest.config.ts --passWithNoTests",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage --passWithNoTests",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
