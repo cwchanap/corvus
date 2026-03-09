@@ -290,7 +290,7 @@ export type WishlistCategory = {
     id: Scalars["ID"]["output"];
     name: Scalars["String"]["output"];
     updatedAt: Scalars["String"]["output"];
-    userId: Scalars["Int"]["output"];
+    userId: Scalars["String"]["output"];
 };
 
 /** Input for filtering wishlist data */
@@ -314,7 +314,7 @@ export type WishlistItem = {
     links: Array<WishlistItemLink>;
     title: Scalars["String"]["output"];
     updatedAt: Scalars["String"]["output"];
-    userId: Scalars["Int"]["output"];
+    userId: Scalars["String"]["output"];
 };
 
 /** A link associated with a wishlist item */
@@ -696,7 +696,7 @@ export type WishlistCategoryResolvers<
     id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
     name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
     updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-    userId?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+    userId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -729,7 +729,7 @@ export type WishlistItemResolvers<
     >;
     title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
     updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-    userId?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+    userId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

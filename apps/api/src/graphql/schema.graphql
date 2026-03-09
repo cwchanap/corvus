@@ -23,7 +23,7 @@ A wishlist category
 """
 type WishlistCategory {
   id: ID!
-  userId: Int!
+  userId: String!
   name: String!
   color: String
   createdAt: String!
@@ -48,7 +48,7 @@ A wishlist item
 """
 type WishlistItem {
   id: ID!
-  userId: Int!
+  userId: String!
   categoryId: String
   title: String!
   description: String

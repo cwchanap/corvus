@@ -12,7 +12,7 @@ describe("createDefaultCategories", () => {
             insert: insertMock,
         } as unknown as DB;
 
-        await createDefaultCategories(db, 123);
+        await createDefaultCategories(db, "user-uuid-123");
 
         expect(insertMock).toHaveBeenCalledTimes(3);
         expect(valuesMock).toHaveBeenCalledTimes(3);
@@ -22,7 +22,7 @@ describe("createDefaultCategories", () => {
             (call) =>
                 (call as unknown[])[0] as {
                     name: string;
-                    user_id: number;
+                    user_id: string;
                     id: string;
                 },
         );
@@ -33,7 +33,7 @@ describe("createDefaultCategories", () => {
         ]);
         payloads.forEach((payload) => {
             if (payload) {
-                expect(payload.user_id).toBe(123);
+                expect(payload.user_id).toBe("user-uuid-123");
                 expect(typeof payload.id).toBe("string");
             }
         });

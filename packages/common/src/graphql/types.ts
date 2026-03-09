@@ -23,7 +23,7 @@ export interface GraphQLWishlistCategory {
     id: string;
     name: string;
     color: string | null;
-    userId: number;
+    userId: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -44,7 +44,7 @@ export interface GraphQLWishlistItem {
     description: string | null;
     categoryId: string | null;
     favicon: string | null;
-    userId: number;
+    userId: string;
     createdAt: string;
     updatedAt: string;
     links: GraphQLWishlistItemLink[];
