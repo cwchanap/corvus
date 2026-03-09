@@ -8,9 +8,9 @@ This is a Turborepo monorepo built with SolidJS for wishlist management, featuri
 
 ## Key Applications
 
-- **`apps/web`**: SolidStart web application (port 5000) with authentication system and API proxy
-- **`apps/api`**: Hono-based Cloudflare Workers API (port 8787) with Drizzle ORM for D1 database operations
-- **`apps/extension`**: WXT-based browser extension for adding items to wishlists
+- **`apps/web`**: SolidStart web application (port 5000) with custom session-based auth and GraphQL client
+- **`apps/api`**: Hono-based Cloudflare Workers API (port 8787) exposing a single `/graphql` endpoint via GraphQL Yoga; also serves web app static assets in production
+- **`apps/extension`**: WXT-based browser extension that communicates with the API via GraphQL (not browser storage)
 
 ## Shared Packages
 
@@ -114,8 +114,17 @@ cd apps/extension && npm run zip
 # Run API unit tests (Vitest)
 cd apps/api && bun run test
 
+# Run a single API test file
+cd apps/api && bun run test tests/auth/service.test.ts
+
+# Run API tests with coverage
+cd apps/api && bun run test:coverage
+
 # Run Playwright E2E tests
 bun --cwd packages/e2e test
+
+# Run a specific E2E test file
+bun --cwd packages/e2e test tests/auth.e2e.spec.ts
 
 # Run Playwright tests with UI
 bun --cwd packages/e2e test:ui
@@ -126,30 +135,32 @@ bun --cwd packages/e2e test:ui
 ### API Backend
 
 - Built with Hono framework for Cloudflare Workers
-- Uses Drizzle ORM with Cloudflare D1 database
-- Runs on port 8787 in development
-- Database migrations managed through Drizzle Kit
+- Single GraphQL endpoint at `/graphql` using GraphQL Yoga + `@graphql-tools/schema`
+- Schema defined in `apps/api/src/graphql/schema.graphql`; resolvers in `resolvers.ts`
+- Custom session-based authentication (no third-party auth library) in `src/lib/auth/`
+- Uses Drizzle ORM with Cloudflare D1 (SQLite); schema in `src/lib/db/schema.ts`
+- In production, also serves web app static assets via a catch-all route (single Cloudflare Worker deployment)
+- Unit tests live in `apps/api/tests/` (not alongside source)
 
 ### Web Application
 
 - Built with SolidStart and Vinxi
 - Runs on port 5000 in development
-- Proxies `/api` requests to the API backend (port 8787)
-- Authentication system with Better Auth
-- Cloudflare Pages deployment target
+- In dev, proxies `/graphql` requests to the API backend (port 8787)
+- GraphQL client in `src/lib/graphql/`; auth via GraphQL mutations (register/login/logout)
+- Deployment: static assets served by the same Cloudflare Worker as the API
 
 ### Browser Extension
 
-- Built with WXT framework and SolidJS
+- Built with WXT framework and SolidJS; uses `npm` (not `bun`) as its package manager
 - Supports both Chrome and Firefox
-- Uses browser storage API for wishlist persistence
-- Popup interface for adding and managing wishlist items
+- Communicates with the API via GraphQL (shares `@repo/common/graphql/client`)
+- State managed via SolidJS context (`src/lib/wishlist/context.tsx`)
 
-### Shared Components
+### Shared Packages
 
-- UI components use class-variance-authority for variants
-- Tailwind CSS for styling
-- TypeScript throughout with strict type checking
+- `@repo/ui-components`: SolidJS components using class-variance-authority for variants, Tailwind CSS
+- `@repo/common`: Shared GraphQL client utility (`graphql/client.ts`) used by both web and extension; also shared TypeScript types
 
 ## Code Quality
 
