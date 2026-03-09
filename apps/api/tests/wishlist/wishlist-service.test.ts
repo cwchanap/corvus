@@ -13,7 +13,7 @@ describe("WishlistService", () => {
         const categories: WishlistCategory[] = [
             {
                 id: "cat-1",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 name: "Gadgets",
                 color: "#FF0000",
                 created_at: "2024-01-01T00:00:00.000Z",
@@ -21,7 +21,7 @@ describe("WishlistService", () => {
             },
             {
                 id: "cat-2",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 name: "Books",
                 color: "#00FF00",
                 created_at: "2024-01-02T00:00:00.000Z",
@@ -31,7 +31,7 @@ describe("WishlistService", () => {
         const items: WishlistItem[] = [
             {
                 id: "item-1",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 category_id: "cat-1",
                 title: "Noise Cancelling Headphones",
                 description: "Comfortable and quiet",
@@ -41,7 +41,7 @@ describe("WishlistService", () => {
             },
             {
                 id: "item-2",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 category_id: "cat-2",
                 title: "Productivity Book",
                 description: null,
@@ -94,7 +94,7 @@ describe("WishlistService", () => {
             }
 
             override async getUserItems(
-                _userId: number,
+                _userId: string,
                 options: Record<string, unknown> = {},
             ) {
                 receivedOptions = options;
@@ -114,7 +114,10 @@ describe("WishlistService", () => {
             search: "shop",
         };
 
-        const result = await service.getUserWishlistData(42, options);
+        const result = await service.getUserWishlistData(
+            "user-uuid-42",
+            options,
+        );
 
         expect(receivedOptions).toEqual(options);
         expect(fakeDb.select).toHaveBeenCalledTimes(1);
@@ -163,7 +166,7 @@ describe("WishlistService", () => {
         }
 
         const service = new EmptyWishlistService();
-        const result = await service.getUserWishlistData(99);
+        const result = await service.getUserWishlistData("user-uuid-99");
 
         expect(result.categories).toEqual([]);
         expect(result.items).toEqual([]);
@@ -182,7 +185,7 @@ describe("WishlistService", () => {
         const items: WishlistItem[] = [
             {
                 id: "item-1",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 category_id: "cat-1",
                 title: "Apple",
                 description: null,
@@ -192,7 +195,7 @@ describe("WishlistService", () => {
             },
             {
                 id: "item-2",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 category_id: "cat-1",
                 title: "Zebra",
                 description: null,
@@ -233,7 +236,10 @@ describe("WishlistService", () => {
         const sortBy = "TITLE" as WishlistSortKey;
         const sortDir = "ASC" as SortDirection;
 
-        const result = await service.getUserItems(42, { sortBy, sortDir });
+        const result = await service.getUserItems("user-uuid-42", {
+            sortBy,
+            sortDir,
+        });
 
         expect(result).toEqual(items);
         expect(fakeDb.select).toHaveBeenCalledTimes(1);
@@ -250,7 +256,7 @@ describe("WishlistService", () => {
             const categories: WishlistCategory[] = [
                 {
                     id: "cat-1",
-                    user_id: 42,
+                    user_id: "user-uuid-42",
                     name: "Electronics",
                     color: "#FF0000",
                     created_at: "2024-01-01T00:00:00.000Z",
@@ -258,7 +264,7 @@ describe("WishlistService", () => {
                 },
                 {
                     id: "cat-2",
-                    user_id: 42,
+                    user_id: "user-uuid-42",
                     name: "Books",
                     color: "#00FF00",
                     created_at: "2024-01-02T00:00:00.000Z",
@@ -277,7 +283,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getUserCategories(42);
+            const result = await service.getUserCategories("user-uuid-42");
 
             expect(result).toEqual(categories);
             expect(selectMock).toHaveBeenCalledTimes(1);
@@ -290,7 +296,7 @@ describe("WishlistService", () => {
         it("createCategory inserts a new category with generated UUID", async () => {
             const newCategory: WishlistCategory = {
                 id: "generated-uuid",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 name: "New Category",
                 color: "#0000FF",
                 created_at: "2024-01-01T00:00:00.000Z",
@@ -308,7 +314,7 @@ describe("WishlistService", () => {
 
             const service = new WishlistService(fakeDb as DB);
             const result = await service.createCategory({
-                user_id: 42,
+                user_id: "user-uuid-42",
                 name: "New Category",
                 color: "#0000FF",
             });
@@ -323,7 +329,7 @@ describe("WishlistService", () => {
         it("updateCategory updates an existing category", async () => {
             const updatedCategory: WishlistCategory = {
                 id: "cat-1",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 name: "Updated Name",
                 color: "#FF00FF",
                 created_at: "2024-01-01T00:00:00.000Z",
@@ -341,10 +347,14 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.updateCategory("cat-1", 42, {
-                name: "Updated Name",
-                color: "#FF00FF",
-            });
+            const result = await service.updateCategory(
+                "cat-1",
+                "user-uuid-42",
+                {
+                    name: "Updated Name",
+                    color: "#FF00FF",
+                },
+            );
 
             expect(result).toEqual(updatedCategory);
             expect(updateMock).toHaveBeenCalledTimes(1);
@@ -366,9 +376,13 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.updateCategory("non-existent", 42, {
-                name: "Updated Name",
-            });
+            const result = await service.updateCategory(
+                "non-existent",
+                "user-uuid-42",
+                {
+                    name: "Updated Name",
+                },
+            );
 
             expect(result).toBeNull();
         });
@@ -390,7 +404,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await service.deleteCategory("cat-1", 42);
+            await service.deleteCategory("cat-1", "user-uuid-42");
 
             expect(updateMock).toHaveBeenCalledTimes(1);
             expect(setMock).toHaveBeenCalledTimes(1);
@@ -407,7 +421,7 @@ describe("WishlistService", () => {
             const items: WishlistItem[] = [
                 {
                     id: "item-1",
-                    user_id: 42,
+                    user_id: "user-uuid-42",
                     category_id: "cat-1",
                     title: "Item 1",
                     description: "Description 1",
@@ -428,7 +442,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getUserItems(42);
+            const result = await service.getUserItems("user-uuid-42");
 
             expect(result).toEqual(items);
             expect(selectMock).toHaveBeenCalledTimes(1);
@@ -439,7 +453,7 @@ describe("WishlistService", () => {
             const items: WishlistItem[] = [
                 {
                     id: "item-2",
-                    user_id: 42,
+                    user_id: "user-uuid-42",
                     category_id: "cat-1",
                     title: "Item 2",
                     description: null,
@@ -462,7 +476,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getUserItems(42, {
+            const result = await service.getUserItems("user-uuid-42", {
                 limit: 10,
                 offset: 5,
             });
@@ -486,7 +500,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getUserItems(42, {
+            const result = await service.getUserItems("user-uuid-42", {
                 categoryId: "cat-1",
             });
 
@@ -508,7 +522,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getUserItems(42, {
+            const result = await service.getUserItems("user-uuid-42", {
                 search: "headphones",
             });
 
@@ -530,7 +544,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await service.getUserItems(42);
+            await service.getUserItems("user-uuid-42");
 
             expect(orderByMock).toHaveBeenCalledTimes(1);
         });
@@ -549,7 +563,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await service.getUserItems(42, {
+            await service.getUserItems("user-uuid-42", {
                 sortBy: "TITLE" as WishlistSortKey,
                 sortDir: "ASC" as SortDirection,
             });
@@ -561,7 +575,7 @@ describe("WishlistService", () => {
             const items: WishlistItem[] = [
                 {
                     id: "item-1",
-                    user_id: 42,
+                    user_id: "user-uuid-42",
                     category_id: "cat-1",
                     title: "Item 1",
                     description: null,
@@ -582,7 +596,10 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getItemsByCategory(42, "cat-1");
+            const result = await service.getItemsByCategory(
+                "user-uuid-42",
+                "cat-1",
+            );
 
             expect(result).toEqual(items);
             expect(whereMock).toHaveBeenCalledTimes(1);
@@ -599,7 +616,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getUserItemsCount(42);
+            const result = await service.getUserItemsCount("user-uuid-42");
 
             expect(result).toBe(5);
             expect(selectMock).toHaveBeenCalledTimes(1);
@@ -618,7 +635,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getUserItemsCount(42);
+            const result = await service.getUserItemsCount("user-uuid-42");
 
             expect(result).toBe(0);
         });
@@ -626,7 +643,7 @@ describe("WishlistService", () => {
         it("createItem inserts a new item with generated UUID", async () => {
             const newItem: WishlistItem = {
                 id: "generated-uuid",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 category_id: "cat-1",
                 title: "New Item",
                 description: "Description",
@@ -646,7 +663,7 @@ describe("WishlistService", () => {
 
             const service = new WishlistService(fakeDb as DB);
             const result = await service.createItem({
-                user_id: 42,
+                user_id: "user-uuid-42",
                 category_id: "cat-1",
                 title: "New Item",
                 description: "Description",
@@ -662,7 +679,7 @@ describe("WishlistService", () => {
         it("updateItem updates an existing item", async () => {
             const updatedItem: WishlistItem = {
                 id: "item-1",
-                user_id: 42,
+                user_id: "user-uuid-42",
                 category_id: "cat-1",
                 title: "Updated Title",
                 description: "Updated Description",
@@ -682,7 +699,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.updateItem("item-1", 42, {
+            const result = await service.updateItem("item-1", "user-uuid-42", {
                 title: "Updated Title",
                 description: "Updated Description",
             });
@@ -707,9 +724,13 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.updateItem("non-existent", 42, {
-                title: "Updated Title",
-            });
+            const result = await service.updateItem(
+                "non-existent",
+                "user-uuid-42",
+                {
+                    title: "Updated Title",
+                },
+            );
 
             expect(result).toBeNull();
         });
@@ -724,7 +745,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await service.deleteItem("item-1", 42);
+            await service.deleteItem("item-1", "user-uuid-42");
 
             expect(deleteMock).toHaveBeenCalledTimes(1);
             expect(whereMock).toHaveBeenCalledTimes(1);
@@ -755,7 +776,9 @@ describe("WishlistService", () => {
                 },
             ];
 
-            const itemGetMock = vi.fn().mockResolvedValue({ user_id: 42 });
+            const itemGetMock = vi
+                .fn()
+                .mockResolvedValue({ user_id: "user-uuid-42" });
             const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
             const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
 
@@ -773,7 +796,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.getItemLinks(42, "item-1");
+            const result = await service.getItemLinks("user-uuid-42", "item-1");
 
             expect(result).toEqual(links);
             expect(selectMock).toHaveBeenCalledTimes(2);
@@ -795,9 +818,9 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await expect(service.getItemLinks(42, "item-1")).rejects.toThrow(
-                "Not authorized",
-            );
+            await expect(
+                service.getItemLinks("user-uuid-42", "item-1"),
+            ).rejects.toThrow("Not authorized");
         });
 
         it("createItemLink inserts a new link with generated UUID", async () => {
@@ -816,7 +839,9 @@ describe("WishlistService", () => {
             const valuesMock = vi.fn(() => ({ returning: returningMock }));
             const insertMock = vi.fn(() => ({ values: valuesMock })) as Mock;
 
-            const itemGetMock = vi.fn().mockResolvedValue({ user_id: 42 });
+            const itemGetMock = vi
+                .fn()
+                .mockResolvedValue({ user_id: "user-uuid-42" });
             const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
             const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
             const selectMock = vi.fn(() => ({ from: itemFromMock })) as Mock;
@@ -827,7 +852,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.createItemLink(42, {
+            const result = await service.createItemLink("user-uuid-42", {
                 item_id: "item-1",
                 url: "https://example.com/new",
                 description: "New Link",
@@ -864,10 +889,14 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.updateItemLink(42, "link-1", {
-                url: "https://example.com/updated",
-                description: "Updated Link",
-            });
+            const result = await service.updateItemLink(
+                "user-uuid-42",
+                "link-1",
+                {
+                    url: "https://example.com/updated",
+                    description: "Updated Link",
+                },
+            );
 
             expect(result).toEqual(updatedLink);
             expect(updateMock).toHaveBeenCalledTimes(1);
@@ -889,9 +918,13 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            const result = await service.updateItemLink(42, "non-existent", {
-                url: "https://example.com/updated",
-            });
+            const result = await service.updateItemLink(
+                "user-uuid-42",
+                "non-existent",
+                {
+                    url: "https://example.com/updated",
+                },
+            );
 
             expect(result).toBeNull();
         });
@@ -912,7 +945,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await service.deleteItemLink(42, "link-1");
+            await service.deleteItemLink("user-uuid-42", "link-1");
 
             expect(selectMock).toHaveBeenCalledTimes(1);
             expect(deleteMock).toHaveBeenCalledTimes(1);
@@ -934,13 +967,15 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await expect(service.deleteItemLink(42, "link-1")).rejects.toThrow(
-                "Not authorized",
-            );
+            await expect(
+                service.deleteItemLink("user-uuid-42", "link-1"),
+            ).rejects.toThrow("Not authorized");
         });
 
         it("setPrimaryLink uses single atomic UPDATE with CASE statement", async () => {
-            const itemGetMock = vi.fn().mockResolvedValue({ user_id: 42 });
+            const itemGetMock = vi
+                .fn()
+                .mockResolvedValue({ user_id: "user-uuid-42" });
             const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
             const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
 
@@ -964,7 +999,7 @@ describe("WishlistService", () => {
             };
 
             const service = new WishlistService(fakeDb as DB);
-            await service.setPrimaryLink(42, "item-1", "link-2");
+            await service.setPrimaryLink("user-uuid-42", "item-1", "link-2");
 
             // Should only call update once with atomic CASE statement
             expect(updateMock).toHaveBeenCalledTimes(1);
@@ -992,7 +1027,10 @@ describe("WishlistService", () => {
                 };
 
                 const service = new WishlistService(fakeDb as DB);
-                const result = await service.batchDeleteItems([], 42);
+                const result = await service.batchDeleteItems(
+                    [],
+                    "user-uuid-42",
+                );
 
                 expect(result).toEqual({
                     processedCount: 0,
@@ -1030,7 +1068,7 @@ describe("WishlistService", () => {
                 const service = new WishlistService(fakeDb as DB);
                 const result = await service.batchDeleteItems(
                     ["item-1", "item-2", "item-3"],
-                    42,
+                    "user-uuid-42",
                 );
 
                 expect(result).toEqual({
@@ -1064,7 +1102,7 @@ describe("WishlistService", () => {
                 const service = new WishlistService(fakeDb as DB);
                 const result = await service.batchDeleteItems(
                     ["non-existent-1", "non-existent-2"],
-                    42,
+                    "user-uuid-42",
                 );
 
                 expect(result).toEqual({
@@ -1106,7 +1144,7 @@ describe("WishlistService", () => {
                 const service = new WishlistService(fakeDb as DB);
                 const result = await service.batchDeleteItems(
                     ["item-1", "item-2", "item-3"],
-                    42,
+                    "user-uuid-42",
                 );
 
                 expect(result).toEqual({
@@ -1127,7 +1165,11 @@ describe("WishlistService", () => {
                 };
 
                 const service = new WishlistService(fakeDb as DB);
-                const result = await service.batchMoveItems([], 42, "cat-1");
+                const result = await service.batchMoveItems(
+                    [],
+                    "user-uuid-42",
+                    "cat-1",
+                );
 
                 expect(result).toEqual({
                     processedCount: 0,
@@ -1140,7 +1182,11 @@ describe("WishlistService", () => {
 
             it("moves valid items to category", async () => {
                 const ownedItems = [{ id: "item-1" }, { id: "item-2" }];
-                const category = { id: "cat-1", user_id: 42, name: "Test" };
+                const category = {
+                    id: "cat-1",
+                    user_id: "user-uuid-42",
+                    name: "Test",
+                };
 
                 // First select returns owned items
                 const selectAllMock1 = vi.fn().mockResolvedValue(ownedItems);
@@ -1176,7 +1222,7 @@ describe("WishlistService", () => {
                 const service = new WishlistService(fakeDb as DB);
                 const result = await service.batchMoveItems(
                     ["item-1", "item-2"],
-                    42,
+                    "user-uuid-42",
                     "cat-1",
                 );
 
@@ -1220,7 +1266,7 @@ describe("WishlistService", () => {
                 const service = new WishlistService(fakeDb as DB);
                 const result = await service.batchMoveItems(
                     ["item-1"],
-                    42,
+                    "user-uuid-42",
                     null,
                 );
 
@@ -1267,7 +1313,7 @@ describe("WishlistService", () => {
                 const service = new WishlistService(fakeDb as DB);
                 const result = await service.batchMoveItems(
                     ["item-1"],
-                    42,
+                    "user-uuid-42",
                     "non-existent-category",
                 );
 
@@ -1300,7 +1346,7 @@ describe("WishlistService", () => {
                 const service = new WishlistService(fakeDb as DB);
                 const result = await service.batchMoveItems(
                     ["non-existent-1"],
-                    42,
+                    "user-uuid-42",
                     "cat-1",
                 );
 
@@ -1316,7 +1362,11 @@ describe("WishlistService", () => {
             it("reports invalid items when moving partially owned items", async () => {
                 // User owns item-1 but not item-2
                 const ownedItems = [{ id: "item-1" }];
-                const category = { id: "cat-1", user_id: 42, name: "Test" };
+                const category = {
+                    id: "cat-1",
+                    user_id: "user-uuid-42",
+                    name: "Test",
+                };
 
                 const selectAllMock = vi.fn().mockResolvedValue(ownedItems);
                 const selectWhereMock1 = vi.fn(() => ({ all: selectAllMock }));
@@ -1350,7 +1400,7 @@ describe("WishlistService", () => {
                 const service = new WishlistService(fakeDb as DB);
                 const result = await service.batchMoveItems(
                     ["item-1", "item-2"],
-                    42,
+                    "user-uuid-42",
                     "cat-1",
                 );
 

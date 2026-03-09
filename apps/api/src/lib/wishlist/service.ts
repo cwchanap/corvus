@@ -39,7 +39,7 @@ export class WishlistService {
     constructor(private db: DB) {}
 
     private async assertItemOwnedByUser(
-        requesterUserId: number,
+        requesterUserId: string,
         itemId: string,
     ): Promise<void> {
         const item = await this.db
@@ -54,7 +54,7 @@ export class WishlistService {
     }
 
     // Category operations
-    async getUserCategories(userId: number): Promise<WishlistCategory[]> {
+    async getUserCategories(userId: string): Promise<WishlistCategory[]> {
         return await this.db
             .select()
             .from(wishlistCategories)
@@ -78,7 +78,7 @@ export class WishlistService {
 
     async updateCategory(
         categoryId: string,
-        userId: number,
+        userId: string,
         updates: WishlistCategoryUpdate,
     ): Promise<WishlistCategory | null> {
         const row = await this.db
@@ -95,7 +95,7 @@ export class WishlistService {
         return row || null;
     }
 
-    async deleteCategory(categoryId: string, userId: number): Promise<void> {
+    async deleteCategory(categoryId: string, userId: string): Promise<void> {
         // Set category_id to null for all items in this category
         await this.db
             .update(wishlistItems)
@@ -132,7 +132,7 @@ export class WishlistService {
     }
 
     private buildItemFilters(
-        userId: number,
+        userId: string,
         options: ItemQueryOptions = {},
     ): SQL | undefined {
         const filters: SQL[] = [eq(wishlistItems.user_id, userId)];
@@ -153,7 +153,7 @@ export class WishlistService {
     }
 
     async getUserItems(
-        userId: number,
+        userId: string,
         options: ItemQueryOptions = {},
     ): Promise<WishlistItem[]> {
         const { limit, offset, sortBy, sortDir } = options;
@@ -213,7 +213,7 @@ export class WishlistService {
     }
 
     async getItemsByCategory(
-        userId: number,
+        userId: string,
         categoryId: string,
     ): Promise<WishlistItem[]> {
         return await this.db
@@ -230,7 +230,7 @@ export class WishlistService {
     }
 
     async getUserItemsCount(
-        userId: number,
+        userId: string,
         options: ItemQueryOptions = {},
     ): Promise<number> {
         const filter = this.buildItemFilters(userId, options);
@@ -287,7 +287,7 @@ export class WishlistService {
 
     async updateItem(
         itemId: string,
-        userId: number,
+        userId: string,
         updates: WishlistItemUpdate,
     ): Promise<WishlistItem | null> {
         const row = await this.db
@@ -304,7 +304,7 @@ export class WishlistService {
         return row || null;
     }
 
-    async deleteItem(itemId: string, userId: number): Promise<void> {
+    async deleteItem(itemId: string, userId: string): Promise<void> {
         await this.db
             .delete(wishlistItems)
             .where(
@@ -323,7 +323,7 @@ export class WishlistService {
      */
     async batchDeleteItems(
         itemIds: string[],
-        userId: number,
+        userId: string,
     ): Promise<{
         processedCount: number;
         failedCount: number;
@@ -391,7 +391,7 @@ export class WishlistService {
      */
     async batchMoveItems(
         itemIds: string[],
-        userId: number,
+        userId: string,
         categoryId: string | null,
     ): Promise<{
         processedCount: number;
@@ -482,7 +482,7 @@ export class WishlistService {
 
     // Item link operations
     async getItemLinks(
-        requesterUserId: number,
+        requesterUserId: string,
         itemId: string,
     ): Promise<WishlistItemLink[]> {
         await this.assertItemOwnedByUser(requesterUserId, itemId);
@@ -498,7 +498,7 @@ export class WishlistService {
     }
 
     async createItemLink(
-        requesterUserId: number,
+        requesterUserId: string,
         linkData: Omit<NewWishlistItemLink, "id" | "created_at" | "updated_at">,
     ): Promise<WishlistItemLink> {
         await this.assertItemOwnedByUser(requesterUserId, linkData.item_id);
@@ -510,7 +510,7 @@ export class WishlistService {
     }
 
     async updateItemLink(
-        requesterUserId: number,
+        requesterUserId: string,
         linkId: string,
         updates: WishlistItemLinkUpdate,
     ): Promise<WishlistItemLink | null> {
@@ -529,7 +529,7 @@ export class WishlistService {
     }
 
     async deleteItemLink(
-        requesterUserId: number,
+        requesterUserId: string,
         linkId: string,
     ): Promise<void> {
         const link = await this.db
@@ -554,7 +554,7 @@ export class WishlistService {
     }
 
     async setPrimaryLink(
-        requesterUserId: number,
+        requesterUserId: string,
         itemId: string,
         linkId: string,
     ): Promise<void> {
@@ -589,7 +589,7 @@ export class WishlistService {
     }
 
     // Combined operations
-    async getUserWishlistData(userId: number, options: ItemQueryOptions = {}) {
+    async getUserWishlistData(userId: string, options: ItemQueryOptions = {}) {
         const {
             limit,
             offset = 0,

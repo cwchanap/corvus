@@ -1,11 +1,11 @@
 import { GraphQLError } from "graphql";
 import type { Resolvers } from "./types";
-import { AuthService } from "../lib/auth/service";
+import { SupabaseAuthService } from "../lib/auth/service";
+import { createSupabaseServerClient } from "../lib/auth/supabase-client";
 import {
     WishlistService,
     WishlistAuthorizationError,
 } from "../lib/wishlist/service";
-import { setSessionCookie, clearSessionCookie } from "../lib/auth/session";
 import { mapUser, mapCategory, mapItem, mapLink } from "./mappers";
 
 /**
@@ -112,7 +112,8 @@ export const resolvers: Resolvers = {
     },
     Mutation: {
         register: async (_parent, args, context) => {
-            const authService = new AuthService(context.db);
+            const supabase = createSupabaseServerClient(context.honoContext);
+            const authService = new SupabaseAuthService(supabase, context.db);
 
             try {
                 const user = await authService.register(
@@ -120,10 +121,6 @@ export const resolvers: Resolvers = {
                     args.input.password,
                     args.input.name,
                 );
-
-                // Create session and set cookie
-                const sessionId = await authService.createSession(user.id);
-                setSessionCookie(context.honoContext, sessionId);
 
                 return {
                     success: true,
@@ -147,7 +144,8 @@ export const resolvers: Resolvers = {
             }
         },
         login: async (_parent, args, context) => {
-            const authService = new AuthService(context.db);
+            const supabase = createSupabaseServerClient(context.honoContext);
+            const authService = new SupabaseAuthService(supabase, context.db);
 
             const user = await authService.login(
                 args.input.email,
@@ -162,10 +160,6 @@ export const resolvers: Resolvers = {
                 };
             }
 
-            // Create session and set cookie
-            const sessionId = await authService.createSession(user.id);
-            setSessionCookie(context.honoContext, sessionId);
-
             return {
                 success: true,
                 user: mapUser(user),
@@ -173,8 +167,9 @@ export const resolvers: Resolvers = {
             };
         },
         logout: async (_parent, _args, context) => {
-            // Clear session cookie
-            clearSessionCookie(context.honoContext);
+            const supabase = createSupabaseServerClient(context.honoContext);
+            const authService = new SupabaseAuthService(supabase, context.db);
+            await authService.logout();
             return true;
         },
         createCategory: async (_parent, args, context) => {

@@ -19,7 +19,10 @@
       "mcp__chrome-devtools__list_network_requests",
       "mcp__chrome-devtools__get_network_request",
       "Bash(bun dev)",
-      "Bash(bun db:migrate:*)"
+      "Bash(bun db:migrate:*)",
+      "Bash(bun add:*)",
+      "Bash(bun run:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []
