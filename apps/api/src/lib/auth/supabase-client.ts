@@ -2,10 +2,36 @@ import { createServerClient } from "@supabase/ssr";
 import type { Context } from "hono";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+function getRequiredEnvValue(c: Context, key: string): string {
+    const value = c.env[key as keyof typeof c.env];
+    if (typeof value !== "string" || value.trim().length === 0) {
+        throw new Error(
+            `createSupabaseServerClient: missing required environment variable ${key}`,
+        );
+    }
+
+    return value;
+}
+
+function readBooleanEnv(value: unknown): boolean {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value !== 0;
+    if (typeof value !== "string") return false;
+
+    const normalized = value.trim().toLowerCase();
+    return (
+        normalized === "1" ||
+        normalized === "true" ||
+        normalized === "yes" ||
+        normalized === "on"
+    );
+}
+
 export function createSupabaseServerClient(c: Context): SupabaseClient {
-    const supabaseUrl = c.env.SUPABASE_URL as string;
-    const supabaseAnonKey = c.env.SUPABASE_ANON_KEY as string;
-    const isDev = Boolean(c.env.DEV) || Boolean(c.env.INSECURE_COOKIES);
+    const supabaseUrl = getRequiredEnvValue(c, "SUPABASE_URL");
+    const supabaseAnonKey = getRequiredEnvValue(c, "SUPABASE_ANON_KEY");
+    const isDev =
+        readBooleanEnv(c.env.DEV) || readBooleanEnv(c.env.INSECURE_COOKIES);
 
     return createServerClient(supabaseUrl, supabaseAnonKey, {
         cookies: {
@@ -18,16 +44,26 @@ export function createSupabaseServerClient(c: Context): SupabaseClient {
                     .map((s) => {
                         const idx = s.indexOf("=");
                         if (idx === -1) return { name: s, value: "" };
+
+                        const rawValue = s.slice(idx + 1);
+                        let value = rawValue;
+                        try {
+                            value = decodeURIComponent(rawValue);
+                        } catch {
+                            value = rawValue;
+                        }
+
                         return {
                             name: s.slice(0, idx),
-                            value: s.slice(idx + 1),
+                            value,
                         };
                     });
             },
             setAll(cookiesToSet) {
                 for (const { name, value, options } of cookiesToSet) {
+                    const encodedValue = encodeURIComponent(value);
                     const parts = [
-                        `${name}=${value}`,
+                        `${name}=${encodedValue}`,
                         "HttpOnly",
                         options?.path ? `Path=${options.path}` : "Path=/",
                         isDev ? "SameSite=Lax" : "SameSite=None",

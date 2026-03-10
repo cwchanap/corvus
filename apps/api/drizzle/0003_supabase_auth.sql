@@ -26,6 +26,8 @@ DROP TABLE `wishlist_categories`;
 --> statement-breakpoint
 ALTER TABLE `wishlist_categories_new` RENAME TO `wishlist_categories`;
 --> statement-breakpoint
+CREATE INDEX `wishlist_categories_user_id_idx` ON `wishlist_categories` (`user_id`);
+--> statement-breakpoint
 
 -- Rebuild wishlist_items: user_id integer -> text (Supabase UUID), drop FK to users
 CREATE TABLE `wishlist_items_new` (
@@ -43,6 +45,8 @@ CREATE TABLE `wishlist_items_new` (
 DROP TABLE `wishlist_items`;
 --> statement-breakpoint
 ALTER TABLE `wishlist_items_new` RENAME TO `wishlist_items`;
+--> statement-breakpoint
+CREATE INDEX `wishlist_items_user_id_idx` ON `wishlist_items` (`user_id`);
 --> statement-breakpoint
 
 -- Drop sessions table (replaced by Supabase JWT sessions)
