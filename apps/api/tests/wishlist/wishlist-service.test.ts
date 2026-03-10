@@ -808,7 +808,7 @@ describe("WishlistService", () => {
         });
 
         it("getItemLinks throws when item is not owned by user", async () => {
-            const itemGetMock = vi.fn().mockResolvedValue({ user_id: 999 });
+            const itemGetMock = vi.fn().mockResolvedValue({ user_id: "999" });
             const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
             const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
             const selectMock = vi.fn(() => ({ from: itemFromMock })) as Mock;

@@ -167,7 +167,7 @@ describe("WishlistDashboard", () => {
     color: "#6366f1",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    user_id: 1,
+    user_id: "user-uuid-1",
   };
 
   const mockItem: WishlistItemRecord = {
@@ -176,7 +176,7 @@ describe("WishlistDashboard", () => {
     description: "Gaming laptop",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    user_id: 1,
+    user_id: "user-uuid-1",
     category_id: "cat-1",
     links: [],
   };

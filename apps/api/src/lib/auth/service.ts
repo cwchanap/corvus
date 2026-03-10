@@ -50,7 +50,19 @@ export class SupabaseAuthService {
             password,
         });
 
-        if (error || !data.user) {
+        if (error) {
+            const message = error.message.toLowerCase();
+            if (
+                message.includes("invalid login credentials") ||
+                message.includes("invalid email or password")
+            ) {
+                return null;
+            }
+
+            throw new Error(`Login failed: ${error.message}`);
+        }
+
+        if (!data.user) {
             return null;
         }
 
@@ -58,7 +70,10 @@ export class SupabaseAuthService {
     }
 
     async logout(): Promise<void> {
-        await this.supabase.auth.signOut();
+        const { error } = await this.supabase.auth.signOut();
+        if (error) {
+            throw new Error(`Logout failed: ${error.message}`);
+        }
     }
 
     async getUser(): Promise<PublicUser | null> {

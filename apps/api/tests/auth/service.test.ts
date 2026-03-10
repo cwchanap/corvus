@@ -217,6 +217,23 @@ describe("SupabaseAuthService", () => {
 
             expect(result).toBeNull();
         });
+
+        it("throws when upstream login fails for non-credential reasons", async () => {
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: { message: "Too many requests" },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(
+                service.login("test@example.com", "password123"),
+            ).rejects.toThrow("Login failed: Too many requests");
+        });
     });
 
     describe("logout", () => {
@@ -232,6 +249,22 @@ describe("SupabaseAuthService", () => {
             await service.logout();
 
             expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+        });
+
+        it("throws when supabase sign out fails", async () => {
+            const mockSupabase = createMockSupabase({
+                signOut: vi.fn().mockResolvedValue({
+                    error: { message: "Service unavailable" },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(service.logout()).rejects.toThrow(
+                "Logout failed: Service unavailable",
+            );
         });
     });
 
