@@ -308,5 +308,45 @@ describe("SupabaseAuthService", () => {
 
             expect(result).toBeNull();
         });
+
+        it("returns null when AuthSessionMissingError is returned (no session cookie)", async () => {
+            const mockSupabase = createMockSupabase({
+                getUser: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        name: "AuthSessionMissingError",
+                        message: "Auth session missing!",
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            const result = await service.getUser();
+
+            expect(result).toBeNull();
+        });
+
+        it("throws when getUser returns a non-session error (e.g. network failure)", async () => {
+            const mockSupabase = createMockSupabase({
+                getUser: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        name: "AuthRetryableFetchError",
+                        message: "Network request failed",
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(service.getUser()).rejects.toThrow(
+                "Failed to validate session: Network request failed",
+            );
+        });
     });
 });
