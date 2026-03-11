@@ -79,7 +79,17 @@ export class SupabaseAuthService {
     async getUser(): Promise<PublicUser | null> {
         const {
             data: { user },
+            error,
         } = await this.supabase.auth.getUser();
+
+        if (error) {
+            // AuthSessionMissingError means no session cookie — user is simply not logged in.
+            if (error.name === "AuthSessionMissingError") {
+                return null;
+            }
+            // Any other error is a real infrastructure or configuration problem.
+            throw new Error(`Failed to validate session: ${error.message}`);
+        }
 
         return user ? toPublicUser(user) : null;
     }
