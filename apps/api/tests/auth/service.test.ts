@@ -314,6 +314,7 @@ describe("SupabaseAuthService", () => {
                 getUser: vi.fn().mockResolvedValue({
                     data: { user: null },
                     error: {
+                        __isAuthError: true,
                         name: "AuthSessionMissingError",
                         message: "Auth session missing!",
                     },
@@ -334,6 +335,7 @@ describe("SupabaseAuthService", () => {
                 getUser: vi.fn().mockResolvedValue({
                     data: { user: null },
                     error: {
+                        __isAuthError: true,
                         name: "AuthRetryableFetchError",
                         message: "Network request failed",
                     },
