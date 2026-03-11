@@ -41,7 +41,19 @@ export class SupabaseAuthService {
             throw new Error("User already exists");
         }
 
-        await createDefaultCategories(this.db, data.user.id);
+        try {
+            await createDefaultCategories(this.db, data.user.id);
+        } catch (dbError) {
+            // CRITICAL: User created in Supabase but D1 setup failed.
+            // The user exists in Supabase Auth but has no application data.
+            // Manual remediation may be required using the Supabase user ID below.
+            console.error(
+                "Failed to create default categories for new user. Supabase user ID:",
+                data.user.id,
+                dbError,
+            );
+            throw dbError;
+        }
         return toPublicUser(data.user);
     }
 

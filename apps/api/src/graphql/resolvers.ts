@@ -139,6 +139,7 @@ export const resolvers: Resolvers = {
                         error: "User already exists",
                     };
                 }
+                console.error("Registration error:", error);
                 throw new GraphQLError("Registration failed", {
                     extensions: { code: "INTERNAL_SERVER_ERROR" },
                 });
@@ -150,31 +151,44 @@ export const resolvers: Resolvers = {
                 context.db,
             );
 
-            const user = await authService.login(
-                args.input.email,
-                args.input.password,
-            );
+            try {
+                const user = await authService.login(
+                    args.input.email,
+                    args.input.password,
+                );
 
-            if (!user) {
+                if (!user) {
+                    return {
+                        success: false,
+                        user: null,
+                        error: "Invalid email or password",
+                    };
+                }
+
                 return {
-                    success: false,
-                    user: null,
-                    error: "Invalid email or password",
+                    success: true,
+                    user: mapUser(user),
+                    error: null,
                 };
+            } catch (error) {
+                console.error("Login error:", error);
+                throw new GraphQLError("Login failed", {
+                    extensions: { code: "INTERNAL_SERVER_ERROR" },
+                });
             }
-
-            return {
-                success: true,
-                user: mapUser(user),
-                error: null,
-            };
         },
         logout: async (_parent, _args, context) => {
             const authService = new SupabaseAuthService(
                 context.supabase,
                 context.db,
             );
-            await authService.logout();
+            try {
+                await authService.logout();
+            } catch (error) {
+                console.error("Logout error:", error);
+                // Still return true — the client-side cookie will be cleared
+                // by Supabase's local signOut even if global revocation fails.
+            }
             return true;
         },
         createCategory: async (_parent, args, context) => {
