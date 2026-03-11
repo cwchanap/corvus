@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DB } from "../lib/db";
 import type { PublicUser } from "../lib/db/types";
 import { createDatabase } from "../lib/db";
@@ -9,6 +10,7 @@ import { getD1 } from "../lib/cloudflare";
 export interface GraphQLContext {
     db: DB;
     user: PublicUser | null;
+    supabase: SupabaseClient;
     request: Request;
     honoContext: Context;
 }
@@ -16,6 +18,8 @@ export interface GraphQLContext {
 /**
  * Create GraphQL context from Hono context.
  * Validates the Supabase session cookie and injects DB and user.
+ * The Supabase client is created once per request and shared with resolvers
+ * so that cookie state is accumulated on a single instance.
  */
 export async function createGraphQLContext(
     c: Context,
@@ -28,6 +32,7 @@ export async function createGraphQLContext(
     return {
         db,
         user,
+        supabase,
         request: c.req.raw,
         honoContext: c,
     };
