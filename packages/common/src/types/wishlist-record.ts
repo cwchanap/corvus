@@ -1,6 +1,6 @@
 export interface WishlistCategoryRecord {
     id: string;
-    user_id?: string;
+    user_id: string;
     name: string;
     color?: string;
     created_at: string;
@@ -19,7 +19,7 @@ export interface WishlistItemLinkRecord {
 
 export interface WishlistItemRecord {
     id: string;
-    user_id?: string;
+    user_id: string;
     category_id?: string;
     title: string;
     description?: string;

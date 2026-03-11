@@ -254,6 +254,29 @@ describe("SupabaseAuthService", () => {
             expect(result).toBeNull();
         });
 
+        it("returns null when credentials are invalid (alternate Supabase error message)", async () => {
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        __isAuthError: true,
+                        message: "Invalid email or password",
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            const result = await service.login(
+                "test@example.com",
+                "wrongpassword",
+            );
+
+            expect(result).toBeNull();
+        });
+
         it("throws when upstream login fails for non-credential reasons", async () => {
             const mockSupabase = createMockSupabase({
                 signInWithPassword: vi.fn().mockResolvedValue({
