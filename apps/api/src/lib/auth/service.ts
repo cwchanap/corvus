@@ -1,3 +1,4 @@
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import type {
     SupabaseClient,
     User as SupabaseUser,
@@ -84,7 +85,7 @@ export class SupabaseAuthService {
 
         if (error) {
             // AuthSessionMissingError means no session cookie — user is simply not logged in.
-            if (error.name === "AuthSessionMissingError") {
+            if (isAuthSessionMissingError(error)) {
                 return null;
             }
             // Any other error is a real infrastructure or configuration problem.
