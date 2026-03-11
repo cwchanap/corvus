@@ -1,7 +1,6 @@
 import { GraphQLError } from "graphql";
 import type { Resolvers } from "./types";
 import { SupabaseAuthService } from "../lib/auth/service";
-import { createSupabaseServerClient } from "../lib/auth/supabase-client";
 import {
     WishlistService,
     WishlistAuthorizationError,
@@ -112,8 +111,10 @@ export const resolvers: Resolvers = {
     },
     Mutation: {
         register: async (_parent, args, context) => {
-            const supabase = createSupabaseServerClient(context.honoContext);
-            const authService = new SupabaseAuthService(supabase, context.db);
+            const authService = new SupabaseAuthService(
+                context.supabase,
+                context.db,
+            );
 
             try {
                 const user = await authService.register(
@@ -144,8 +145,10 @@ export const resolvers: Resolvers = {
             }
         },
         login: async (_parent, args, context) => {
-            const supabase = createSupabaseServerClient(context.honoContext);
-            const authService = new SupabaseAuthService(supabase, context.db);
+            const authService = new SupabaseAuthService(
+                context.supabase,
+                context.db,
+            );
 
             const user = await authService.login(
                 args.input.email,
@@ -167,8 +170,10 @@ export const resolvers: Resolvers = {
             };
         },
         logout: async (_parent, _args, context) => {
-            const supabase = createSupabaseServerClient(context.honoContext);
-            const authService = new SupabaseAuthService(supabase, context.db);
+            const authService = new SupabaseAuthService(
+                context.supabase,
+                context.db,
+            );
             await authService.logout();
             return true;
         },
