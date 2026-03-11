@@ -165,6 +165,42 @@ describe("SupabaseAuthService", () => {
 
             expect(mockCreateDefaultCategories).not.toHaveBeenCalled();
         });
+
+        it("logs and rethrows when createDefaultCategories fails", async () => {
+            const mockSupabase = createMockSupabase({
+                signUp: vi.fn().mockResolvedValue({
+                    data: { user: TEST_USER },
+                    error: null,
+                }),
+            });
+            mockCreateDefaultCategories.mockRejectedValue(
+                new Error("D1 unavailable"),
+            );
+            const consoleSpy = vi
+                .spyOn(console, "error")
+                .mockImplementation(() => {});
+
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(
+                service.register(
+                    "test@example.com",
+                    "password123",
+                    "Test User",
+                ),
+            ).rejects.toThrow("D1 unavailable");
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                expect.stringContaining("Failed to create default categories"),
+                "user-uuid-123",
+                expect.any(Error),
+            );
+
+            consoleSpy.mockRestore();
+        });
     });
 
     describe("login", () => {
