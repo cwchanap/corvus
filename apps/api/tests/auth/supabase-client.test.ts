@@ -206,6 +206,34 @@ describe("createSupabaseServerClient", () => {
             expect(raw).toContain("Max-Age=3600");
         });
 
+        it("includes Domain when provided in options", () => {
+            const ctx = makeContext({ env: { DEV: "true" } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([
+                {
+                    name: "tok",
+                    value: "val",
+                    options: { domain: ".example.com" },
+                },
+            ]);
+
+            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
+                ._setCookieHeaders[0];
+            expect(raw).toContain("Domain=.example.com");
+        });
+
+        it("omits Domain when not provided", () => {
+            const ctx = makeContext({ env: { DEV: "true" } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([{ name: "tok", value: "val", options: {} }]);
+
+            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
+                ._setCookieHeaders[0];
+            expect(raw).not.toContain("Domain");
+        });
+
         it("omits Max-Age when not provided", () => {
             const ctx = makeContext({ env: { DEV: "true" } });
             createSupabaseServerClient(ctx);
