@@ -11,6 +11,26 @@ import type { PublicUser } from "../db/types";
 import type { DB } from "../db";
 import { createDefaultCategories } from "../db/migrations";
 
+type AuthServiceErrorCode = "RATE_LIMITED" | "TRANSIENT" | "UNKNOWN";
+
+export class AuthServiceError extends Error {
+    readonly code: AuthServiceErrorCode;
+    readonly status?: number;
+
+    constructor(
+        message: string,
+        options: {
+            code: AuthServiceErrorCode;
+            status?: number;
+        },
+    ) {
+        super(message);
+        this.name = "AuthServiceError";
+        this.code = options.code;
+        this.status = options.status;
+    }
+}
+
 export class SupabaseAuthService {
     constructor(
         private supabase: SupabaseClient,
@@ -102,7 +122,7 @@ export class SupabaseAuthService {
                 return null;
             }
 
-            throw new Error(`Login failed: ${error.message}`);
+            throw createLoginError(error);
         }
 
         if (!data.user) {
@@ -166,13 +186,48 @@ export class SupabaseAuthService {
 }
 
 function toPublicUser(user: SupabaseUser): PublicUser {
+    const metadataName = user.user_metadata?.name;
+
     return {
         id: user.id,
         email: user.email ?? "",
-        name: (user.user_metadata?.name as string) ?? "",
+        name: typeof metadataName === "string" ? metadataName : "",
         created_at: user.created_at,
         updated_at: user.updated_at ?? user.created_at,
     };
+}
+
+function createLoginError(error: AuthError): AuthServiceError {
+    const status = typeof error.status === "number" ? error.status : undefined;
+    const message = error.message.toLowerCase();
+
+    if (
+        status === 429 ||
+        message.includes("too many requests") ||
+        message.includes("rate limit")
+    ) {
+        return new AuthServiceError(`Login failed: ${error.message}`, {
+            code: "RATE_LIMITED",
+            status: status ?? 429,
+        });
+    }
+
+    if (
+        error.name === "AuthRetryableFetchError" ||
+        (typeof status === "number" && status >= 500) ||
+        message.includes("network request failed") ||
+        message.includes("temporarily unavailable")
+    ) {
+        return new AuthServiceError(`Login failed: ${error.message}`, {
+            code: "TRANSIENT",
+            status,
+        });
+    }
+
+    return new AuthServiceError(`Login failed: ${error.message}`, {
+        code: "UNKNOWN",
+        status,
+    });
 }
 
 function isRecoverableInvalidSessionError(error: AuthError): boolean {

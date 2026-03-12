@@ -55,22 +55,28 @@ export const wishlistItems = sqliteTable(
     }),
 );
 
-export const wishlistItemLinks = sqliteTable("wishlist_item_links", {
-    id: text("id").primaryKey(),
-    item_id: text("item_id")
-        .notNull()
-        .references(() => wishlistItems.id, {
-            onDelete: "cascade",
-        }),
-    url: text("url").notNull(),
-    description: text("description"),
-    is_primary: integer("is_primary", { mode: "boolean" })
-        .notNull()
-        .default(false),
-    created_at: text("created_at")
-        .notNull()
-        .default(sql`CURRENT_TIMESTAMP`),
-    updated_at: text("updated_at")
-        .notNull()
-        .default(sql`CURRENT_TIMESTAMP`),
-});
+export const wishlistItemLinks = sqliteTable(
+    "wishlist_item_links",
+    {
+        id: text("id").primaryKey(),
+        item_id: text("item_id")
+            .notNull()
+            .references(() => wishlistItems.id, {
+                onDelete: "cascade",
+            }),
+        url: text("url").notNull(),
+        description: text("description"),
+        is_primary: integer("is_primary", { mode: "boolean" })
+            .notNull()
+            .default(false),
+        created_at: text("created_at")
+            .notNull()
+            .default(sql`CURRENT_TIMESTAMP`),
+        updated_at: text("updated_at")
+            .notNull()
+            .default(sql`CURRENT_TIMESTAMP`),
+    },
+    (table) => ({
+        itemIdIdx: index("wishlist_item_links_item_id_idx").on(table.item_id),
+    }),
+);
