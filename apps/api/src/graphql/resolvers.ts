@@ -141,7 +141,10 @@ export const resolvers: Resolvers = {
                         error.message.startsWith(
                             "Account created but setup failed",
                         ) ||
-                        error.message.startsWith("Please check your email")
+                        error.message.startsWith("Please check your email") ||
+                        error.message.startsWith(
+                            "Registration failed: check your email",
+                        )
                     ) {
                         return {
                             success: false,
@@ -592,6 +595,18 @@ function toLoginGraphQLError(error: unknown): GraphQLError | null {
                 extensions: {
                     code: "SERVICE_UNAVAILABLE",
                     status: error.status ?? 503,
+                },
+            },
+        );
+    }
+
+    if (error.code === "UNCONFIRMED_ACCOUNT") {
+        return new GraphQLError(
+            "Please confirm your email before logging in.",
+            {
+                extensions: {
+                    code: "BAD_USER_INPUT",
+                    status: error.status ?? 400,
                 },
             },
         );
