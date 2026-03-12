@@ -90,8 +90,16 @@ export class SupabaseAuthService {
         }
 
         // Idempotent bootstrap: heals accounts where registration succeeded in
-        // Supabase but D1 setup failed (onConflictDoNothing means no-op if already set up).
-        await createDefaultCategories(this.db, data.user.id);
+        // Supabase but D1 setup failed. Non-fatal: login already succeeded.
+        try {
+            await createDefaultCategories(this.db, data.user.id);
+        } catch (dbError) {
+            console.error(
+                "Failed to bootstrap default categories on login. User ID:",
+                data.user.id,
+                dbError,
+            );
+        }
 
         return toPublicUser(data.user);
     }

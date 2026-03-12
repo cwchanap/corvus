@@ -197,8 +197,9 @@ export const resolvers: Resolvers = {
                 await authService.logout();
             } catch (error) {
                 console.error("Logout error:", error);
-                // Still return true — the client-side cookie will be cleared
-                // by Supabase's local signOut even if global revocation fails.
+                throw new GraphQLError("Logout failed", {
+                    extensions: { code: "INTERNAL_SERVER_ERROR" },
+                });
             }
             return true;
         },
