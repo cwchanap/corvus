@@ -19,6 +19,7 @@ export async function createDefaultCategories(db: DB, userId: string) {
                 user_id: userId,
                 ...category,
             })
+            .onConflictDoNothing()
             .run();
     }
 }
