@@ -1,0 +1,8 @@
+# Development environment variables for Cloudflare Workers (API)
+# Copy this file to .dev.vars and fill in real values before running `wrangler dev`
+
+# Supabase project URL (from Project Settings > API)
+SUPABASE_URL="https://your-project-ref.supabase.co"
+
+# Supabase anon/public key (from Project Settings > API)
+SUPABASE_ANON_KEY="your-supabase-anon-key"

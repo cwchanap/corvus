@@ -45,7 +45,10 @@ describe("SupabaseAuthService", () => {
         it("creates a new user and default categories", async () => {
             const mockSupabase = createMockSupabase({
                 signUp: vi.fn().mockResolvedValue({
-                    data: { user: TEST_USER },
+                    data: {
+                        user: TEST_USER,
+                        session: { access_token: "mock-token" },
+                    },
                     error: null,
                 }),
             });
@@ -166,10 +169,13 @@ describe("SupabaseAuthService", () => {
             expect(mockCreateDefaultCategories).not.toHaveBeenCalled();
         });
 
-        it("logs and rethrows when createDefaultCategories fails", async () => {
+        it("throws user-friendly error and logs when createDefaultCategories fails", async () => {
             const mockSupabase = createMockSupabase({
                 signUp: vi.fn().mockResolvedValue({
-                    data: { user: TEST_USER },
+                    data: {
+                        user: TEST_USER,
+                        session: { access_token: "mock-token" },
+                    },
                     error: null,
                 }),
             });
@@ -191,7 +197,7 @@ describe("SupabaseAuthService", () => {
                     "password123",
                     "Test User",
                 ),
-            ).rejects.toThrow("D1 unavailable");
+            ).rejects.toThrow("Account created but setup failed");
 
             expect(consoleSpy).toHaveBeenCalledWith(
                 expect.stringContaining("Failed to create default categories"),
@@ -201,13 +207,11 @@ describe("SupabaseAuthService", () => {
 
             consoleSpy.mockRestore();
         });
-    });
 
-    describe("login", () => {
-        it("returns PublicUser on successful authentication", async () => {
+        it("throws when signUp succeeds but session is null (email confirmation required)", async () => {
             const mockSupabase = createMockSupabase({
-                signInWithPassword: vi.fn().mockResolvedValue({
-                    data: { user: TEST_USER },
+                signUp: vi.fn().mockResolvedValue({
+                    data: { user: TEST_USER, session: null },
                     error: null,
                 }),
             });
@@ -215,6 +219,32 @@ describe("SupabaseAuthService", () => {
                 mockSupabase,
                 createMockDb(),
             );
+
+            await expect(
+                service.register(
+                    "test@example.com",
+                    "password123",
+                    "Test User",
+                ),
+            ).rejects.toThrow("Please check your email to confirm");
+
+            expect(mockCreateDefaultCategories).toHaveBeenCalledWith(
+                expect.anything(),
+                "user-uuid-123",
+            );
+        });
+    });
+
+    describe("login", () => {
+        it("returns PublicUser on successful authentication and bootstraps D1", async () => {
+            const mockDb = createMockDb();
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: TEST_USER },
+                    error: null,
+                }),
+            });
+            const service = new SupabaseAuthService(mockSupabase, mockDb);
 
             const result = await service.login(
                 "test@example.com",
@@ -225,6 +255,10 @@ describe("SupabaseAuthService", () => {
                 email: "test@example.com",
                 password: "password123",
             });
+            expect(mockCreateDefaultCategories).toHaveBeenCalledWith(
+                mockDb,
+                "user-uuid-123",
+            );
             expect(result).toEqual({
                 id: "user-uuid-123",
                 email: "test@example.com",
@@ -232,6 +266,26 @@ describe("SupabaseAuthService", () => {
                 created_at: "2024-01-01T00:00:00.000Z",
                 updated_at: "2024-01-01T00:00:00.000Z",
             });
+        });
+
+        it("heals partial registration by bootstrapping D1 on login", async () => {
+            const mockDb = createMockDb();
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: TEST_USER },
+                    error: null,
+                }),
+            });
+            const service = new SupabaseAuthService(mockSupabase, mockDb);
+
+            await service.login("test@example.com", "password123");
+
+            // createDefaultCategories uses onConflictDoNothing, so calling it on
+            // login is safe whether or not D1 was previously initialized.
+            expect(mockCreateDefaultCategories).toHaveBeenCalledWith(
+                mockDb,
+                "user-uuid-123",
+            );
         });
 
         it("returns null when credentials are invalid", async () => {

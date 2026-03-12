@@ -46,14 +46,24 @@ export class SupabaseAuthService {
         } catch (dbError) {
             // CRITICAL: User created in Supabase but D1 setup failed.
             // The user exists in Supabase Auth but has no application data.
-            // Manual remediation may be required using the Supabase user ID below.
+            // Recovery: createDefaultCategories is idempotent — logging in will
+            // re-run the bootstrap and heal the account automatically.
             console.error(
                 "Failed to create default categories for new user. Supabase user ID:",
                 data.user.id,
                 dbError,
             );
-            throw dbError;
+            throw new Error(
+                "Account created but setup failed. Please try logging in to complete your account setup.",
+            );
         }
+
+        if (!data.session) {
+            throw new Error(
+                "Please check your email to confirm your account before logging in.",
+            );
+        }
+
         return toPublicUser(data.user);
     }
 
@@ -78,6 +88,10 @@ export class SupabaseAuthService {
         if (!data.user) {
             return null;
         }
+
+        // Idempotent bootstrap: heals accounts where registration succeeded in
+        // Supabase but D1 setup failed (onConflictDoNothing means no-op if already set up).
+        await createDefaultCategories(this.db, data.user.id);
 
         return toPublicUser(data.user);
     }
