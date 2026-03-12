@@ -1,5 +1,9 @@
-import { isAuthSessionMissingError } from "@supabase/supabase-js";
+import {
+    isAuthApiError,
+    isAuthSessionMissingError,
+} from "@supabase/supabase-js";
 import type {
+    AuthError,
     SupabaseClient,
     User as SupabaseUser,
 } from "@supabase/supabase-js";
@@ -53,6 +57,22 @@ export class SupabaseAuthService {
                 data.user.id,
                 dbError,
             );
+
+            if (data.session) {
+                try {
+                    await this.clearServerSession();
+                } catch (sessionError) {
+                    console.error(
+                        "Failed to clear session after registration bootstrap failed. Supabase user ID:",
+                        data.user.id,
+                        sessionError,
+                    );
+                    throw new Error(
+                        "Account created but setup failed, and we could not clear the new session automatically. Please clear your cookies before trying again.",
+                    );
+                }
+            }
+
             throw new Error(
                 "Account created but setup failed. Please try logging in to complete your account setup.",
             );
@@ -122,11 +142,26 @@ export class SupabaseAuthService {
             if (isAuthSessionMissingError(error)) {
                 return null;
             }
+
+            if (isRecoverableInvalidSessionError(error)) {
+                await this.clearServerSession();
+                return null;
+            }
+
             // Any other error is a real infrastructure or configuration problem.
             throw new Error(`Failed to validate session: ${error.message}`);
         }
 
         return user ? toPublicUser(user) : null;
+    }
+
+    private async clearServerSession(): Promise<void> {
+        const { error } = await this.supabase.auth.signOut({ scope: "local" });
+        if (error && !isRecoverableSessionCleanupError(error)) {
+            throw new Error(
+                `Failed to clear invalid session: ${error.message}`,
+            );
+        }
     }
 }
 
@@ -138,4 +173,20 @@ function toPublicUser(user: SupabaseUser): PublicUser {
         created_at: user.created_at,
         updated_at: user.updated_at ?? user.created_at,
     };
+}
+
+function isRecoverableInvalidSessionError(error: AuthError): boolean {
+    return (
+        isAuthApiError(error) && (error.status === 401 || error.status === 403)
+    );
+}
+
+function isRecoverableSessionCleanupError(error: AuthError): boolean {
+    return (
+        isAuthSessionMissingError(error) ||
+        (isAuthApiError(error) &&
+            (error.status === 401 ||
+                error.status === 403 ||
+                error.status === 404))
+    );
 }
