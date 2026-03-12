@@ -11,7 +11,11 @@ import type { PublicUser } from "../db/types";
 import type { DB } from "../db";
 import { createDefaultCategories } from "../db/migrations";
 
-type AuthServiceErrorCode = "RATE_LIMITED" | "TRANSIENT" | "UNKNOWN";
+type AuthServiceErrorCode =
+    | "RATE_LIMITED"
+    | "TRANSIENT"
+    | "UNCONFIRMED_ACCOUNT"
+    | "UNKNOWN";
 
 export class AuthServiceError extends Error {
     readonly code: AuthServiceErrorCode;
@@ -145,7 +149,9 @@ export class SupabaseAuthService {
     }
 
     async logout(): Promise<void> {
-        const { error } = await this.supabase.auth.signOut();
+        const { error } = await this.supabase.auth.signOut({
+            scope: "local",
+        });
         if (error) {
             throw new Error(`Logout failed: ${error.message}`);
         }
@@ -221,6 +227,17 @@ function createLoginError(error: AuthError): AuthServiceError {
         return new AuthServiceError(`Login failed: ${error.message}`, {
             code: "TRANSIENT",
             status,
+        });
+    }
+
+    if (
+        message.includes("email not confirmed") ||
+        message.includes("email not verified") ||
+        message.includes("confirm your email")
+    ) {
+        return new AuthServiceError(`Login failed: ${error.message}`, {
+            code: "UNCONFIRMED_ACCOUNT",
+            status: status ?? 400,
         });
     }
 

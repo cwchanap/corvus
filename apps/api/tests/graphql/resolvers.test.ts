@@ -6,15 +6,21 @@ import { resolvers } from "../../src/graphql/resolvers";
 import type { DB } from "../../src/lib/db";
 
 function createContext(
-    signInWithPassword: ReturnType<typeof vi.fn>,
+    authOverrides: Partial<{
+        signInWithPassword: ReturnType<typeof vi.fn>;
+        signUp: ReturnType<typeof vi.fn>;
+        signOut: ReturnType<typeof vi.fn>;
+    }> = {},
 ): GraphQLContext {
     return {
         db: {} as DB,
         user: null,
         supabase: {
             auth: {
-                signInWithPassword,
+                signInWithPassword: vi.fn(),
+                signUp: vi.fn(),
                 signOut: vi.fn().mockResolvedValue({ error: null }),
+                ...authOverrides,
             },
         } as unknown as SupabaseClient,
         request: new Request("https://app.example.com/graphql"),
@@ -36,10 +42,30 @@ async function invokeLogin(context: GraphQLContext) {
     );
 }
 
+async function invokeRegister(context: GraphQLContext) {
+    const registerResolver = resolvers.Mutation?.register;
+    if (!registerResolver) {
+        throw new Error("Register resolver is unavailable");
+    }
+
+    return registerResolver(
+        {},
+        {
+            input: {
+                email: "test@example.com",
+                password: "password123",
+                name: "Test User",
+            },
+        },
+        context,
+        {} as never,
+    );
+}
+
 describe("login resolver", () => {
     it("returns a rate-limited GraphQLError for rate-limited auth failures", async () => {
-        const context = createContext(
-            vi.fn().mockResolvedValue({
+        const context = createContext({
+            signInWithPassword: vi.fn().mockResolvedValue({
                 data: { user: null },
                 error: {
                     __isAuthError: true,
@@ -48,7 +74,7 @@ describe("login resolver", () => {
                     status: 429,
                 },
             }),
-        );
+        });
 
         await expect(invokeLogin(context)).rejects.toBeInstanceOf(GraphQLError);
 
@@ -67,8 +93,8 @@ describe("login resolver", () => {
     });
 
     it("returns a service-unavailable GraphQLError for transient auth failures", async () => {
-        const context = createContext(
-            vi.fn().mockResolvedValue({
+        const context = createContext({
+            signInWithPassword: vi.fn().mockResolvedValue({
                 data: { user: null },
                 error: {
                     __isAuthError: true,
@@ -76,7 +102,7 @@ describe("login resolver", () => {
                     message: "Network request failed",
                 },
             }),
-        );
+        });
 
         await expect(invokeLogin(context)).rejects.toBeInstanceOf(GraphQLError);
 
@@ -92,5 +118,51 @@ describe("login resolver", () => {
                 },
             });
         }
+    });
+
+    it("returns a bad-user-input GraphQLError for unconfirmed accounts", async () => {
+        const context = createContext({
+            signInWithPassword: vi.fn().mockResolvedValue({
+                data: { user: null },
+                error: {
+                    __isAuthError: true,
+                    name: "AuthApiError",
+                    message: "Email not confirmed",
+                    status: 400,
+                },
+            }),
+        });
+
+        await expect(invokeLogin(context)).rejects.toBeInstanceOf(GraphQLError);
+
+        try {
+            await invokeLogin(context);
+        } catch (error) {
+            expect(error).toBeInstanceOf(GraphQLError);
+            expect(error).toMatchObject({
+                message: "Please confirm your email before logging in.",
+                extensions: {
+                    code: "BAD_USER_INPUT",
+                    status: 400,
+                },
+            });
+        }
+    });
+});
+
+describe("register resolver", () => {
+    it("returns a handled error when signup requires email confirmation but no user is returned", async () => {
+        const context = createContext({
+            signUp: vi.fn().mockResolvedValue({
+                data: { user: null, session: null },
+                error: null,
+            }),
+        });
+
+        await expect(invokeRegister(context)).resolves.toEqual({
+            success: false,
+            user: null,
+            error: "Registration failed: check your email to confirm",
+        });
     });
 });
