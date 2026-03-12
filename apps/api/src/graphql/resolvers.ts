@@ -129,15 +129,26 @@ export const resolvers: Resolvers = {
                     error: null,
                 };
             } catch (error) {
-                if (
-                    error instanceof Error &&
-                    error.message === "User already exists"
-                ) {
-                    return {
-                        success: false,
-                        user: null,
-                        error: "User already exists",
-                    };
+                if (error instanceof Error) {
+                    if (error.message === "User already exists") {
+                        return {
+                            success: false,
+                            user: null,
+                            error: "User already exists",
+                        };
+                    }
+                    if (
+                        error.message.startsWith(
+                            "Account created but setup failed",
+                        ) ||
+                        error.message.startsWith("Please check your email")
+                    ) {
+                        return {
+                            success: false,
+                            user: null,
+                            error: error.message,
+                        };
+                    }
                 }
                 console.error("Registration error:", error);
                 throw new GraphQLError("Registration failed", {

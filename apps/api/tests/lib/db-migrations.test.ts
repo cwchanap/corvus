@@ -5,7 +5,10 @@ import { createDefaultCategories } from "../../src/lib/db/migrations";
 describe("createDefaultCategories", () => {
     it("inserts the default categories for a user", async () => {
         const runMock = vi.fn().mockResolvedValue(undefined);
-        const valuesMock = vi.fn(() => ({ run: runMock }));
+        const onConflictDoNothingMock = vi.fn(() => ({ run: runMock }));
+        const valuesMock = vi.fn(() => ({
+            onConflictDoNothing: onConflictDoNothingMock,
+        }));
         const insertMock = vi.fn(() => ({ values: valuesMock }));
 
         const db = {
@@ -16,6 +19,7 @@ describe("createDefaultCategories", () => {
 
         expect(insertMock).toHaveBeenCalledTimes(3);
         expect(valuesMock).toHaveBeenCalledTimes(3);
+        expect(onConflictDoNothingMock).toHaveBeenCalledTimes(3);
         expect(runMock).toHaveBeenCalledTimes(3);
 
         const payloads = valuesMock.mock.calls.map(
