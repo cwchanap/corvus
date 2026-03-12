@@ -1,4 +1,3 @@
-import { eq, sql } from "drizzle-orm";
 import type { DB } from "../db";
 import { wishlistCategories } from "./schema";
 
@@ -6,30 +5,23 @@ import { wishlistCategories } from "./schema";
 // Drizzle-powered data bootstrapping utilities only.
 
 export async function createDefaultCategories(db: DB, userId: string) {
-    const existing = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(wishlistCategories)
-        .where(eq(wishlistCategories.user_id, userId))
-        .get();
-
-    if (existing && existing.count > 0) {
-        return;
-    }
-
     const defaultCategories = [
         { name: "General", color: "#6366f1" },
         { name: "Work", color: "#059669" },
         { name: "Personal", color: "#dc2626" },
     ];
 
-    for (const category of defaultCategories) {
-        await db
-            .insert(wishlistCategories)
-            .values({
+    await db
+        .insert(wishlistCategories)
+        .values(
+            defaultCategories.map((category) => ({
                 id: crypto.randomUUID(),
                 user_id: userId,
                 ...category,
-            })
-            .run();
-    }
+            })),
+        )
+        .onConflictDoNothing({
+            target: [wishlistCategories.user_id, wishlistCategories.name],
+        })
+        .run();
 }

@@ -1,4 +1,10 @@
-import { sqliteTable, integer, text, index } from "drizzle-orm/sqlite-core";
+import {
+    sqliteTable,
+    integer,
+    text,
+    index,
+    uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const wishlistCategories = sqliteTable(
@@ -17,6 +23,9 @@ export const wishlistCategories = sqliteTable(
     },
     (table) => ({
         userIdIdx: index("wishlist_categories_user_id_idx").on(table.user_id),
+        userIdNameUnique: uniqueIndex(
+            "wishlist_categories_user_id_name_unique",
+        ).on(table.user_id, table.name),
     }),
 );
 

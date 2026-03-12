@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import type { Context } from "hono";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
+
 function getRequiredEnvValue(c: Context, key: string): string {
     const value = c.env[key as keyof typeof c.env];
     if (typeof value !== "string" || value.trim().length === 0) {
@@ -27,11 +29,21 @@ function readBooleanEnv(value: unknown): boolean {
     );
 }
 
+function isLocalInsecureRequest(c: Context): boolean {
+    const requestUrl = new URL(c.req.url);
+    return (
+        requestUrl.protocol === "http:" &&
+        LOCALHOST_HOSTNAMES.has(requestUrl.hostname)
+    );
+}
+
 export function createSupabaseServerClient(c: Context): SupabaseClient {
     const supabaseUrl = getRequiredEnvValue(c, "SUPABASE_URL");
     const supabaseAnonKey = getRequiredEnvValue(c, "SUPABASE_ANON_KEY");
     const isDev =
-        readBooleanEnv(c.env.DEV) || readBooleanEnv(c.env.INSECURE_COOKIES);
+        readBooleanEnv(c.env.DEV) ||
+        readBooleanEnv(c.env.INSECURE_COOKIES) ||
+        isLocalInsecureRequest(c);
 
     return createServerClient(supabaseUrl, supabaseAnonKey, {
         cookies: {
