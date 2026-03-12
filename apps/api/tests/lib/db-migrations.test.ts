@@ -3,23 +3,28 @@ import type { DB } from "../../src/lib/db";
 import { createDefaultCategories } from "../../src/lib/db/migrations";
 
 describe("createDefaultCategories", () => {
-    it("inserts the default categories for a user", async () => {
+    function makeDb(existingCount: number) {
+        const getMock = vi.fn().mockResolvedValue({ count: existingCount });
+        const whereMock = vi.fn(() => ({ get: getMock }));
+        const fromMock = vi.fn(() => ({ where: whereMock }));
+        const selectMock = vi.fn(() => ({ from: fromMock }));
+
         const runMock = vi.fn().mockResolvedValue(undefined);
-        const onConflictDoNothingMock = vi.fn(() => ({ run: runMock }));
-        const valuesMock = vi.fn(() => ({
-            onConflictDoNothing: onConflictDoNothingMock,
-        }));
+        const valuesMock = vi.fn(() => ({ run: runMock }));
         const insertMock = vi.fn(() => ({ values: valuesMock }));
 
-        const db = {
-            insert: insertMock,
-        } as unknown as DB;
+        const db = { select: selectMock, insert: insertMock } as unknown as DB;
+        return { db, selectMock, getMock, insertMock, valuesMock, runMock };
+    }
+
+    it("inserts the default categories when none exist", async () => {
+        const { db, selectMock, insertMock, valuesMock, runMock } = makeDb(0);
 
         await createDefaultCategories(db, "user-uuid-123");
 
+        expect(selectMock).toHaveBeenCalledTimes(1);
         expect(insertMock).toHaveBeenCalledTimes(3);
         expect(valuesMock).toHaveBeenCalledTimes(3);
-        expect(onConflictDoNothingMock).toHaveBeenCalledTimes(3);
         expect(runMock).toHaveBeenCalledTimes(3);
 
         const payloads = valuesMock.mock.calls.map(
@@ -41,5 +46,14 @@ describe("createDefaultCategories", () => {
                 expect(typeof payload.id).toBe("string");
             }
         });
+    });
+
+    it("skips insert when user already has categories", async () => {
+        const { db, selectMock, insertMock } = makeDb(3);
+
+        await createDefaultCategories(db, "user-uuid-123");
+
+        expect(selectMock).toHaveBeenCalledTimes(1);
+        expect(insertMock).not.toHaveBeenCalled();
     });
 });
