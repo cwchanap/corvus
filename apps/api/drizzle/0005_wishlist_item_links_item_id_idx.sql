@@ -1,0 +1,1 @@
+CREATE INDEX `wishlist_item_links_item_id_idx` ON `wishlist_item_links` (`item_id`);

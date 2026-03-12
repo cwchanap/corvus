@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { DB } from "../../src/lib/db";
-import { SupabaseAuthService } from "../../src/lib/auth/service";
+import {
+    AuthServiceError,
+    SupabaseAuthService,
+} from "../../src/lib/auth/service";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import * as migrations from "../../src/lib/db/migrations";
 
@@ -376,7 +379,7 @@ describe("SupabaseAuthService", () => {
             const mockSupabase = createMockSupabase({
                 signInWithPassword: vi.fn().mockResolvedValue({
                     data: { user: null },
-                    error: { message: "Too many requests" },
+                    error: { message: "Too many requests", status: 429 },
                 }),
             });
             const service = new SupabaseAuthService(
@@ -384,9 +387,20 @@ describe("SupabaseAuthService", () => {
                 createMockDb(),
             );
 
-            await expect(
-                service.login("test@example.com", "password123"),
-            ).rejects.toThrow("Login failed: Too many requests");
+            let error: unknown;
+
+            try {
+                await service.login("test@example.com", "password123");
+            } catch (caughtError) {
+                error = caughtError;
+            }
+
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message: "Login failed: Too many requests",
+                code: "RATE_LIMITED",
+                status: 429,
+            });
         });
     });
 
@@ -443,6 +457,32 @@ describe("SupabaseAuthService", () => {
                 name: "Test User",
                 created_at: "2024-01-01T00:00:00.000Z",
                 updated_at: "2024-01-01T00:00:00.000Z",
+            });
+        });
+
+        it("normalizes non-string user metadata names to an empty string", async () => {
+            const mockSupabase = createMockSupabase({
+                getUser: vi.fn().mockResolvedValue({
+                    data: {
+                        user: {
+                            ...TEST_USER,
+                            user_metadata: { name: { display: "Test User" } },
+                        },
+                    },
+                    error: null,
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            const result = await service.getUser();
+
+            expect(result).toMatchObject({
+                id: "user-uuid-123",
+                email: "test@example.com",
+                name: "",
             });
         });
 
