@@ -15,6 +15,7 @@ const mockCreateServerClient = createServerClient as ReturnType<typeof vi.fn>;
 function makeContext(overrides: {
     env?: Record<string, unknown>;
     cookieHeader?: string;
+    requestUrl?: string;
 }): Context {
     const setCookieHeaders: string[] = [];
     return {
@@ -24,6 +25,7 @@ function makeContext(overrides: {
             ...overrides.env,
         },
         req: {
+            url: overrides.requestUrl ?? "https://app.example.com/graphql",
             header: (name: string) => {
                 if (name === "cookie") return overrides.cookieHeader ?? "";
                 return undefined;
@@ -174,6 +176,21 @@ describe("createSupabaseServerClient", () => {
 
         it("sets SameSite=Lax without Secure in dev (DEV=true)", () => {
             const ctx = makeContext({ env: { DEV: "true" } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([{ name: "tok", value: "val", options: {} }]);
+
+            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
+                ._setCookieHeaders[0];
+            expect(raw).toContain("SameSite=Lax");
+            expect(raw).not.toContain("Secure");
+        });
+
+        it("sets SameSite=Lax without Secure for local http requests when DEV is not bound", () => {
+            const ctx = makeContext({
+                env: { INSECURE_COOKIES: "false" },
+                requestUrl: "http://localhost:5002/graphql",
+            });
             createSupabaseServerClient(ctx);
             const { setAll } = getCookiesCallbacks();
             setAll([{ name: "tok", value: "val", options: {} }]);

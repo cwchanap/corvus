@@ -24,7 +24,7 @@ function createMockSupabase(authOverrides: Record<string, unknown> = {}) {
         auth: {
             signUp: vi.fn(),
             signInWithPassword: vi.fn(),
-            signOut: vi.fn(),
+            signOut: vi.fn().mockResolvedValue({ error: null }),
             getUser: vi.fn(),
             ...authOverrides,
         },
@@ -203,6 +203,47 @@ describe("SupabaseAuthService", () => {
                 expect.stringContaining("Failed to create default categories"),
                 "user-uuid-123",
                 expect.any(Error),
+            );
+            expect(mockSupabase.auth.signOut).toHaveBeenCalledWith({
+                scope: "local",
+            });
+
+            consoleSpy.mockRestore();
+        });
+
+        it("throws a cookie-clearance error when signup bootstrap fails and signOut cannot clear the new session", async () => {
+            const consoleSpy = vi
+                .spyOn(console, "error")
+                .mockImplementation(() => {});
+            const mockSupabase = createMockSupabase({
+                signUp: vi.fn().mockResolvedValue({
+                    data: {
+                        user: TEST_USER,
+                        session: { access_token: "mock-token" },
+                    },
+                    error: null,
+                }),
+                signOut: vi.fn().mockResolvedValue({
+                    error: { message: "Supabase unavailable" },
+                }),
+            });
+            mockCreateDefaultCategories.mockRejectedValue(
+                new Error("D1 unavailable"),
+            );
+
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(
+                service.register(
+                    "test@example.com",
+                    "password123",
+                    "Test User",
+                ),
+            ).rejects.toThrow(
+                "Account created but setup failed, and we could not clear the new session automatically",
             );
 
             consoleSpy.mockRestore();
@@ -441,6 +482,60 @@ describe("SupabaseAuthService", () => {
             const result = await service.getUser();
 
             expect(result).toBeNull();
+        });
+
+        it("returns null and clears cookies when getUser reports an invalid persisted session", async () => {
+            const mockSupabase = createMockSupabase({
+                getUser: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        __isAuthError: true,
+                        name: "AuthApiError",
+                        message: "Invalid JWT",
+                        status: 401,
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            const result = await service.getUser();
+
+            expect(result).toBeNull();
+            expect(mockSupabase.auth.signOut).toHaveBeenCalledWith({
+                scope: "local",
+            });
+        });
+
+        it("throws when an invalid persisted session cannot be cleared", async () => {
+            const mockSupabase = createMockSupabase({
+                getUser: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        __isAuthError: true,
+                        name: "AuthApiError",
+                        message: "Invalid JWT",
+                        status: 401,
+                    },
+                }),
+                signOut: vi.fn().mockResolvedValue({
+                    error: {
+                        __isAuthError: true,
+                        name: "AuthUnknownError",
+                        message: "Storage unavailable",
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(service.getUser()).rejects.toThrow(
+                "Failed to clear invalid session: Storage unavailable",
+            );
         });
 
         it("throws when getUser returns a non-session error (e.g. network failure)", async () => {
