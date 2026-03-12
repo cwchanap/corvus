@@ -39,10 +39,24 @@ jobs:
       - name: Install Playwright browsers
         run: cd packages/e2e && bunx playwright install --with-deps chromium
 
+      - name: Configure Supabase bindings for Wrangler
+        run: |
+          test -n "${SUPABASE_URL}" || { echo "Missing SUPABASE_URL secret"; exit 1; }
+          test -n "${SUPABASE_ANON_KEY}" || { echo "Missing SUPABASE_ANON_KEY secret"; exit 1; }
+
+          {
+            echo "SUPABASE_URL=${SUPABASE_URL}"
+            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+          } > apps/api/.dev.vars
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
       - name: Run Playwright tests
         run: bun run test
         env:
           CI: true
+          VITE_API_URL: http://localhost:5002/graphql
           VITE_API_BASE: http://localhost:5002
           VITE_WEB_BASE: http://localhost:5000
 
