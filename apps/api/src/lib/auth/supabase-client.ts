@@ -37,6 +37,18 @@ function isLocalInsecureRequest(c: Context): boolean {
     );
 }
 
+function isExtensionOriginRequest(c: Context): boolean {
+    const origin = c.req.header("origin");
+    if (!origin) {
+        return false;
+    }
+
+    return (
+        origin.startsWith("chrome-extension://") ||
+        origin.startsWith("moz-extension://")
+    );
+}
+
 export function createSupabaseServerClient(c: Context): SupabaseClient {
     const supabaseUrl = getRequiredEnvValue(c, "SUPABASE_URL");
     const supabaseAnonKey = getRequiredEnvValue(c, "SUPABASE_ANON_KEY");
@@ -44,6 +56,7 @@ export function createSupabaseServerClient(c: Context): SupabaseClient {
         readBooleanEnv(c.env.DEV) ||
         readBooleanEnv(c.env.INSECURE_COOKIES) ||
         isLocalInsecureRequest(c);
+    const requiresCrossSiteCookies = isExtensionOriginRequest(c);
 
     return createServerClient(supabaseUrl, supabaseAnonKey, {
         cookies: {
@@ -79,7 +92,9 @@ export function createSupabaseServerClient(c: Context): SupabaseClient {
                         "HttpOnly",
                         options?.path ? `Path=${options.path}` : "Path=/",
                         options?.domain ? `Domain=${options.domain}` : "",
-                        isDev ? "SameSite=Lax" : "SameSite=None",
+                        isDev && !requiresCrossSiteCookies
+                            ? "SameSite=Lax"
+                            : "SameSite=None",
                         isDev ? "" : "Secure",
                         options?.maxAge != null
                             ? `Max-Age=${options.maxAge}`

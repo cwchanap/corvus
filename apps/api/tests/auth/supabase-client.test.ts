@@ -20,6 +20,7 @@ type SetCookieHeaderCall = {
 function makeContext(overrides: {
     env?: Record<string, unknown>;
     cookieHeader?: string;
+    originHeader?: string;
     requestUrl?: string;
 }): Context {
     const setCookieHeaders: SetCookieHeaderCall[] = [];
@@ -33,6 +34,7 @@ function makeContext(overrides: {
             url: overrides.requestUrl ?? "https://app.example.com/graphql",
             header: (name: string) => {
                 if (name === "cookie") return overrides.cookieHeader ?? "";
+                if (name === "origin") return overrides.originHeader;
                 return undefined;
             },
         },
@@ -207,6 +209,23 @@ describe("createSupabaseServerClient", () => {
                 ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
             )._setCookieHeaders[0];
             expect(raw?.value).toContain("SameSite=Lax");
+            expect(raw?.value).not.toContain("Secure");
+        });
+
+        it("sets SameSite=None without Secure for local extension requests", () => {
+            const ctx = makeContext({
+                env: { INSECURE_COOKIES: "false" },
+                originHeader: "chrome-extension://abcdefghijklmnop",
+                requestUrl: "http://localhost:8787/graphql",
+            });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([{ name: "tok", value: "val", options: {} }]);
+
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("SameSite=None");
             expect(raw?.value).not.toContain("Secure");
         });
 
