@@ -1,6 +1,6 @@
 import { GraphQLError } from "graphql";
 import type { Resolvers } from "./types";
-import { SupabaseAuthService } from "../lib/auth/service";
+import { AuthServiceError, SupabaseAuthService } from "../lib/auth/service";
 import {
     WishlistService,
     WishlistAuthorizationError,
@@ -182,6 +182,11 @@ export const resolvers: Resolvers = {
                     error: null,
                 };
             } catch (error) {
+                const loginGraphQLError = toLoginGraphQLError(error);
+                if (loginGraphQLError) {
+                    throw loginGraphQLError;
+                }
+
                 console.error("Login error:", error);
                 throw new GraphQLError("Login failed", {
                     extensions: { code: "INTERNAL_SERVER_ERROR" },
@@ -562,3 +567,35 @@ export const resolvers: Resolvers = {
         },
     },
 };
+
+function toLoginGraphQLError(error: unknown): GraphQLError | null {
+    if (!(error instanceof AuthServiceError)) {
+        return null;
+    }
+
+    if (error.code === "RATE_LIMITED") {
+        return new GraphQLError(
+            "Too many login attempts. Please wait and try again.",
+            {
+                extensions: {
+                    code: "RATE_LIMITED",
+                    status: error.status ?? 429,
+                },
+            },
+        );
+    }
+
+    if (error.code === "TRANSIENT") {
+        return new GraphQLError(
+            "Login is temporarily unavailable. Please try again.",
+            {
+                extensions: {
+                    code: "SERVICE_UNAVAILABLE",
+                    status: error.status ?? 503,
+                },
+            },
+        );
+    }
+
+    return null;
+}
