@@ -11,13 +11,18 @@ import { createServerClient } from "@supabase/ssr";
 
 const mockCreateServerClient = createServerClient as ReturnType<typeof vi.fn>;
 
+type SetCookieHeaderCall = {
+    value: string;
+    options?: unknown;
+};
+
 // Helper to build a minimal Hono Context mock
 function makeContext(overrides: {
     env?: Record<string, unknown>;
     cookieHeader?: string;
     requestUrl?: string;
 }): Context {
-    const setCookieHeaders: string[] = [];
+    const setCookieHeaders: SetCookieHeaderCall[] = [];
     return {
         env: {
             SUPABASE_URL: "https://example.supabase.co",
@@ -31,8 +36,8 @@ function makeContext(overrides: {
                 return undefined;
             },
         },
-        header: (_name: string, value: string, _opts?: unknown) => {
-            setCookieHeaders.push(value);
+        header: (_name: string, value: string, options?: unknown) => {
+            setCookieHeaders.push({ value, options });
         },
         _setCookieHeaders: setCookieHeaders,
     } as unknown as Context;
@@ -154,10 +159,11 @@ describe("createSupabaseServerClient", () => {
             const { setAll } = getCookiesCallbacks();
             setAll([{ name: "sb-token", value: "mytoken", options: {} }]);
 
-            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                ._setCookieHeaders[0];
-            expect(raw).toContain("HttpOnly");
-            expect(raw).toContain("Path=/");
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("HttpOnly");
+            expect(raw?.value).toContain("Path=/");
         });
 
         it("sets SameSite=None; Secure in production (DEV=false)", () => {
@@ -168,10 +174,11 @@ describe("createSupabaseServerClient", () => {
             const { setAll } = getCookiesCallbacks();
             setAll([{ name: "tok", value: "val", options: {} }]);
 
-            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                ._setCookieHeaders[0];
-            expect(raw).toContain("SameSite=None");
-            expect(raw).toContain("Secure");
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("SameSite=None");
+            expect(raw?.value).toContain("Secure");
         });
 
         it("sets SameSite=Lax without Secure in dev (DEV=true)", () => {
@@ -180,10 +187,11 @@ describe("createSupabaseServerClient", () => {
             const { setAll } = getCookiesCallbacks();
             setAll([{ name: "tok", value: "val", options: {} }]);
 
-            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                ._setCookieHeaders[0];
-            expect(raw).toContain("SameSite=Lax");
-            expect(raw).not.toContain("Secure");
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("SameSite=Lax");
+            expect(raw?.value).not.toContain("Secure");
         });
 
         it("sets SameSite=Lax without Secure for local http requests when DEV is not bound", () => {
@@ -195,10 +203,11 @@ describe("createSupabaseServerClient", () => {
             const { setAll } = getCookiesCallbacks();
             setAll([{ name: "tok", value: "val", options: {} }]);
 
-            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                ._setCookieHeaders[0];
-            expect(raw).toContain("SameSite=Lax");
-            expect(raw).not.toContain("Secure");
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("SameSite=Lax");
+            expect(raw?.value).not.toContain("Secure");
         });
 
         it("URL-encodes cookie values", () => {
@@ -207,9 +216,10 @@ describe("createSupabaseServerClient", () => {
             const { setAll } = getCookiesCallbacks();
             setAll([{ name: "tok", value: "hello world", options: {} }]);
 
-            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                ._setCookieHeaders[0];
-            expect(raw).toContain("tok=hello%20world");
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("tok=hello%20world");
         });
 
         it("includes Max-Age when provided in options", () => {
@@ -218,9 +228,10 @@ describe("createSupabaseServerClient", () => {
             const { setAll } = getCookiesCallbacks();
             setAll([{ name: "tok", value: "val", options: { maxAge: 3600 } }]);
 
-            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                ._setCookieHeaders[0];
-            expect(raw).toContain("Max-Age=3600");
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("Max-Age=3600");
         });
 
         it("includes Domain when provided in options", () => {
@@ -235,9 +246,10 @@ describe("createSupabaseServerClient", () => {
                 },
             ]);
 
-            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                ._setCookieHeaders[0];
-            expect(raw).toContain("Domain=.example.com");
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("Domain=.example.com");
         });
 
         it("omits Domain when not provided", () => {
@@ -246,9 +258,10 @@ describe("createSupabaseServerClient", () => {
             const { setAll } = getCookiesCallbacks();
             setAll([{ name: "tok", value: "val", options: {} }]);
 
-            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                ._setCookieHeaders[0];
-            expect(raw).not.toContain("Domain");
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).not.toContain("Domain");
         });
 
         it("omits Max-Age when not provided", () => {
@@ -257,9 +270,36 @@ describe("createSupabaseServerClient", () => {
             const { setAll } = getCookiesCallbacks();
             setAll([{ name: "tok", value: "val", options: {} }]);
 
-            const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                ._setCookieHeaders[0];
-            expect(raw).not.toContain("Max-Age");
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).not.toContain("Max-Age");
+        });
+
+        it("preserves append semantics when Supabase sets multiple cookies", () => {
+            const ctx = makeContext({ env: { DEV: "true" } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([
+                { name: "sb-access-token", value: "token-a", options: {} },
+                { name: "sb-refresh-token", value: "token-b", options: {} },
+            ]);
+
+            const headers = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders;
+
+            expect(headers).toHaveLength(2);
+            expect(headers).toEqual([
+                expect.objectContaining({
+                    value: expect.stringContaining("sb-access-token=token-a"),
+                    options: { append: true },
+                }),
+                expect.objectContaining({
+                    value: expect.stringContaining("sb-refresh-token=token-b"),
+                    options: { append: true },
+                }),
+            ]);
         });
     });
 
@@ -273,9 +313,12 @@ describe("createSupabaseServerClient", () => {
                 createSupabaseServerClient(ctx);
                 const { setAll } = getCookiesCallbacks();
                 setAll([{ name: "t", value: "v", options: {} }]);
-                const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                    ._setCookieHeaders[0];
-                expect(raw).toContain("SameSite=Lax");
+                const raw = (
+                    ctx as unknown as {
+                        _setCookieHeaders: SetCookieHeaderCall[];
+                    }
+                )._setCookieHeaders[0];
+                expect(raw?.value).toContain("SameSite=Lax");
             });
         }
 
@@ -285,9 +328,12 @@ describe("createSupabaseServerClient", () => {
                 createSupabaseServerClient(ctx);
                 const { setAll } = getCookiesCallbacks();
                 setAll([{ name: "t", value: "v", options: {} }]);
-                const raw = (ctx as unknown as { _setCookieHeaders: string[] })
-                    ._setCookieHeaders[0];
-                expect(raw).toContain("SameSite=None");
+                const raw = (
+                    ctx as unknown as {
+                        _setCookieHeaders: SetCookieHeaderCall[];
+                    }
+                )._setCookieHeaders[0];
+                expect(raw?.value).toContain("SameSite=None");
             });
         }
     });
