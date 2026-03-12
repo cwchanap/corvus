@@ -15,6 +15,9 @@ jobs:
     name: Playwright Tests (Web)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY }}
 
     steps:
       - name: Checkout code
@@ -39,20 +42,39 @@ jobs:
       - name: Install Playwright browsers
         run: cd packages/e2e && bunx playwright install --with-deps chromium
 
-      - name: Configure Supabase bindings for Wrangler
+      - name: Detect Supabase credentials
+        id: supabase
         run: |
-          test -n "${SUPABASE_URL}" || { echo "Missing SUPABASE_URL secret"; exit 1; }
-          test -n "${SUPABASE_ANON_KEY}" || { echo "Missing SUPABASE_ANON_KEY secret"; exit 1; }
+          if [ -n "${SUPABASE_URL}" ] && [ -n "${SUPABASE_ANON_KEY}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Supabase credentials detected for E2E."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Supabase credentials are missing."
+          fi
 
+      - name: Configure Supabase bindings for Wrangler
+        if: steps.supabase.outputs.available == 'true'
+        run: |
           {
             echo "SUPABASE_URL=${SUPABASE_URL}"
             echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
           } > apps/api/.dev.vars
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Fail if missing credentials on main pushes
+        if: github.event_name == 'push' && steps.supabase.outputs.available != 'true'
+        run: |
+          echo "Missing Supabase credentials (SUPABASE_URL / SUPABASE_ANON_KEY)."
+          echo "Set them as repository secrets or variables for main-branch E2E runs."
+          exit 1
+
+      - name: Skip E2E on pull_request without credentials
+        if: github.event_name == 'pull_request' && steps.supabase.outputs.available != 'true'
+        run: |
+          echo "::warning::Skipping E2E tests for this PR because Supabase credentials are unavailable."
 
       - name: Run Playwright tests
+        if: steps.supabase.outputs.available == 'true'
         run: bun run test
         env:
           CI: true
