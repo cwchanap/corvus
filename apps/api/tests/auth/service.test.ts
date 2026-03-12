@@ -402,10 +402,43 @@ describe("SupabaseAuthService", () => {
                 status: 429,
             });
         });
+
+        it("throws a typed error when email confirmation is still pending", async () => {
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        __isAuthError: true,
+                        name: "AuthApiError",
+                        message: "Email not confirmed",
+                        status: 400,
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            let error: unknown;
+
+            try {
+                await service.login("test@example.com", "password123");
+            } catch (caughtError) {
+                error = caughtError;
+            }
+
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message: "Login failed: Email not confirmed",
+                code: "UNCONFIRMED_ACCOUNT",
+                status: 400,
+            });
+        });
     });
 
     describe("logout", () => {
-        it("signs out via supabase", async () => {
+        it("signs out only the current supabase session", async () => {
             const mockSupabase = createMockSupabase({
                 signOut: vi.fn().mockResolvedValue({ error: null }),
             });
@@ -416,7 +449,9 @@ describe("SupabaseAuthService", () => {
 
             await service.logout();
 
-            expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+            expect(mockSupabase.auth.signOut).toHaveBeenCalledWith({
+                scope: "local",
+            });
         });
 
         it("throws when supabase sign out fails", async () => {
