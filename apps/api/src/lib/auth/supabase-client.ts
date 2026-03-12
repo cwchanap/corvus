@@ -66,6 +66,7 @@ export function createSupabaseServerClient(c: Context): SupabaseClient {
                         `${name}=${encodedValue}`,
                         "HttpOnly",
                         options?.path ? `Path=${options.path}` : "Path=/",
+                        options?.domain ? `Domain=${options.domain}` : "",
                         isDev ? "SameSite=Lax" : "SameSite=None",
                         isDev ? "" : "Secure",
                         options?.maxAge != null
