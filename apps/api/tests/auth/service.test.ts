@@ -94,13 +94,24 @@ describe("SupabaseAuthService", () => {
                 createMockDb(),
             );
 
-            await expect(
-                service.register(
+            let error: unknown;
+
+            try {
+                await service.register(
                     "existing@example.com",
                     "password123",
                     "Existing User",
-                ),
-            ).rejects.toThrow("User already exists");
+                );
+            } catch (caughtError) {
+                error = caughtError;
+            }
+
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message: "User already exists",
+                code: "ALREADY_EXISTS",
+                status: 409,
+            });
 
             expect(mockCreateDefaultCategories).not.toHaveBeenCalled();
         });
@@ -138,13 +149,24 @@ describe("SupabaseAuthService", () => {
                 createMockDb(),
             );
 
-            await expect(
-                service.register(
+            let error: unknown;
+
+            try {
+                await service.register(
                     "test@example.com",
                     "password123",
                     "Test User",
-                ),
-            ).rejects.toThrow("Registration failed");
+                );
+            } catch (caughtError) {
+                error = caughtError;
+            }
+
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message: "Registration failed: check your email to confirm",
+                code: "UNCONFIRMED_ACCOUNT",
+                status: 400,
+            });
 
             expect(mockCreateDefaultCategories).not.toHaveBeenCalled();
         });
@@ -161,13 +183,24 @@ describe("SupabaseAuthService", () => {
                 createMockDb(),
             );
 
-            await expect(
-                service.register(
+            let error: unknown;
+
+            try {
+                await service.register(
                     "existing@example.com",
                     "password123",
                     "Existing User",
-                ),
-            ).rejects.toThrow("User already exists");
+                );
+            } catch (caughtError) {
+                error = caughtError;
+            }
+
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message: "User already exists",
+                code: "ALREADY_EXISTS",
+                status: 409,
+            });
 
             expect(mockCreateDefaultCategories).not.toHaveBeenCalled();
         });
@@ -194,13 +227,24 @@ describe("SupabaseAuthService", () => {
                 createMockDb(),
             );
 
-            await expect(
-                service.register(
+            let error: unknown;
+
+            try {
+                await service.register(
                     "test@example.com",
                     "password123",
                     "Test User",
-                ),
-            ).rejects.toThrow("Account created but setup failed");
+                );
+            } catch (caughtError) {
+                error = caughtError;
+            }
+
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message:
+                    "Account created but setup failed. Please try logging in to complete your account setup.",
+                code: "REGISTRATION_SETUP_FAILED",
+            });
 
             expect(consoleSpy).toHaveBeenCalledWith(
                 expect.stringContaining("Failed to create default categories"),
@@ -239,20 +283,29 @@ describe("SupabaseAuthService", () => {
                 createMockDb(),
             );
 
-            await expect(
-                service.register(
+            let error: unknown;
+
+            try {
+                await service.register(
                     "test@example.com",
                     "password123",
                     "Test User",
-                ),
-            ).rejects.toThrow(
-                "Account created but setup failed, and we could not clear the new session automatically",
-            );
+                );
+            } catch (caughtError) {
+                error = caughtError;
+            }
+
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message:
+                    "Account created but setup failed, and we could not clear the new session automatically. Please clear your cookies before trying again.",
+                code: "REGISTRATION_SETUP_FAILED",
+            });
 
             consoleSpy.mockRestore();
         });
 
-        it("throws when signUp succeeds but session is null (email confirmation required)", async () => {
+        it("throws when signUp succeeds but session is null without bootstrapping D1", async () => {
             const mockSupabase = createMockSupabase({
                 signUp: vi.fn().mockResolvedValue({
                     data: { user: TEST_USER, session: null },
@@ -264,18 +317,26 @@ describe("SupabaseAuthService", () => {
                 createMockDb(),
             );
 
-            await expect(
-                service.register(
+            let error: unknown;
+
+            try {
+                await service.register(
                     "test@example.com",
                     "password123",
                     "Test User",
-                ),
-            ).rejects.toThrow("Please check your email to confirm");
+                );
+            } catch (caughtError) {
+                error = caughtError;
+            }
 
-            expect(mockCreateDefaultCategories).toHaveBeenCalledWith(
-                expect.anything(),
-                "user-uuid-123",
-            );
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message:
+                    "Please check your email to confirm your account before logging in.",
+                code: "UNCONFIRMED_ACCOUNT",
+                status: 400,
+            });
+            expect(mockCreateDefaultCategories).not.toHaveBeenCalled();
         });
     });
 
@@ -454,10 +515,32 @@ describe("SupabaseAuthService", () => {
             });
         });
 
+        it.each([401, 403, 404])(
+            "treats recoverable sign-out errors (%i) as successful logout",
+            async (status) => {
+                const mockSupabase = createMockSupabase({
+                    signOut: vi.fn().mockResolvedValue({
+                        error: {
+                            __isAuthError: true,
+                            name: "AuthApiError",
+                            message: "Session already cleared",
+                            status,
+                        },
+                    }),
+                });
+                const service = new SupabaseAuthService(
+                    mockSupabase,
+                    createMockDb(),
+                );
+
+                await expect(service.logout()).resolves.toBeUndefined();
+            },
+        );
+
         it("throws when supabase sign out fails", async () => {
             const mockSupabase = createMockSupabase({
                 signOut: vi.fn().mockResolvedValue({
-                    error: { message: "Service unavailable" },
+                    error: { message: "Service unavailable", status: 503 },
                 }),
             });
             const service = new SupabaseAuthService(

@@ -129,29 +129,9 @@ export const resolvers: Resolvers = {
                     error: null,
                 };
             } catch (error) {
-                if (error instanceof Error) {
-                    if (error.message === "User already exists") {
-                        return {
-                            success: false,
-                            user: null,
-                            error: "User already exists",
-                        };
-                    }
-                    if (
-                        error.message.startsWith(
-                            "Account created but setup failed",
-                        ) ||
-                        error.message.startsWith("Please check your email") ||
-                        error.message.startsWith(
-                            "Registration failed: check your email",
-                        )
-                    ) {
-                        return {
-                            success: false,
-                            user: null,
-                            error: error.message,
-                        };
-                    }
+                const registerErrorPayload = toRegisterErrorPayload(error);
+                if (registerErrorPayload) {
+                    return registerErrorPayload;
                 }
                 console.error("Registration error:", error);
                 throw new GraphQLError("Registration failed", {
@@ -570,6 +550,37 @@ export const resolvers: Resolvers = {
         },
     },
 };
+
+function toRegisterErrorPayload(error: unknown): {
+    success: false;
+    user: null;
+    error: string;
+} | null {
+    if (!(error instanceof AuthServiceError)) {
+        return null;
+    }
+
+    if (error.code === "ALREADY_EXISTS") {
+        return {
+            success: false,
+            user: null,
+            error: "User already exists",
+        };
+    }
+
+    if (
+        error.code === "UNCONFIRMED_ACCOUNT" ||
+        error.code === "REGISTRATION_SETUP_FAILED"
+    ) {
+        return {
+            success: false,
+            user: null,
+            error: error.message,
+        };
+    }
+
+    return null;
+}
 
 function toLoginGraphQLError(error: unknown): GraphQLError | null {
     if (!(error instanceof AuthServiceError)) {
