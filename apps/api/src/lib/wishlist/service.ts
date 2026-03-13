@@ -69,11 +69,37 @@ export class WishlistService {
             "id" | "created_at" | "updated_at"
         >,
     ): Promise<WishlistCategory> {
-        return await this.db
+        const insertedCategory = await this.db
             .insert(wishlistCategories)
             .values({ id: crypto.randomUUID(), ...categoryData })
+            .onConflictDoNothing({
+                target: [wishlistCategories.user_id, wishlistCategories.name],
+            })
             .returning()
             .get();
+
+        if (insertedCategory) {
+            return insertedCategory;
+        }
+
+        const existingCategory = await this.db
+            .select()
+            .from(wishlistCategories)
+            .where(
+                and(
+                    eq(wishlistCategories.user_id, categoryData.user_id),
+                    eq(wishlistCategories.name, categoryData.name),
+                ),
+            )
+            .get();
+
+        if (!existingCategory) {
+            throw new Error(
+                "Category insert conflicted but the existing category could not be loaded.",
+            );
+        }
+
+        return existingCategory;
     }
 
     async updateCategory(

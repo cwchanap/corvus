@@ -165,4 +165,19 @@ describe("register resolver", () => {
             error: "Registration failed: check your email to confirm",
         });
     });
+
+    it("returns a handled error when the user already exists", async () => {
+        const context = createContext({
+            signUp: vi.fn().mockResolvedValue({
+                data: { user: null, session: null },
+                error: { message: "User already registered" },
+            }),
+        });
+
+        await expect(invokeRegister(context)).resolves.toEqual({
+            success: false,
+            user: null,
+            error: "User already exists",
+        });
+    });
 });
