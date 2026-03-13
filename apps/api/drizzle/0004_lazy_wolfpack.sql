@@ -39,5 +39,5 @@ WHERE `id` IN (
     WHERE `duplicate_rank` > 1
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `wishlist_categories_user_id_name_unique`
+CREATE UNIQUE INDEX IF NOT EXISTS `wishlist_categories_user_id_name_unique`
 ON `wishlist_categories` (`user_id`, `name`);

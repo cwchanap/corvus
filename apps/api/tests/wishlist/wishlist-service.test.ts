@@ -5,6 +5,7 @@ import type {
     WishlistItem,
     WishlistItemLink,
 } from "../../src/lib/db/types";
+import { wishlistCategories } from "../../src/lib/db/schema";
 import { WishlistService } from "../../src/lib/wishlist/service";
 import type { WishlistSortKey, SortDirection } from "../../src/graphql/types";
 
@@ -305,7 +306,12 @@ describe("WishlistService", () => {
 
             const getMock = vi.fn().mockResolvedValue(newCategory);
             const returningMock = vi.fn(() => ({ get: getMock }));
-            const valuesMock = vi.fn(() => ({ returning: returningMock }));
+            const onConflictDoNothingMock = vi.fn(() => ({
+                returning: returningMock,
+            }));
+            const valuesMock = vi.fn(() => ({
+                onConflictDoNothing: onConflictDoNothingMock,
+            }));
             const insertMock = vi.fn(() => ({ values: valuesMock })) as Mock;
 
             const fakeDb: Partial<DB> = {
@@ -322,8 +328,58 @@ describe("WishlistService", () => {
             expect(result).toEqual(newCategory);
             expect(insertMock).toHaveBeenCalledTimes(1);
             expect(valuesMock).toHaveBeenCalledTimes(1);
+            expect(onConflictDoNothingMock).toHaveBeenCalledWith({
+                target: [wishlistCategories.user_id, wishlistCategories.name],
+            });
             expect(returningMock).toHaveBeenCalledTimes(1);
             expect(getMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("createCategory returns the existing category when the insert conflicts", async () => {
+            const existingCategory: WishlistCategory = {
+                id: "existing-cat",
+                user_id: "user-uuid-42",
+                name: "New Category",
+                color: "#0000FF",
+                created_at: "2024-01-01T00:00:00.000Z",
+                updated_at: "2024-01-01T00:00:00.000Z",
+            };
+
+            const insertGetMock = vi.fn().mockResolvedValue(undefined);
+            const returningMock = vi.fn(() => ({ get: insertGetMock }));
+            const onConflictDoNothingMock = vi.fn(() => ({
+                returning: returningMock,
+            }));
+            const valuesMock = vi.fn(() => ({
+                onConflictDoNothing: onConflictDoNothingMock,
+            }));
+            const insertMock = vi.fn(() => ({ values: valuesMock })) as Mock;
+
+            const selectGetMock = vi.fn().mockResolvedValue(existingCategory);
+            const whereMock = vi.fn(() => ({ get: selectGetMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                insert: insertMock,
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.createCategory({
+                user_id: "user-uuid-42",
+                name: "New Category",
+                color: "#0000FF",
+            });
+
+            expect(result).toEqual(existingCategory);
+            expect(onConflictDoNothingMock).toHaveBeenCalledWith({
+                target: [wishlistCategories.user_id, wishlistCategories.name],
+            });
+            expect(selectMock).toHaveBeenCalledTimes(1);
+            expect(fromMock).toHaveBeenCalledTimes(1);
+            expect(whereMock).toHaveBeenCalledTimes(1);
+            expect(selectGetMock).toHaveBeenCalledTimes(1);
         });
 
         it("updateCategory updates an existing category", async () => {

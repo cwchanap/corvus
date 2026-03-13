@@ -12,9 +12,11 @@ import type { DB } from "../db";
 import { createDefaultCategories } from "../db/migrations";
 
 type AuthServiceErrorCode =
+    | "ALREADY_EXISTS"
     | "RATE_LIMITED"
     | "TRANSIENT"
     | "UNCONFIRMED_ACCOUNT"
+    | "REGISTRATION_SETUP_FAILED"
     | "UNKNOWN";
 
 export class AuthServiceError extends Error {
@@ -54,7 +56,10 @@ export class SupabaseAuthService {
 
         if (error) {
             if (error.message.toLowerCase().includes("already registered")) {
-                throw new Error("User already exists");
+                throw new AuthServiceError("User already exists", {
+                    code: "ALREADY_EXISTS",
+                    status: 409,
+                });
             }
             throw new Error(error.message);
         }
@@ -62,11 +67,30 @@ export class SupabaseAuthService {
         // When email confirmation is enabled, signUp returns null user for existing emails
         // (Supabase obfuscates to prevent email enumeration). Detect via empty identities.
         if (!data.user) {
-            throw new Error("Registration failed: check your email to confirm");
+            throw new AuthServiceError(
+                "Registration failed: check your email to confirm",
+                {
+                    code: "UNCONFIRMED_ACCOUNT",
+                    status: 400,
+                },
+            );
         }
 
         if (data.user.identities?.length === 0) {
-            throw new Error("User already exists");
+            throw new AuthServiceError("User already exists", {
+                code: "ALREADY_EXISTS",
+                status: 409,
+            });
+        }
+
+        if (!data.session) {
+            throw new AuthServiceError(
+                "Please check your email to confirm your account before logging in.",
+                {
+                    code: "UNCONFIRMED_ACCOUNT",
+                    status: 400,
+                },
+            );
         }
 
         try {
@@ -82,29 +106,27 @@ export class SupabaseAuthService {
                 dbError,
             );
 
-            if (data.session) {
-                try {
-                    await this.clearServerSession();
-                } catch (sessionError) {
-                    console.error(
-                        "Failed to clear session after registration bootstrap failed. Supabase user ID:",
-                        data.user.id,
-                        sessionError,
-                    );
-                    throw new Error(
-                        "Account created but setup failed, and we could not clear the new session automatically. Please clear your cookies before trying again.",
-                    );
-                }
+            try {
+                await this.clearServerSession();
+            } catch (sessionError) {
+                console.error(
+                    "Failed to clear session after registration bootstrap failed. Supabase user ID:",
+                    data.user.id,
+                    sessionError,
+                );
+                throw new AuthServiceError(
+                    "Account created but setup failed, and we could not clear the new session automatically. Please clear your cookies before trying again.",
+                    {
+                        code: "REGISTRATION_SETUP_FAILED",
+                    },
+                );
             }
 
-            throw new Error(
+            throw new AuthServiceError(
                 "Account created but setup failed. Please try logging in to complete your account setup.",
-            );
-        }
-
-        if (!data.session) {
-            throw new Error(
-                "Please check your email to confirm your account before logging in.",
+                {
+                    code: "REGISTRATION_SETUP_FAILED",
+                },
             );
         }
 
@@ -152,7 +174,7 @@ export class SupabaseAuthService {
         const { error } = await this.supabase.auth.signOut({
             scope: "local",
         });
-        if (error) {
+        if (error && !isRecoverableSessionCleanupError(error)) {
             throw new Error(`Logout failed: ${error.message}`);
         }
     }
@@ -254,11 +276,12 @@ function isRecoverableInvalidSessionError(error: AuthError): boolean {
 }
 
 function isRecoverableSessionCleanupError(error: AuthError): boolean {
+    const status = typeof error.status === "number" ? error.status : undefined;
+
     return (
         isAuthSessionMissingError(error) ||
-        (isAuthApiError(error) &&
-            (error.status === 401 ||
-                error.status === 403 ||
-                error.status === 404))
+        status === 401 ||
+        status === 403 ||
+        status === 404
     );
 }
