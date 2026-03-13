@@ -74,7 +74,11 @@ export function createSupabaseServerClient(c: Context): SupabaseClient {
                         let value = rawValue;
                         try {
                             value = decodeURIComponent(rawValue);
-                        } catch {
+                        } catch (e) {
+                            console.warn(
+                                `[supabase-client] Failed to decode cookie "${s.slice(0, idx)}"; using raw value:`,
+                                e,
+                            );
                             value = rawValue;
                         }
 
@@ -95,7 +99,7 @@ export function createSupabaseServerClient(c: Context): SupabaseClient {
                         isDev && !requiresCrossSiteCookies
                             ? "SameSite=Lax"
                             : "SameSite=None",
-                        isDev ? "" : "Secure",
+                        isDev && !requiresCrossSiteCookies ? "" : "Secure",
                         options?.maxAge != null
                             ? `Max-Age=${options.maxAge}`
                             : "",
