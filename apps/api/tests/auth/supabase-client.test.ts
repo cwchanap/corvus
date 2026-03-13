@@ -212,7 +212,7 @@ describe("createSupabaseServerClient", () => {
             expect(raw?.value).not.toContain("Secure");
         });
 
-        it("sets SameSite=None without Secure for local extension requests", () => {
+        it("sets SameSite=None with Secure for local extension requests", () => {
             const ctx = makeContext({
                 env: { INSECURE_COOKIES: "false" },
                 originHeader: "chrome-extension://abcdefghijklmnop",
@@ -226,7 +226,7 @@ describe("createSupabaseServerClient", () => {
                 ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
             )._setCookieHeaders[0];
             expect(raw?.value).toContain("SameSite=None");
-            expect(raw?.value).not.toContain("Secure");
+            expect(raw?.value).toContain("Secure");
         });
 
         it("URL-encodes cookie values", () => {
