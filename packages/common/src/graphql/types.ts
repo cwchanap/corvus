@@ -81,6 +81,7 @@ export interface WishlistFilterInput {
     categoryId?: string;
     search?: string;
     sortBy?: string;
+    sortDir?: "ASC" | "DESC";
 }
 
 export interface PaginationInput {

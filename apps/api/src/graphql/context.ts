@@ -27,7 +27,13 @@ export async function createGraphQLContext(
     const db = createDatabase(getD1(c));
     const supabase = createSupabaseServerClient(c);
     const authService = new SupabaseAuthService(supabase, db);
-    const user = await authService.getUser();
+    const user = await authService.getUser().catch((err) => {
+        console.error(
+            "[createGraphQLContext] Failed to resolve user from session:",
+            err,
+        );
+        throw err;
+    });
 
     return {
         db,

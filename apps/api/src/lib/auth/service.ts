@@ -61,7 +61,16 @@ export class SupabaseAuthService {
                     status: 409,
                 });
             }
-            throw new Error(error.message);
+            throw new AuthServiceError(
+                `Registration failed: ${error.message}`,
+                {
+                    code: "UNKNOWN",
+                    status:
+                        typeof error.status === "number"
+                            ? error.status
+                            : undefined,
+                },
+            );
         }
 
         // When email confirmation is enabled, signUp returns null user for existing emails
@@ -175,7 +184,11 @@ export class SupabaseAuthService {
             scope: "local",
         });
         if (error && !isRecoverableSessionCleanupError(error)) {
-            throw new Error(`Logout failed: ${error.message}`);
+            throw new AuthServiceError(`Logout failed: ${error.message}`, {
+                code: "UNKNOWN",
+                status:
+                    typeof error.status === "number" ? error.status : undefined,
+            });
         }
     }
 
@@ -192,7 +205,14 @@ export class SupabaseAuthService {
             }
 
             if (isRecoverableInvalidSessionError(error)) {
-                await this.clearServerSession();
+                try {
+                    await this.clearServerSession();
+                } catch (clearError) {
+                    console.error(
+                        "Failed to clear invalid session during getUser recovery:",
+                        clearError,
+                    );
+                }
                 return null;
             }
 

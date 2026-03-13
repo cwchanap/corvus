@@ -308,6 +308,12 @@ export class WishlistService {
         const item = itemResult[0];
         const link = linkResult[0];
 
+        if (!item || !link) {
+            throw new Error(
+                `createItemWithPrimaryLink: batch insert returned no rows. itemResult.length=${itemResult.length}, linkResult.length=${linkResult.length}`,
+            );
+        }
+
         return { item, link };
     }
 

@@ -667,7 +667,10 @@ describe("SupabaseAuthService", () => {
             });
         });
 
-        it("throws when an invalid persisted session cannot be cleared", async () => {
+        it("returns null and logs when an invalid persisted session cannot be cleared", async () => {
+            const consoleSpy = vi
+                .spyOn(console, "error")
+                .mockImplementation(() => {});
             const mockSupabase = createMockSupabase({
                 getUser: vi.fn().mockResolvedValue({
                     data: { user: null },
@@ -691,9 +694,14 @@ describe("SupabaseAuthService", () => {
                 createMockDb(),
             );
 
-            await expect(service.getUser()).rejects.toThrow(
-                "Failed to clear invalid session: Storage unavailable",
+            const result = await service.getUser();
+
+            expect(result).toBeNull();
+            expect(consoleSpy).toHaveBeenCalledWith(
+                "Failed to clear invalid session during getUser recovery:",
+                expect.any(Error),
             );
+            consoleSpy.mockRestore();
         });
 
         it("throws when getUser returns a non-session error (e.g. network failure)", async () => {
