@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { DB } from "../../src/lib/db";
 import { createDefaultCategories } from "../../src/lib/db/migrations";
+import { wishlistCategories } from "../../src/lib/db/schema";
 
 describe("createDefaultCategories", () => {
     function makeDb() {
@@ -51,7 +52,7 @@ describe("createDefaultCategories", () => {
             }
         });
         expect(onConflictDoNothingMock).toHaveBeenCalledWith({
-            target: expect.any(Array),
+            target: [wishlistCategories.user_id, wishlistCategories.name],
         });
     });
 });
