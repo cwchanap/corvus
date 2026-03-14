@@ -2,8 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import type { Context } from "hono";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
-
 function getRequiredEnvValue(c: Context, key: string): string {
     const value = c.env[key as keyof typeof c.env];
     if (typeof value !== "string" || value.trim().length === 0) {
@@ -29,12 +27,9 @@ function readBooleanEnv(value: unknown): boolean {
     );
 }
 
-function isLocalInsecureRequest(c: Context): boolean {
+function isInsecureRequest(c: Context): boolean {
     const requestUrl = new URL(c.req.url);
-    return (
-        requestUrl.protocol === "http:" &&
-        LOCALHOST_HOSTNAMES.has(requestUrl.hostname)
-    );
+    return requestUrl.protocol === "http:";
 }
 
 function isExtensionOriginRequest(c: Context): boolean {
@@ -55,7 +50,7 @@ export function createSupabaseServerClient(c: Context): SupabaseClient {
     const isDev =
         readBooleanEnv(c.env.DEV) ||
         readBooleanEnv(c.env.INSECURE_COOKIES) ||
-        isLocalInsecureRequest(c);
+        isInsecureRequest(c);
     const requiresCrossSiteCookies = isExtensionOriginRequest(c);
 
     return createServerClient(supabaseUrl, supabaseAnonKey, {
