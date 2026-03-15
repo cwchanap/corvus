@@ -4,6 +4,18 @@
 PRAGMA foreign_keys=off;
 --> statement-breakpoint
 
+-- Safety guard: abort if any existing data would be destroyed by this migration.
+-- This migration is intended only for empty/dev environments with no real users.
+SELECT CASE
+    WHEN EXISTS (SELECT 1 FROM `wishlist_item_links`)
+      OR EXISTS (SELECT 1 FROM `wishlist_items`)
+      OR EXISTS (SELECT 1 FROM `wishlist_categories`)
+      OR EXISTS (SELECT 1 FROM `users`)
+      OR EXISTS (SELECT 1 FROM `sessions`)
+    THEN RAISE(ABORT, 'Migration 0003_supabase_auth aborted: existing data detected. This migration is destructive and must only run on empty databases.')
+END;
+--> statement-breakpoint
+
 -- Clear application data (old integer user_ids are orphaned after this migration)
 DELETE FROM `wishlist_item_links`;
 --> statement-breakpoint
