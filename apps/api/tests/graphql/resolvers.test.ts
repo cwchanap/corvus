@@ -1,9 +1,54 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GraphQLError } from "graphql";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { GraphQLContext } from "../../src/graphql/context";
 import { resolvers } from "../../src/graphql/resolvers";
 import type { DB } from "../../src/lib/db";
+
+// ---------------------------------------------------------------------------
+// WishlistService mock
+// ---------------------------------------------------------------------------
+const mockWishlistService = {
+    getUserWishlistData: vi.fn(),
+    getUserCategories: vi.fn(),
+    getUserItems: vi.fn(),
+    getItemLinks: vi.fn(),
+    createCategory: vi.fn(),
+    updateCategory: vi.fn(),
+    deleteCategory: vi.fn(),
+    createItem: vi.fn(),
+    createItemWithPrimaryLink: vi.fn(),
+    updateItem: vi.fn(),
+    deleteItem: vi.fn(),
+    createItemLink: vi.fn(),
+    updateItemLink: vi.fn(),
+    deleteItemLink: vi.fn(),
+    setPrimaryLink: vi.fn(),
+    batchDeleteItems: vi.fn(),
+    batchMoveItems: vi.fn(),
+};
+
+vi.mock("../../src/lib/wishlist/service", async (importOriginal) => {
+    const original =
+        await importOriginal<typeof import("../../src/lib/wishlist/service")>();
+    return {
+        ...original,
+        WishlistService: vi.fn(() => mockWishlistService),
+    };
+});
+
+import { WishlistAuthorizationError } from "../../src/lib/wishlist/service";
+
+// ---------------------------------------------------------------------------
+// Context helpers
+// ---------------------------------------------------------------------------
+const mockUser = {
+    id: "user-1",
+    email: "test@example.com",
+    name: "Test User",
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+};
 
 function createContext(
     authOverrides: Partial<{
@@ -11,10 +56,11 @@ function createContext(
         signUp: ReturnType<typeof vi.fn>;
         signOut: ReturnType<typeof vi.fn>;
     }> = {},
+    user: typeof mockUser | null = null,
 ): GraphQLContext {
     return {
         db: {} as DB,
-        user: null,
+        user,
         supabase: {
             auth: {
                 signInWithPassword: vi.fn(),
@@ -28,12 +74,41 @@ function createContext(
     };
 }
 
+function createAuthenticatedContext(
+    authOverrides: Parameters<typeof createContext>[0] = {},
+) {
+    return createContext(authOverrides, mockUser);
+}
+
+// ---------------------------------------------------------------------------
+// Resolver invokers
+// ---------------------------------------------------------------------------
+function invokeResolver<
+    TParent,
+    TArgs,
+    TResult,
+    TType extends "Query" | "Mutation" | "WishlistItem",
+>(
+    type: TType,
+    name: string,
+    args: TArgs,
+    context: GraphQLContext,
+    parent?: TParent,
+) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const resolver = (resolvers as any)[type]?.[name];
+    if (!resolver) throw new Error(`Resolver ${type}.${name} not found`);
+    return resolver(
+        parent ?? {},
+        args,
+        context,
+        {} as never,
+    ) as Promise<TResult>;
+}
+
 async function invokeLogin(context: GraphQLContext) {
     const loginResolver = resolvers.Mutation?.login;
-    if (!loginResolver) {
-        throw new Error("Login resolver is unavailable");
-    }
-
+    if (!loginResolver) throw new Error("Login resolver is unavailable");
     return loginResolver(
         {},
         { input: { email: "test@example.com", password: "password123" } },
@@ -44,10 +119,7 @@ async function invokeLogin(context: GraphQLContext) {
 
 async function invokeRegister(context: GraphQLContext) {
     const registerResolver = resolvers.Mutation?.register;
-    if (!registerResolver) {
-        throw new Error("Register resolver is unavailable");
-    }
-
+    if (!registerResolver) throw new Error("Register resolver is unavailable");
     return registerResolver(
         {},
         {
@@ -62,6 +134,277 @@ async function invokeRegister(context: GraphQLContext) {
     );
 }
 
+// ---------------------------------------------------------------------------
+// Shared DB fixtures
+// ---------------------------------------------------------------------------
+const dbCategory = {
+    id: "cat-1",
+    user_id: "user-1",
+    name: "General",
+    color: "#ff0000",
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+};
+
+const dbItem = {
+    id: "item-1",
+    user_id: "user-1",
+    category_id: "cat-1",
+    title: "My Item",
+    description: null,
+    favicon: null,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+};
+
+const dbLink = {
+    id: "link-1",
+    item_id: "item-1",
+    url: "https://example.com",
+    description: null,
+    is_primary: true,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+};
+
+// ---------------------------------------------------------------------------
+// Query.me
+// ---------------------------------------------------------------------------
+describe("Query.me", () => {
+    it("returns mapped user when context has a user", async () => {
+        const ctx = createAuthenticatedContext();
+        const result = await invokeResolver("Query", "me", {}, ctx);
+        expect(result).toMatchObject({
+            id: "user-1",
+            email: "test@example.com",
+            name: "Test User",
+        });
+    });
+
+    it("returns null when no user in context", async () => {
+        const ctx = createContext();
+        const result = await invokeResolver("Query", "me", {}, ctx);
+        expect(result).toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Query.wishlist
+// ---------------------------------------------------------------------------
+describe("Query.wishlist", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Query",
+                "wishlist",
+                { pagination: null, filter: null },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns wishlist data for authenticated user", async () => {
+        mockWishlistService.getUserWishlistData.mockResolvedValue({
+            categories: [dbCategory],
+            items: [{ ...dbItem, links: [dbLink] }],
+            pagination: {
+                total_items: 1,
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                has_next: false,
+                has_previous: false,
+            },
+        });
+
+        const result = await invokeResolver(
+            "Query",
+            "wishlist",
+            { pagination: { page: 1, pageSize: 10 }, filter: null },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({
+            categories: [expect.objectContaining({ id: "cat-1" })],
+            items: [expect.objectContaining({ id: "item-1" })],
+            pagination: expect.objectContaining({ totalItems: 1, page: 1 }),
+        });
+    });
+
+    it("clamps pageSize to max 50", async () => {
+        mockWishlistService.getUserWishlistData.mockResolvedValue({
+            categories: [],
+            items: [],
+            pagination: {
+                total_items: 0,
+                page: 1,
+                page_size: 50,
+                total_pages: 0,
+                has_next: false,
+                has_previous: false,
+            },
+        });
+
+        await invokeResolver(
+            "Query",
+            "wishlist",
+            { pagination: { page: 1, pageSize: 999 }, filter: null },
+            createAuthenticatedContext(),
+        );
+
+        expect(mockWishlistService.getUserWishlistData).toHaveBeenCalledWith(
+            "user-1",
+            expect.objectContaining({ limit: 50 }),
+        );
+    });
+
+    it("uses defaults when pagination/filter not provided", async () => {
+        mockWishlistService.getUserWishlistData.mockResolvedValue({
+            categories: [],
+            items: [],
+            pagination: {
+                total_items: 0,
+                page: 1,
+                page_size: 10,
+                total_pages: 0,
+                has_next: false,
+                has_previous: false,
+            },
+        });
+
+        await invokeResolver(
+            "Query",
+            "wishlist",
+            {},
+            createAuthenticatedContext(),
+        );
+
+        expect(mockWishlistService.getUserWishlistData).toHaveBeenCalledWith(
+            "user-1",
+            expect.objectContaining({ limit: 10, offset: 0 }),
+        );
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Query.categories
+// ---------------------------------------------------------------------------
+describe("Query.categories", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver("Query", "categories", {}, createContext()),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns mapped categories for authenticated user", async () => {
+        mockWishlistService.getUserCategories.mockResolvedValue([dbCategory]);
+
+        const result = await invokeResolver(
+            "Query",
+            "categories",
+            {},
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toEqual([
+            expect.objectContaining({
+                id: "cat-1",
+                name: "General",
+                userId: "user-1",
+            }),
+        ]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Query.item
+// ---------------------------------------------------------------------------
+describe("Query.item", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver("Query", "item", { id: "item-1" }, createContext()),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns null when item not found", async () => {
+        mockWishlistService.getUserItems.mockResolvedValue([]);
+
+        const result = await invokeResolver(
+            "Query",
+            "item",
+            { id: "item-1" },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toBeNull();
+    });
+
+    it("returns mapped item with links when found", async () => {
+        mockWishlistService.getUserItems.mockResolvedValue([dbItem]);
+        mockWishlistService.getItemLinks.mockResolvedValue([dbLink]);
+
+        const result = await invokeResolver(
+            "Query",
+            "item",
+            { id: "item-1" },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({ id: "item-1" });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((result as any).links).toHaveLength(1);
+    });
+
+    it("throws FORBIDDEN on WishlistAuthorizationError from getItemLinks", async () => {
+        mockWishlistService.getUserItems.mockResolvedValue([dbItem]);
+        mockWishlistService.getItemLinks.mockRejectedValue(
+            new WishlistAuthorizationError("Not authorized"),
+        );
+
+        await expect(
+            invokeResolver(
+                "Query",
+                "item",
+                { id: "item-1" },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.logout
+// ---------------------------------------------------------------------------
+describe("Mutation.logout", () => {
+    it("returns true on successful logout", async () => {
+        const ctx = createAuthenticatedContext({
+            signOut: vi.fn().mockResolvedValue({ error: null }),
+        });
+        const result = await invokeResolver("Mutation", "logout", {}, ctx);
+        expect(result).toBe(true);
+    });
+
+    it("throws INTERNAL_SERVER_ERROR when logout fails", async () => {
+        const ctx = createAuthenticatedContext({
+            signOut: vi.fn().mockRejectedValue(new Error("Network error")),
+        });
+        await expect(
+            invokeResolver("Mutation", "logout", {}, ctx),
+        ).rejects.toMatchObject({
+            extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.login
+// ---------------------------------------------------------------------------
 describe("login resolver", () => {
     it("returns a rate-limited GraphQLError for rate-limited auth failures", async () => {
         const context = createContext({
@@ -148,8 +491,54 @@ describe("login resolver", () => {
             });
         }
     });
+
+    it("returns invalid credentials payload when user is null with no error", async () => {
+        const context = createContext({
+            signInWithPassword: vi.fn().mockResolvedValue({
+                data: { user: null, session: null },
+                error: null,
+            }),
+        });
+
+        const result = await invokeLogin(context);
+        expect(result).toMatchObject({
+            success: false,
+            user: null,
+            error: "Invalid email or password",
+        });
+    });
+
+    it("returns success payload on valid credentials", async () => {
+        // SupabaseAuthService.login maps the supabase user directly via toPublicUser.
+        // createDefaultCategories errors are swallowed (non-fatal), so login succeeds
+        // even when db is an empty object.
+        const supabaseUser = {
+            id: "user-1",
+            email: "test@example.com",
+            user_metadata: { name: "Test User" },
+        };
+        const context = createContext({
+            signInWithPassword: vi.fn().mockResolvedValue({
+                data: { user: supabaseUser, session: { access_token: "tok" } },
+                error: null,
+            }),
+        });
+
+        const result = await invokeLogin(context);
+        expect(result).toMatchObject({
+            success: true,
+            user: expect.objectContaining({
+                id: "user-1",
+                email: "test@example.com",
+            }),
+            error: null,
+        });
+    });
 });
 
+// ---------------------------------------------------------------------------
+// Mutation.register
+// ---------------------------------------------------------------------------
 describe("register resolver", () => {
     it("returns a handled error when signup requires email confirmation but no user is returned", async () => {
         const context = createContext({
@@ -179,5 +568,776 @@ describe("register resolver", () => {
             user: null,
             error: "User already exists",
         });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.createCategory
+// ---------------------------------------------------------------------------
+describe("Mutation.createCategory", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "createCategory",
+                { input: { name: "Work", color: null } },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns mapped category on success", async () => {
+        mockWishlistService.createCategory.mockResolvedValue(dbCategory);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "createCategory",
+            { input: { name: "General", color: "#ff0000" } },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({
+            id: "cat-1",
+            name: "General",
+            color: "#ff0000",
+        });
+    });
+
+    it("passes null when color not provided", async () => {
+        mockWishlistService.createCategory.mockResolvedValue({
+            ...dbCategory,
+            color: null,
+        });
+
+        await invokeResolver(
+            "Mutation",
+            "createCategory",
+            { input: { name: "General", color: null } },
+            createAuthenticatedContext(),
+        );
+
+        expect(mockWishlistService.createCategory).toHaveBeenCalledWith(
+            expect.objectContaining({ color: null }),
+        );
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.updateCategory
+// ---------------------------------------------------------------------------
+describe("Mutation.updateCategory", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateCategory",
+                { id: "cat-1", input: {} },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns mapped category when found", async () => {
+        mockWishlistService.updateCategory.mockResolvedValue(dbCategory);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "updateCategory",
+            { id: "cat-1", input: { name: "Updated" } },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({ id: "cat-1" });
+    });
+
+    it("returns null when category not found", async () => {
+        mockWishlistService.updateCategory.mockResolvedValue(null);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "updateCategory",
+            { id: "cat-1", input: {} },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.deleteCategory
+// ---------------------------------------------------------------------------
+describe("Mutation.deleteCategory", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "deleteCategory",
+                { id: "cat-1" },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns true on success", async () => {
+        mockWishlistService.deleteCategory.mockResolvedValue(undefined);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "deleteCategory",
+            { id: "cat-1" },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toBe(true);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.createItem
+// ---------------------------------------------------------------------------
+describe("Mutation.createItem", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "createItem",
+                { input: { categoryId: "cat-1", title: "Item" } },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("creates item without link when no url provided", async () => {
+        mockWishlistService.createItem.mockResolvedValue(dbItem);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "createItem",
+            { input: { categoryId: "cat-1", title: "My Item" } },
+            createAuthenticatedContext(),
+        );
+
+        expect(mockWishlistService.createItem).toHaveBeenCalled();
+        expect(
+            mockWishlistService.createItemWithPrimaryLink,
+        ).not.toHaveBeenCalled();
+        expect(result).toMatchObject({ id: "item-1" });
+    });
+
+    it("creates item with primary link when url provided", async () => {
+        mockWishlistService.createItemWithPrimaryLink.mockResolvedValue({
+            item: dbItem,
+            link: dbLink,
+        });
+
+        const result = await invokeResolver(
+            "Mutation",
+            "createItem",
+            {
+                input: {
+                    categoryId: "cat-1",
+                    title: "My Item",
+                    url: "https://example.com",
+                },
+            },
+            createAuthenticatedContext(),
+        );
+
+        expect(
+            mockWishlistService.createItemWithPrimaryLink,
+        ).toHaveBeenCalled();
+        expect(result).toMatchObject({ id: "item-1" });
+    });
+
+    it("throws FORBIDDEN on WishlistAuthorizationError when creating with link", async () => {
+        mockWishlistService.createItemWithPrimaryLink.mockRejectedValue(
+            new WishlistAuthorizationError(),
+        );
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "createItem",
+                {
+                    input: {
+                        categoryId: "cat-1",
+                        title: "My Item",
+                        url: "https://example.com",
+                    },
+                },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.updateItem
+// ---------------------------------------------------------------------------
+describe("Mutation.updateItem", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateItem",
+                { id: "item-1", input: {} },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("throws NOT_FOUND when item not found", async () => {
+        mockWishlistService.updateItem.mockResolvedValue(null);
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateItem",
+                { id: "item-1", input: { title: "Updated" } },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "NOT_FOUND" } });
+    });
+
+    it("returns mapped item with links on success", async () => {
+        mockWishlistService.updateItem.mockResolvedValue(dbItem);
+        mockWishlistService.getItemLinks.mockResolvedValue([dbLink]);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "updateItem",
+            { id: "item-1", input: { title: "Updated" } },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({ id: "item-1" });
+    });
+
+    it("throws FORBIDDEN on WishlistAuthorizationError from getItemLinks", async () => {
+        mockWishlistService.updateItem.mockResolvedValue(dbItem);
+        mockWishlistService.getItemLinks.mockRejectedValue(
+            new WishlistAuthorizationError(),
+        );
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateItem",
+                { id: "item-1", input: {} },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.deleteItem
+// ---------------------------------------------------------------------------
+describe("Mutation.deleteItem", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "deleteItem",
+                { id: "item-1" },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns true on success", async () => {
+        mockWishlistService.deleteItem.mockResolvedValue(undefined);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "deleteItem",
+            { id: "item-1" },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toBe(true);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.addItemLink
+// ---------------------------------------------------------------------------
+describe("Mutation.addItemLink", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "addItemLink",
+                { itemId: "item-1", input: { url: "https://example.com" } },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns mapped link on success", async () => {
+        mockWishlistService.createItemLink.mockResolvedValue(dbLink);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "addItemLink",
+            {
+                itemId: "item-1",
+                input: { url: "https://example.com", isPrimary: true },
+            },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({
+            id: "link-1",
+            url: "https://example.com",
+        });
+    });
+
+    it("throws FORBIDDEN on WishlistAuthorizationError", async () => {
+        mockWishlistService.createItemLink.mockRejectedValue(
+            new WishlistAuthorizationError(),
+        );
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "addItemLink",
+                { itemId: "item-1", input: { url: "https://example.com" } },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.updateItemLink
+// ---------------------------------------------------------------------------
+describe("Mutation.updateItemLink", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateItemLink",
+                { id: "link-1", input: {} },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns mapped link when found", async () => {
+        mockWishlistService.updateItemLink.mockResolvedValue(dbLink);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "updateItemLink",
+            { id: "link-1", input: { url: "https://updated.com" } },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({ id: "link-1" });
+    });
+
+    it("returns null when link not found", async () => {
+        mockWishlistService.updateItemLink.mockResolvedValue(null);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "updateItemLink",
+            { id: "link-1", input: {} },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toBeNull();
+    });
+
+    it("throws FORBIDDEN on WishlistAuthorizationError", async () => {
+        mockWishlistService.updateItemLink.mockRejectedValue(
+            new WishlistAuthorizationError(),
+        );
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateItemLink",
+                { id: "link-1", input: {} },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.deleteItemLink
+// ---------------------------------------------------------------------------
+describe("Mutation.deleteItemLink", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "deleteItemLink",
+                { id: "link-1" },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns true on success", async () => {
+        mockWishlistService.deleteItemLink.mockResolvedValue(undefined);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "deleteItemLink",
+            { id: "link-1" },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toBe(true);
+    });
+
+    it("throws FORBIDDEN on WishlistAuthorizationError", async () => {
+        mockWishlistService.deleteItemLink.mockRejectedValue(
+            new WishlistAuthorizationError(),
+        );
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "deleteItemLink",
+                { id: "link-1" },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.setPrimaryLink
+// ---------------------------------------------------------------------------
+describe("Mutation.setPrimaryLink", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "setPrimaryLink",
+                { itemId: "item-1", linkId: "link-1" },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns true on success", async () => {
+        mockWishlistService.setPrimaryLink.mockResolvedValue(undefined);
+
+        const result = await invokeResolver(
+            "Mutation",
+            "setPrimaryLink",
+            { itemId: "item-1", linkId: "link-1" },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toBe(true);
+    });
+
+    it("throws FORBIDDEN on WishlistAuthorizationError", async () => {
+        mockWishlistService.setPrimaryLink.mockRejectedValue(
+            new WishlistAuthorizationError(),
+        );
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "setPrimaryLink",
+                { itemId: "item-1", linkId: "link-1" },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.batchDeleteItems
+// ---------------------------------------------------------------------------
+describe("Mutation.batchDeleteItems", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "batchDeleteItems",
+                { input: { itemIds: ["item-1"] } },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("throws BAD_USER_INPUT when itemIds is empty", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "batchDeleteItems",
+                { input: { itemIds: [] } },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "BAD_USER_INPUT" } });
+    });
+
+    it("throws BAD_USER_INPUT when batch exceeds 100 items", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "batchDeleteItems",
+                {
+                    input: {
+                        itemIds: Array.from(
+                            { length: 101 },
+                            (_, i) => `item-${i}`,
+                        ),
+                    },
+                },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "BAD_USER_INPUT" } });
+    });
+
+    it("returns batch result on success", async () => {
+        mockWishlistService.batchDeleteItems.mockResolvedValue({
+            processedCount: 2,
+            failedCount: 0,
+            errors: [],
+        });
+
+        const result = await invokeResolver(
+            "Mutation",
+            "batchDeleteItems",
+            { input: { itemIds: ["item-1", "item-2"] } },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({
+            success: true,
+            processedCount: 2,
+            failedCount: 0,
+            errors: null,
+        });
+    });
+
+    it("returns success=false when some items fail", async () => {
+        mockWishlistService.batchDeleteItems.mockResolvedValue({
+            processedCount: 2,
+            failedCount: 1,
+            errors: ["item-2: not found"],
+        });
+
+        const result = await invokeResolver(
+            "Mutation",
+            "batchDeleteItems",
+            { input: { itemIds: ["item-1", "item-2"] } },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({
+            success: false,
+            failedCount: 1,
+            errors: ["item-2: not found"],
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.batchMoveItems
+// ---------------------------------------------------------------------------
+describe("Mutation.batchMoveItems", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "batchMoveItems",
+                { input: { itemIds: ["item-1"], categoryId: "cat-1" } },
+                createContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("throws BAD_USER_INPUT when itemIds is empty", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "batchMoveItems",
+                { input: { itemIds: [], categoryId: "cat-1" } },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "BAD_USER_INPUT" } });
+    });
+
+    it("throws BAD_USER_INPUT when batch exceeds 100 items", async () => {
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "batchMoveItems",
+                {
+                    input: {
+                        itemIds: Array.from(
+                            { length: 101 },
+                            (_, i) => `item-${i}`,
+                        ),
+                        categoryId: "cat-1",
+                    },
+                },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "BAD_USER_INPUT" } });
+    });
+
+    it("returns batch result on success", async () => {
+        mockWishlistService.batchMoveItems.mockResolvedValue({
+            processedCount: 3,
+            failedCount: 0,
+            errors: [],
+        });
+
+        const result = await invokeResolver(
+            "Mutation",
+            "batchMoveItems",
+            {
+                input: {
+                    itemIds: ["item-1", "item-2", "item-3"],
+                    categoryId: "cat-2",
+                },
+            },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({
+            success: true,
+            processedCount: 3,
+            errors: null,
+        });
+    });
+
+    it("passes null categoryId when not provided", async () => {
+        mockWishlistService.batchMoveItems.mockResolvedValue({
+            processedCount: 1,
+            failedCount: 0,
+            errors: [],
+        });
+
+        await invokeResolver(
+            "Mutation",
+            "batchMoveItems",
+            { input: { itemIds: ["item-1"] } },
+            createAuthenticatedContext(),
+        );
+
+        expect(mockWishlistService.batchMoveItems).toHaveBeenCalledWith(
+            ["item-1"],
+            "user-1",
+            null,
+        );
+    });
+});
+
+// ---------------------------------------------------------------------------
+// WishlistItem.links field resolver
+// ---------------------------------------------------------------------------
+describe("WishlistItem.links", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    const gqlItem = {
+        id: "item-1",
+        userId: "user-1",
+        categoryId: "cat-1",
+        title: "My Item",
+        description: null,
+        favicon: null,
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+    };
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "WishlistItem",
+                "links",
+                {},
+                createContext(),
+                gqlItem,
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "UNAUTHENTICATED" } });
+    });
+
+    it("returns already-loaded links without calling service", async () => {
+        const parentWithLinks = {
+            ...gqlItem,
+            links: [{ id: "link-1", url: "https://example.com" }],
+        };
+        const result = await invokeResolver(
+            "WishlistItem",
+            "links",
+            {},
+            createAuthenticatedContext(),
+            parentWithLinks,
+        );
+
+        expect(mockWishlistService.getItemLinks).not.toHaveBeenCalled();
+        expect(result).toEqual(parentWithLinks.links);
+    });
+
+    it("lazy-loads links when not pre-loaded", async () => {
+        mockWishlistService.getItemLinks.mockResolvedValue([dbLink]);
+
+        const result = await invokeResolver(
+            "WishlistItem",
+            "links",
+            {},
+            createAuthenticatedContext(),
+            gqlItem,
+        );
+
+        expect(mockWishlistService.getItemLinks).toHaveBeenCalledWith(
+            "user-1",
+            "item-1",
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((result as any[]).length).toBe(1);
+    });
+
+    it("throws FORBIDDEN on WishlistAuthorizationError during lazy-load", async () => {
+        mockWishlistService.getItemLinks.mockRejectedValue(
+            new WishlistAuthorizationError(),
+        );
+
+        await expect(
+            invokeResolver(
+                "WishlistItem",
+                "links",
+                {},
+                createAuthenticatedContext(),
+                gqlItem,
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
     });
 });
