@@ -572,6 +572,49 @@ describe("register resolver", () => {
 });
 
 // ---------------------------------------------------------------------------
+// login resolver – error fallthrough paths
+// ---------------------------------------------------------------------------
+describe("login resolver error fallthrough", () => {
+    it("throws INTERNAL_SERVER_ERROR when signInWithPassword rejects with a plain Error", async () => {
+        // signInWithPassword throws (not returns) an error → propagates as a
+        // non-AuthServiceError → toLoginGraphQLError returns null → falls through
+        // to the generic INTERNAL_SERVER_ERROR branch (covers lines 586-588)
+        const context = createContext({
+            signInWithPassword: vi
+                .fn()
+                .mockRejectedValue(new Error("Unexpected network failure")),
+        });
+
+        await expect(invokeLogin(context)).rejects.toMatchObject({
+            message: "Login failed",
+            extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
+    });
+
+    it("throws INTERNAL_SERVER_ERROR when AuthServiceError has UNKNOWN code", async () => {
+        // An unrecognised Supabase error maps to UNKNOWN in createLoginError.
+        // toLoginGraphQLError finds no matching branch and returns null (line 626),
+        // so the resolver falls through to the generic error (covers lines 626-627)
+        const context = createContext({
+            signInWithPassword: vi.fn().mockResolvedValue({
+                data: { user: null },
+                error: {
+                    __isAuthError: true,
+                    name: "AuthApiError",
+                    message: "Something unexpected happened",
+                    status: 400,
+                },
+            }),
+        });
+
+        await expect(invokeLogin(context)).rejects.toMatchObject({
+            message: "Login failed",
+            extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Mutation.createCategory
 // ---------------------------------------------------------------------------
 describe("Mutation.createCategory", () => {

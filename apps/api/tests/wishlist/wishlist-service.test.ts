@@ -252,6 +252,119 @@ describe("WishlistService", () => {
         expect(orderAllMock).toHaveBeenCalledTimes(1);
     });
 
+    it("getUserItems applies offset-only pagination when limit is not provided", async () => {
+        // Covers lines 234-236: the offset-only branch of getUserItems
+        const items: WishlistItem[] = [
+            {
+                id: "item-3",
+                user_id: "user-uuid-42",
+                category_id: "cat-1",
+                title: "Third Item",
+                description: null,
+                favicon: null,
+                created_at: "2024-01-03T00:00:00.000Z",
+                updated_at: "2024-01-03T00:00:00.000Z",
+            },
+        ];
+
+        const allMock = vi.fn().mockResolvedValue(items);
+        const offsetMock = vi.fn(() => ({ all: allMock }));
+        const orderByMock = vi.fn(() => ({ offset: offsetMock }));
+        const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+        const fromMock = vi.fn(() => ({ where: whereMock }));
+        const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+        const fakeDb: Partial<DB> = { select: selectMock };
+        const service = new WishlistService(fakeDb as DB);
+
+        // offset provided but no limit → takes the offset-only branch
+        const result = await service.getUserItems("user-uuid-42", {
+            offset: 5,
+        });
+
+        expect(result).toEqual(items);
+        expect(offsetMock).toHaveBeenCalledWith(5);
+        expect(allMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("getUserItems applies limit-only pagination when offset is not provided", async () => {
+        // Covers lines 230-232: the limit-only branch of getUserItems
+        const items: WishlistItem[] = [
+            {
+                id: "item-1",
+                user_id: "user-uuid-42",
+                category_id: "cat-1",
+                title: "First Item",
+                description: null,
+                favicon: null,
+                created_at: "2024-01-01T00:00:00.000Z",
+                updated_at: "2024-01-01T00:00:00.000Z",
+            },
+        ];
+
+        const allMock = vi.fn().mockResolvedValue(items);
+        const limitMock = vi.fn(() => ({ all: allMock }));
+        const orderByMock = vi.fn(() => ({ limit: limitMock }));
+        const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+        const fromMock = vi.fn(() => ({ where: whereMock }));
+        const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+        const fakeDb: Partial<DB> = { select: selectMock };
+        const service = new WishlistService(fakeDb as DB);
+
+        // limit provided but no offset → takes the limit-only branch
+        const result = await service.getUserItems("user-uuid-42", {
+            limit: 10,
+        });
+
+        expect(result).toEqual(items);
+        expect(limitMock).toHaveBeenCalledWith(10);
+        expect(allMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("getUserItems sorts by UPDATED_AT when sortBy is UPDATED_AT", async () => {
+        // Covers line 201: the UPDATED_AT case in the getSortColumn switch
+        const items: WishlistItem[] = [];
+        const allMock = vi.fn().mockResolvedValue(items);
+        const orderByMock = vi.fn(() => ({ all: allMock }));
+        const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+        const fromMock = vi.fn(() => ({ where: whereMock }));
+        const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+        const fakeDb: Partial<DB> = { select: selectMock };
+        const service = new WishlistService(fakeDb as DB);
+
+        const result = await service.getUserItems("user-uuid-42", {
+            sortBy: "UPDATED_AT" as WishlistSortKey,
+            sortDir: "ASC" as SortDirection,
+        });
+
+        expect(result).toEqual(items);
+        expect(orderByMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("getUserItems falls back to created_at when sortBy is NAME", async () => {
+        // Covers line 206: the NAME case in the getSortColumn switch (NAME is for
+        // categories and falls back to created_at for items)
+        const items: WishlistItem[] = [];
+        const allMock = vi.fn().mockResolvedValue(items);
+        const orderByMock = vi.fn(() => ({ all: allMock }));
+        const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+        const fromMock = vi.fn(() => ({ where: whereMock }));
+        const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+        const fakeDb: Partial<DB> = { select: selectMock };
+        const service = new WishlistService(fakeDb as DB);
+
+        const result = await service.getUserItems("user-uuid-42", {
+            sortBy: "NAME" as WishlistSortKey,
+            sortDir: "DESC" as SortDirection,
+        });
+
+        expect(result).toEqual(items);
+        expect(orderByMock).toHaveBeenCalledTimes(1);
+    });
+
     describe("Category Operations", () => {
         it("getUserCategories returns all categories for a user", async () => {
             const categories: WishlistCategory[] = [
@@ -732,6 +845,96 @@ describe("WishlistService", () => {
             expect(getMock).toHaveBeenCalledTimes(1);
         });
 
+        it("createItemWithPrimaryLink creates item and link atomically via batch", async () => {
+            // Covers lines 287-318: the createItemWithPrimaryLink method
+            const mockItem: WishlistItem = {
+                id: "item-batch-uuid",
+                user_id: "user-uuid-42",
+                category_id: "cat-1",
+                title: "Batch Item",
+                description: null,
+                favicon: null,
+                created_at: "2024-01-01T00:00:00.000Z",
+                updated_at: "2024-01-01T00:00:00.000Z",
+            };
+            const mockLink: WishlistItemLink = {
+                id: "link-batch-uuid",
+                item_id: "item-batch-uuid",
+                url: "https://example.com/item",
+                description: null,
+                is_primary: true,
+                created_at: "2024-01-01T00:00:00.000Z",
+                updated_at: "2024-01-01T00:00:00.000Z",
+            };
+
+            // Batch returns [itemResult, linkResult]
+            const batchMock = vi
+                .fn()
+                .mockResolvedValue([[mockItem], [mockLink]]);
+
+            // insert().values().returning() builds a statement passed to batch
+            const returningMock = vi.fn(() => "mock-stmt");
+            const valuesMock = vi.fn(() => ({ returning: returningMock }));
+            const insertMock = vi.fn(() => ({ values: valuesMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                insert: insertMock,
+                batch: batchMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.createItemWithPrimaryLink(
+                {
+                    user_id: "user-uuid-42",
+                    category_id: "cat-1",
+                    title: "Batch Item",
+                    description: null,
+                },
+                {
+                    url: "https://example.com/item",
+                    description: null,
+                    is_primary: true,
+                },
+            );
+
+            expect(result.item).toEqual(mockItem);
+            expect(result.link).toEqual(mockLink);
+            expect(insertMock).toHaveBeenCalledTimes(2);
+            expect(batchMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("createItemWithPrimaryLink throws when batch insert returns no rows", async () => {
+            // Covers lines 311-315: the guard that throws when batch returns empty results
+            const batchMock = vi.fn().mockResolvedValue([[], []]);
+            const returningMock = vi.fn(() => "mock-stmt");
+            const valuesMock = vi.fn(() => ({ returning: returningMock }));
+            const insertMock = vi.fn(() => ({ values: valuesMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                insert: insertMock,
+                batch: batchMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await expect(
+                service.createItemWithPrimaryLink(
+                    {
+                        user_id: "user-uuid-42",
+                        category_id: "cat-1",
+                        title: "Batch Item",
+                        description: null,
+                    },
+                    {
+                        url: "https://example.com/item",
+                        description: null,
+                        is_primary: true,
+                    },
+                ),
+            ).rejects.toThrow(
+                "createItemWithPrimaryLink: batch insert returned no rows",
+            );
+        });
+
         it("updateItem updates an existing item", async () => {
             const updatedItem: WishlistItem = {
                 id: "item-1",
@@ -1070,6 +1273,127 @@ describe("WishlistService", () => {
             });
             expect(whereMock).toHaveBeenCalledTimes(1);
             expect(runMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("setPrimaryLink throws WishlistAuthorizationError when link does not belong to the item", async () => {
+            // Covers lines 607-608: the guard that rejects a link not associated with itemId
+            const itemGetMock = vi
+                .fn()
+                .mockResolvedValue({ user_id: "user-uuid-42" });
+            const itemWhereMock = vi.fn(() => ({ get: itemGetMock }));
+            const itemFromMock = vi.fn(() => ({ where: itemWhereMock }));
+
+            // link lookup returns undefined → not found
+            const linkGetMock = vi.fn().mockResolvedValue(undefined);
+            const linkWhereMock = vi.fn(() => ({ get: linkGetMock }));
+            const linkFromMock = vi.fn(() => ({ where: linkWhereMock }));
+
+            const selectMock = vi
+                .fn()
+                .mockReturnValueOnce({ from: itemFromMock })
+                .mockReturnValueOnce({ from: linkFromMock }) as Mock;
+
+            const fakeDb: Partial<DB> = { select: selectMock };
+            const service = new WishlistService(fakeDb as DB);
+
+            await expect(
+                service.setPrimaryLink(
+                    "user-uuid-42",
+                    "item-1",
+                    "nonexistent-link",
+                ),
+            ).rejects.toThrow("Not authorized");
+        });
+    });
+
+    describe("getUserWishlistData pagination edge cases", () => {
+        it("uses items.length as effectiveLimit when no limit is provided and items exist", async () => {
+            // Covers line 681: the items.length branch when limit is undefined
+            const items: WishlistItem[] = [
+                {
+                    id: "item-1",
+                    user_id: "user-uuid-42",
+                    category_id: "cat-1",
+                    title: "Item One",
+                    description: null,
+                    favicon: null,
+                    created_at: "2024-01-01T00:00:00.000Z",
+                    updated_at: "2024-01-01T00:00:00.000Z",
+                },
+                {
+                    id: "item-2",
+                    user_id: "user-uuid-42",
+                    category_id: "cat-1",
+                    title: "Item Two",
+                    description: null,
+                    favicon: null,
+                    created_at: "2024-01-02T00:00:00.000Z",
+                    updated_at: "2024-01-02T00:00:00.000Z",
+                },
+            ];
+
+            const orderAllMock = vi.fn().mockResolvedValue([]);
+            const selectChain = {
+                from: vi.fn(() => selectChain),
+                where: vi.fn(() => selectChain),
+                orderBy: vi.fn(() => ({ all: orderAllMock })),
+            };
+            const fakeDb: Partial<DB> = {
+                select: vi.fn(() => selectChain) as Mock,
+            };
+
+            class TestService extends WishlistService {
+                constructor() {
+                    super(fakeDb as DB);
+                }
+                override async getUserCategories() {
+                    return [];
+                }
+                override async getUserItems() {
+                    return items;
+                }
+                override async getUserItemsCount() {
+                    return 10;
+                }
+            }
+
+            const service = new TestService();
+            // No limit provided → effectiveLimit falls back to items.length (2)
+            const result = await service.getUserWishlistData("user-uuid-42");
+
+            expect(result.pagination.page_size).toBe(2);
+            expect(result.pagination.total_pages).toBe(5); // Math.ceil(10 / 2)
+        });
+
+        it("uses totalItems as effectiveLimit when no limit and no items but totalItems > 0", async () => {
+            // Covers line 683: the totalItems branch when limit is undefined and items is empty
+            const fakeDb: Partial<DB> = {
+                select: vi.fn(() => {
+                    throw new Error("select should not be called");
+                }) as Mock,
+            };
+
+            class TestService extends WishlistService {
+                constructor() {
+                    super(fakeDb as DB);
+                }
+                override async getUserCategories() {
+                    return [];
+                }
+                override async getUserItems() {
+                    return [];
+                }
+                override async getUserItemsCount() {
+                    return 7;
+                }
+            }
+
+            const service = new TestService();
+            // No limit, no items, but totalItems=7 → effectiveLimit = 7
+            const result = await service.getUserWishlistData("user-uuid-42");
+
+            expect(result.pagination.page_size).toBe(7);
+            expect(result.pagination.total_pages).toBe(1); // Math.ceil(7 / 7)
         });
     });
 
