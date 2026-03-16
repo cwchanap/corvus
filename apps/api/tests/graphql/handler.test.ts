@@ -32,7 +32,6 @@ vi.mock("../../src/graphql/context", () => ({
     createGraphQLContext: vi.fn().mockResolvedValue({}),
 }));
 
-import { createYoga } from "graphql-yoga";
 import { createGraphQLContext } from "../../src/graphql/context";
 import { createGraphQLHandler } from "../../src/graphql/handler";
 
