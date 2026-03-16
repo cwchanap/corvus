@@ -496,6 +496,92 @@ describe("SupabaseAuthService", () => {
                 status: 400,
             });
         });
+
+        it("throws UNCONFIRMED_ACCOUNT for 'email not verified' message", async () => {
+            // Covers the second branch of the email-confirmation check (line 277)
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        __isAuthError: true,
+                        name: "AuthApiError",
+                        message: "Email not verified",
+                        status: 400,
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(
+                service.login("test@example.com", "password123"),
+            ).rejects.toMatchObject({
+                code: "UNCONFIRMED_ACCOUNT",
+                status: 400,
+            });
+        });
+
+        it("throws UNCONFIRMED_ACCOUNT for 'confirm your email' message", async () => {
+            // Covers the third branch of the email-confirmation check (line 278)
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        __isAuthError: true,
+                        name: "AuthApiError",
+                        message: "Please confirm your email to continue",
+                        status: 400,
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(
+                service.login("test@example.com", "password123"),
+            ).rejects.toMatchObject({
+                code: "UNCONFIRMED_ACCOUNT",
+                status: 400,
+            });
+        });
+
+        it("throws UNKNOWN error for unrecognised login failures", async () => {
+            // Covers the UNKNOWN fallthrough branch (lines 286-290)
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        __isAuthError: true,
+                        name: "AuthApiError",
+                        message: "Something unexpected happened",
+                        status: 400,
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            let error: unknown;
+
+            try {
+                await service.login("test@example.com", "password123");
+            } catch (caughtError) {
+                error = caughtError;
+            }
+
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message: "Login failed: Something unexpected happened",
+                code: "UNKNOWN",
+                status: 400,
+            });
+        });
     });
 
     describe("logout", () => {
