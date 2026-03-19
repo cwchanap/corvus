@@ -229,6 +229,46 @@ describe("createSupabaseServerClient", () => {
             expect(raw?.value).toContain("Secure");
         });
 
+        it("sets SameSite=None with Secure for Firefox extension requests (moz-extension://)", () => {
+            // Covers line 43: the moz-extension branch of isExtensionOriginRequest
+            const ctx = makeContext({
+                env: { INSECURE_COOKIES: "false" },
+                originHeader: "moz-extension://some-firefox-extension-id",
+                requestUrl: "http://localhost:8787/graphql",
+            });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([{ name: "tok", value: "val", options: {} }]);
+
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("SameSite=None");
+            expect(raw?.value).toContain("Secure");
+        });
+
+        it("includes Expires when provided in options", () => {
+            // Covers line 102: the Expires cookie attribute in setAll
+            const ctx = makeContext({ env: { DEV: "true" } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            const expiresDate = new Date("2030-01-01T00:00:00Z");
+            setAll([
+                {
+                    name: "tok",
+                    value: "val",
+                    options: { expires: expiresDate },
+                },
+            ]);
+
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain(
+                `Expires=${expiresDate.toUTCString()}`,
+            );
+        });
+
         it("URL-encodes cookie values", () => {
             const ctx = makeContext({ env: { DEV: "true" } });
             createSupabaseServerClient(ctx);
