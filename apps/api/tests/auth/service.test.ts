@@ -137,6 +137,32 @@ describe("SupabaseAuthService", () => {
             ).rejects.toThrow("Signup is disabled");
         });
 
+        it("preserves numeric status from auth error in UNKNOWN registration failure (covers line 70)", async () => {
+            // When the signup error has a numeric status field, line 70 in service.ts
+            // (`? error.status`) is exercised in the UNKNOWN code branch.
+            const mockSupabase = createMockSupabase({
+                signUp: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: { message: "Signup is disabled", status: 403 },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(
+                service.register(
+                    "test@example.com",
+                    "password123",
+                    "Test User",
+                ),
+            ).rejects.toMatchObject({
+                code: "UNKNOWN",
+                status: 403,
+            });
+        });
+
         it("throws error when signUp returns null user (email confirmation mode)", async () => {
             const mockSupabase = createMockSupabase({
                 signUp: vi.fn().mockResolvedValue({

@@ -365,6 +365,27 @@ describe("WishlistService", () => {
         expect(orderByMock).toHaveBeenCalledTimes(1);
     });
 
+    it("getUserItems uses created_at when sortBy is CREATED_AT", async () => {
+        // Covers line 199: the CREATED_AT case in the getSortColumn switch
+        const items: WishlistItem[] = [];
+        const allMock = vi.fn().mockResolvedValue(items);
+        const orderByMock = vi.fn(() => ({ all: allMock }));
+        const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+        const fromMock = vi.fn(() => ({ where: whereMock }));
+        const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+        const fakeDb: Partial<DB> = { select: selectMock };
+        const service = new WishlistService(fakeDb as DB);
+
+        const result = await service.getUserItems("user-uuid-42", {
+            sortBy: "CREATED_AT" as WishlistSortKey,
+            sortDir: "ASC" as SortDirection,
+        });
+
+        expect(result).toEqual(items);
+        expect(orderByMock).toHaveBeenCalledTimes(1);
+    });
+
     describe("Category Operations", () => {
         it("getUserCategories returns all categories for a user", async () => {
             const categories: WishlistCategory[] = [
@@ -493,6 +514,42 @@ describe("WishlistService", () => {
             expect(fromMock).toHaveBeenCalledTimes(1);
             expect(whereMock).toHaveBeenCalledTimes(1);
             expect(selectGetMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("createCategory throws when insert conflicts and existing category cannot be loaded", async () => {
+            // Covers lines 97-100: insert returns undefined (conflict) AND the
+            // subsequent select also returns undefined (race condition / phantom row)
+            const insertGetMock = vi.fn().mockResolvedValue(undefined);
+            const returningMock = vi.fn(() => ({ get: insertGetMock }));
+            const onConflictDoNothingMock = vi.fn(() => ({
+                returning: returningMock,
+            }));
+            const valuesMock = vi.fn(() => ({
+                onConflictDoNothing: onConflictDoNothingMock,
+            }));
+            const insertMock = vi.fn(() => ({ values: valuesMock })) as Mock;
+
+            // select also resolves to undefined (phantom row scenario)
+            const selectGetMock = vi.fn().mockResolvedValue(undefined);
+            const whereMock = vi.fn(() => ({ get: selectGetMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                insert: insertMock,
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await expect(
+                service.createCategory({
+                    user_id: "user-uuid-42",
+                    name: "Phantom Category",
+                    color: null,
+                }),
+            ).rejects.toThrow(
+                "Category insert conflicted but the existing category could not be loaded.",
+            );
         });
 
         it("updateCategory updates an existing category", async () => {
