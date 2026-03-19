@@ -1,13 +1,14 @@
 import { describe, expect, it, Mock, vi } from "vitest";
+import { asc } from "drizzle-orm";
 import type { DB } from "../../src/lib/db";
 import type {
     WishlistCategory,
     WishlistItem,
     WishlistItemLink,
 } from "../../src/lib/db/types";
-import { wishlistCategories } from "../../src/lib/db/schema";
+import { wishlistCategories, wishlistItems } from "../../src/lib/db/schema";
 import { WishlistService } from "../../src/lib/wishlist/service";
-import type { WishlistSortKey, SortDirection } from "../../src/graphql/types";
+import { WishlistSortKey, SortDirection } from "../../src/graphql/types";
 
 describe("WishlistService", () => {
     it("aggregates wishlist data with pagination and link mapping", async () => {
@@ -366,7 +367,10 @@ describe("WishlistService", () => {
     });
 
     it("getUserItems uses created_at when sortBy is CREATED_AT", async () => {
-        // Covers line 199: the CREATED_AT case in the getSortColumn switch
+        // Covers line 199: the CREATED_AT case in the getSortColumn switch.
+        // Uses real enum values and asserts the actual orderBy argument so that a
+        // regression (e.g. accidentally mapping CREATED_AT to a different column)
+        // would be caught.
         const items: WishlistItem[] = [];
         const allMock = vi.fn().mockResolvedValue(items);
         const orderByMock = vi.fn(() => ({ all: allMock }));
@@ -378,12 +382,13 @@ describe("WishlistService", () => {
         const service = new WishlistService(fakeDb as DB);
 
         const result = await service.getUserItems("user-uuid-42", {
-            sortBy: "CREATED_AT" as WishlistSortKey,
-            sortDir: "ASC" as SortDirection,
+            sortBy: WishlistSortKey.CreatedAt,
+            sortDir: SortDirection.Asc,
         });
 
         expect(result).toEqual(items);
-        expect(orderByMock).toHaveBeenCalledTimes(1);
+        // Verify the correct column is used: CREATED_AT + ASC → asc(created_at)
+        expect(orderByMock).toHaveBeenCalledWith(asc(wishlistItems.created_at));
     });
 
     describe("Category Operations", () => {
