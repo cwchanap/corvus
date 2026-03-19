@@ -569,6 +569,61 @@ describe("register resolver", () => {
             error: "User already exists",
         });
     });
+
+    it("returns a handled error when registration setup fails (REGISTRATION_SETUP_FAILED)", async () => {
+        // signUp succeeds with user + session, but db.insert fails (empty DB mock),
+        // causing createDefaultCategories to throw → clearServerSession succeeds (signOut
+        // returns no error) → SupabaseAuthService.register throws REGISTRATION_SETUP_FAILED
+        // → toRegisterErrorPayload matches that code and returns the error payload (covers line 573)
+        const supabaseUser = {
+            id: "new-user-1",
+            email: "test@example.com",
+            user_metadata: { name: "Test User" },
+            identities: [{ id: "id-1" }],
+            created_at: "2024-01-01T00:00:00Z",
+            updated_at: "2024-01-01T00:00:00Z",
+        };
+        const context = createContext(
+            {
+                signUp: vi.fn().mockResolvedValue({
+                    data: {
+                        user: supabaseUser,
+                        session: { access_token: "tok" },
+                    },
+                    error: null,
+                }),
+                // signOut is used by clearServerSession; success → no re-throw
+                signOut: vi.fn().mockResolvedValue({ error: null }),
+            },
+            null,
+        );
+        // context.db is {} as DB, so db.insert is not a function → createDefaultCategories throws
+
+        const result = await invokeRegister(context);
+        expect(result).toMatchObject({
+            success: false,
+            user: null,
+        });
+        expect(typeof (result as { error: unknown }).error).toBe("string");
+    });
+
+    it("throws INTERNAL_SERVER_ERROR when AuthServiceError has an unrecognized code during register (covers toRegisterErrorPayload return null)", async () => {
+        // An auth error message that doesn't include "already registered" triggers
+        // the UNKNOWN code in SupabaseAuthService.register (line 64-73 of service.ts).
+        // toRegisterErrorPayload returns null for UNKNOWN → falls through to INTERNAL_SERVER_ERROR
+        // (covers lines 582-583 of resolvers.ts)
+        const context = createContext({
+            signUp: vi.fn().mockResolvedValue({
+                data: { user: null, session: null },
+                error: { message: "Some unexpected auth failure" },
+            }),
+        });
+
+        await expect(invokeRegister(context)).rejects.toMatchObject({
+            message: "Registration failed",
+            extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -1070,6 +1125,21 @@ describe("Mutation.deleteItemLink", () => {
             ),
         ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
     });
+
+    it("re-throws non-WishlistAuthorizationError (covers line 418)", async () => {
+        mockWishlistService.deleteItemLink.mockRejectedValue(
+            new Error("DB error during deleteItemLink"),
+        );
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "deleteItemLink",
+                { id: "link-1" },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toThrow("DB error during deleteItemLink");
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -1115,6 +1185,21 @@ describe("Mutation.setPrimaryLink", () => {
                 createAuthenticatedContext(),
             ),
         ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+
+    it("re-throws non-WishlistAuthorizationError (covers line 442)", async () => {
+        mockWishlistService.setPrimaryLink.mockRejectedValue(
+            new Error("DB error during setPrimaryLink"),
+        );
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "setPrimaryLink",
+                { itemId: "item-1", linkId: "link-1" },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toThrow("DB error during setPrimaryLink");
     });
 });
 
@@ -1382,5 +1467,44 @@ describe("WishlistItem.links", () => {
                 gqlItem,
             ),
         ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+
+    it("re-throws non-WishlistAuthorizationError errors during lazy-load (covers line 548)", async () => {
+        // getItemLinks throws a plain Error (not WishlistAuthorizationError) →
+        // the catch block at line 547-548 re-throws it as-is
+        const dbError = new Error("Database connection lost");
+        mockWishlistService.getItemLinks.mockRejectedValue(dbError);
+
+        await expect(
+            invokeResolver(
+                "WishlistItem",
+                "links",
+                {},
+                createAuthenticatedContext(),
+                gqlItem,
+            ),
+        ).rejects.toThrow("Database connection lost");
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Additional register edge cases (covers remaining branches)
+// ---------------------------------------------------------------------------
+describe("register resolver – remaining edge cases", () => {
+    it("throws INTERNAL_SERVER_ERROR when signUp itself throws a plain Error (covers toRegisterErrorPayload guard line 560)", async () => {
+        // When supabase.auth.signUp() throws (rather than returning { error }),
+        // the plain Error propagates to the resolver's catch block.
+        // toRegisterErrorPayload(plainError) sees !(plainError instanceof AuthServiceError)
+        // → returns null → falls through to INTERNAL_SERVER_ERROR.
+        const context = createContext({
+            signUp: vi
+                .fn()
+                .mockRejectedValue(new Error("Network failure during signup")),
+        });
+
+        await expect(invokeRegister(context)).rejects.toMatchObject({
+            message: "Registration failed",
+            extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
     });
 });
