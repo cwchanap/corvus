@@ -362,6 +362,48 @@ describe("createSupabaseServerClient", () => {
         });
     });
 
+    describe("cookies.getAll (no cookie header)", () => {
+        it("returns empty array when cookie header is undefined (null coalescing fallback)", () => {
+            // Covers line 59: c.req.header("cookie") ?? "" when header returns undefined
+            const ctx = {
+                env: {
+                    SUPABASE_URL: "https://example.supabase.co",
+                    SUPABASE_ANON_KEY: "anon-key-value",
+                },
+                req: {
+                    url: "https://app.example.com/graphql",
+                    header: (_name: string) => undefined,
+                },
+                header: vi.fn(),
+            } as unknown as import("hono").Context;
+            createSupabaseServerClient(ctx);
+            const { getAll } = getCookiesCallbacks();
+            expect(getAll()).toEqual([]);
+        });
+    });
+
+    describe("cookies.setAll with path option", () => {
+        it("uses provided path instead of default Path=/", () => {
+            // Covers line 92: options?.path ? Path=${options.path} : "Path=/"
+            const ctx = makeContext({ env: { DEV: "true" } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([
+                {
+                    name: "tok",
+                    value: "val",
+                    options: { path: "/api" },
+                },
+            ]);
+
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("Path=/api");
+            expect(raw?.value).not.toContain("Path=/;");
+        });
+    });
+
     describe("readBooleanEnv (via DEV/INSECURE_COOKIES flags)", () => {
         const truthyValues = ["1", "true", "yes", "on", "TRUE", "YES"];
         const falsyValues = ["0", "false", "no", "off", "", "random"];
@@ -395,5 +437,53 @@ describe("createSupabaseServerClient", () => {
                 expect(raw?.value).toContain("SameSite=None");
             });
         }
+
+        it("treats boolean true DEV as isDev=true (SameSite=Lax)", () => {
+            // Covers line 17: typeof value === "boolean" return value
+            const ctx = makeContext({ env: { DEV: true } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([{ name: "t", value: "v", options: {} }]);
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("SameSite=Lax");
+        });
+
+        it("treats boolean false DEV as isDev=false (SameSite=None)", () => {
+            // Covers line 17: typeof value === "boolean" return value (false case)
+            const ctx = makeContext({ env: { DEV: false } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([{ name: "t", value: "v", options: {} }]);
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("SameSite=None");
+        });
+
+        it("treats numeric 1 DEV as isDev=true (SameSite=Lax)", () => {
+            // Covers line 18: typeof value === "number" return value !== 0
+            const ctx = makeContext({ env: { DEV: 1 } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([{ name: "t", value: "v", options: {} }]);
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("SameSite=Lax");
+        });
+
+        it("treats numeric 0 DEV as isDev=false (SameSite=None)", () => {
+            // Covers line 18: typeof value === "number" return value !== 0 (false case)
+            const ctx = makeContext({ env: { DEV: 0 } });
+            createSupabaseServerClient(ctx);
+            const { setAll } = getCookiesCallbacks();
+            setAll([{ name: "t", value: "v", options: {} }]);
+            const raw = (
+                ctx as unknown as { _setCookieHeaders: SetCookieHeaderCall[] }
+            )._setCookieHeaders[0];
+            expect(raw?.value).toContain("SameSite=None");
+        });
     });
 });
