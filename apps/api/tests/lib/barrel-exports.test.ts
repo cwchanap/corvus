@@ -9,8 +9,10 @@ import {
     createSupabaseServerClient,
     requireAuth,
 } from "../../src/lib/auth";
-import { createDatabase } from "../../src/lib/db";
-import { createDefaultCategories } from "../../src/lib/db/index";
+import {
+    createDatabase,
+    createDefaultCategories,
+} from "../../src/lib/db/index";
 
 describe("auth barrel (src/lib/auth/index.ts)", () => {
     it("exports SupabaseAuthService", () => {
