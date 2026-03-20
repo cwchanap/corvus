@@ -4,6 +4,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { GraphQLContext } from "../../src/graphql/context";
 import { resolvers } from "../../src/graphql/resolvers";
 import type { DB } from "../../src/lib/db";
+import * as migrations from "../../src/lib/db/migrations";
+
+vi.mock("../../src/lib/db/migrations", () => ({
+    createDefaultCategories: vi.fn().mockResolvedValue(undefined),
+}));
+
+const mockCreateDefaultCategories =
+    migrations.createDefaultCategories as ReturnType<typeof vi.fn>;
 
 // ---------------------------------------------------------------------------
 // WishlistService mock
@@ -260,6 +268,47 @@ describe("Query.wishlist", () => {
         );
     });
 
+    it("passes filter values to service when filter is provided", async () => {
+        // Covers lines 37-40: the ?. optional chain when args.filter is not null
+        mockWishlistService.getUserWishlistData.mockResolvedValue({
+            categories: [],
+            items: [],
+            pagination: {
+                total_items: 0,
+                page: 1,
+                page_size: 10,
+                total_pages: 0,
+                has_next: false,
+                has_previous: false,
+            },
+        });
+
+        await invokeResolver(
+            "Query",
+            "wishlist",
+            {
+                pagination: { page: 1, pageSize: 10 },
+                filter: {
+                    categoryId: "cat-1",
+                    search: "laptop",
+                    sortBy: "title",
+                    sortDir: "asc",
+                },
+            },
+            createAuthenticatedContext(),
+        );
+
+        expect(mockWishlistService.getUserWishlistData).toHaveBeenCalledWith(
+            "user-1",
+            expect.objectContaining({
+                categoryId: "cat-1",
+                search: "laptop",
+                sortBy: "title",
+                sortDir: "asc",
+            }),
+        );
+    });
+
     it("uses defaults when pagination/filter not provided", async () => {
         mockWishlistService.getUserWishlistData.mockResolvedValue({
             categories: [],
@@ -375,6 +424,21 @@ describe("Query.item", () => {
                 createAuthenticatedContext(),
             ),
         ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+
+    it("re-throws non-authorization errors from getItemLinks in Query.item", async () => {
+        mockWishlistService.getUserItems.mockResolvedValue([dbItem]);
+        const dbError = new Error("DB read failed");
+        mockWishlistService.getItemLinks.mockRejectedValue(dbError);
+
+        await expect(
+            invokeResolver(
+                "Query",
+                "item",
+                { id: "item-1" },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toThrow("DB read failed");
     });
 });
 
@@ -571,10 +635,12 @@ describe("register resolver", () => {
     });
 
     it("returns a handled error when registration setup fails (REGISTRATION_SETUP_FAILED)", async () => {
-        // signUp succeeds with user + session, but db.insert fails (empty DB mock),
-        // causing createDefaultCategories to throw → clearServerSession succeeds (signOut
-        // returns no error) → SupabaseAuthService.register throws REGISTRATION_SETUP_FAILED
-        // → toRegisterErrorPayload matches that code and returns the error payload (covers line 573)
+        // signUp succeeds with user + session, but createDefaultCategories fails,
+        // causing clearServerSession to be called → SupabaseAuthService.register throws
+        // REGISTRATION_SETUP_FAILED → toRegisterErrorPayload matches that code and returns the error payload
+        mockCreateDefaultCategories.mockRejectedValueOnce(
+            new Error("DB setup failed"),
+        );
         const supabaseUser = {
             id: "new-user-1",
             email: "test@example.com",
@@ -876,6 +942,28 @@ describe("Mutation.createItem", () => {
             ),
         ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
     });
+
+    it("re-throws non-authorization errors when creating with link", async () => {
+        const dbError = new Error("Unexpected DB error");
+        mockWishlistService.createItemWithPrimaryLink.mockRejectedValue(
+            dbError,
+        );
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "createItem",
+                {
+                    input: {
+                        categoryId: "cat-1",
+                        title: "My Item",
+                        url: "https://example.com",
+                    },
+                },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toThrow("Unexpected DB error");
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -936,6 +1024,58 @@ describe("Mutation.updateItem", () => {
                 createAuthenticatedContext(),
             ),
         ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+
+    it("re-throws non-authorization errors from getItemLinks", async () => {
+        mockWishlistService.updateItem.mockResolvedValue(dbItem);
+        const dbError = new Error("Links query failed");
+        mockWishlistService.getItemLinks.mockRejectedValue(dbError);
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateItem",
+                { id: "item-1", input: { title: "Updated" } },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toThrow("Links query failed");
+    });
+
+    it("passes undefined for category_id when categoryId is not in input", async () => {
+        mockWishlistService.updateItem.mockResolvedValue(dbItem);
+        mockWishlistService.getItemLinks.mockResolvedValue([]);
+
+        await invokeResolver(
+            "Mutation",
+            "updateItem",
+            { id: "item-1", input: { title: "No Category Change" } },
+            createAuthenticatedContext(),
+        );
+
+        expect(mockWishlistService.updateItem).toHaveBeenCalledWith(
+            "item-1",
+            expect.any(String),
+            expect.objectContaining({ category_id: undefined }),
+        );
+    });
+
+    it("passes categoryId value when categoryId is present in input", async () => {
+        // Covers line 304: args.input.categoryId (the truthy branch of "categoryId" in args.input)
+        mockWishlistService.updateItem.mockResolvedValue(dbItem);
+        mockWishlistService.getItemLinks.mockResolvedValue([]);
+
+        await invokeResolver(
+            "Mutation",
+            "updateItem",
+            { id: "item-1", input: { title: "Updated", categoryId: "cat-2" } },
+            createAuthenticatedContext(),
+        );
+
+        expect(mockWishlistService.updateItem).toHaveBeenCalledWith(
+            "item-1",
+            expect.any(String),
+            expect.objectContaining({ category_id: "cat-2" }),
+        );
     });
 });
 
@@ -1020,6 +1160,20 @@ describe("Mutation.addItemLink", () => {
             ),
         ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
     });
+
+    it("re-throws non-authorization errors", async () => {
+        const dbError = new Error("Database connection failed");
+        mockWishlistService.createItemLink.mockRejectedValue(dbError);
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "addItemLink",
+                { itemId: "item-1", input: { url: "https://example.com" } },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toThrow("Database connection failed");
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -1078,6 +1232,20 @@ describe("Mutation.updateItemLink", () => {
                 createAuthenticatedContext(),
             ),
         ).rejects.toMatchObject({ extensions: { code: "FORBIDDEN" } });
+    });
+
+    it("re-throws non-authorization errors", async () => {
+        const dbError = new Error("Storage quota exceeded");
+        mockWishlistService.updateItemLink.mockRejectedValue(dbError);
+
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateItemLink",
+                { id: "link-1", input: {} },
+                createAuthenticatedContext(),
+            ),
+        ).rejects.toThrow("Storage quota exceeded");
     });
 });
 
@@ -1366,6 +1534,33 @@ describe("Mutation.batchMoveItems", () => {
         });
     });
 
+    it("returns errors array when some items fail to move", async () => {
+        // Covers line 515: result.errors.length > 0 ? result.errors : null (truthy branch)
+        mockWishlistService.batchMoveItems.mockResolvedValue({
+            processedCount: 1,
+            failedCount: 2,
+            errors: ["2 items not found or unauthorized"],
+        });
+
+        const result = await invokeResolver(
+            "Mutation",
+            "batchMoveItems",
+            {
+                input: {
+                    itemIds: ["item-1", "item-2", "item-3"],
+                    categoryId: "cat-2",
+                },
+            },
+            createAuthenticatedContext(),
+        );
+
+        expect(result).toMatchObject({
+            success: false,
+            failedCount: 2,
+            errors: ["2 items not found or unauthorized"],
+        });
+    });
+
     it("passes null categoryId when not provided", async () => {
         mockWishlistService.batchMoveItems.mockResolvedValue({
             processedCount: 1,
@@ -1491,6 +1686,42 @@ describe("WishlistItem.links", () => {
 // Additional register edge cases (covers remaining branches)
 // ---------------------------------------------------------------------------
 describe("register resolver – remaining edge cases", () => {
+    it("returns success payload on successful registration", async () => {
+        // Covers lines 126-130: the success return in the register resolver
+        const supabaseUser = {
+            id: "new-user-123",
+            email: "newuser@example.com",
+            user_metadata: { name: "New User" },
+            identities: [{ id: "id-1" }],
+            created_at: "2024-01-01T00:00:00Z",
+            updated_at: "2024-01-01T00:00:00Z",
+        };
+        const context = createContext(
+            {
+                signUp: vi.fn().mockResolvedValue({
+                    data: {
+                        user: supabaseUser,
+                        session: { access_token: "tok" },
+                    },
+                    error: null,
+                }),
+                signOut: vi.fn().mockResolvedValue({ error: null }),
+            },
+            null,
+        );
+
+        const result = await invokeRegister(context);
+
+        expect(result).toMatchObject({
+            success: true,
+            user: expect.objectContaining({
+                id: "new-user-123",
+                email: "newuser@example.com",
+            }),
+            error: null,
+        });
+    });
+
     it("throws INTERNAL_SERVER_ERROR when signUp itself throws a plain Error (covers toRegisterErrorPayload guard line 560)", async () => {
         // When supabase.auth.signUp() throws (rather than returning { error }),
         // the plain Error propagates to the resolver's catch block.
