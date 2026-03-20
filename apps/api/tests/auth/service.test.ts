@@ -399,6 +399,39 @@ describe("SupabaseAuthService", () => {
             });
         });
 
+        it("still returns PublicUser when createDefaultCategories fails on login", async () => {
+            // Covers lines 172-177: the catch block when createDefaultCategories throws
+            mockCreateDefaultCategories.mockRejectedValueOnce(
+                new Error("D1 write failed"),
+            );
+            const consoleSpy = vi
+                .spyOn(console, "error")
+                .mockImplementation(() => {});
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: TEST_USER },
+                    error: null,
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            const result = await service.login(
+                "test@example.com",
+                "password123",
+            );
+
+            expect(result).toMatchObject({ id: "user-uuid-123" });
+            expect(consoleSpy).toHaveBeenCalledWith(
+                "Failed to bootstrap default categories on login. User ID:",
+                "user-uuid-123",
+                expect.any(Error),
+            );
+            consoleSpy.mockRestore();
+        });
+
         it("heals partial registration by bootstrapping D1 on login", async () => {
             const mockDb = createMockDb();
             const mockSupabase = createMockSupabase({
@@ -487,6 +520,51 @@ describe("SupabaseAuthService", () => {
                 message: "Login failed: Too many requests",
                 code: "RATE_LIMITED",
                 status: 429,
+            });
+        });
+
+        it("throws RATE_LIMITED with default status 429 when error.status is undefined", async () => {
+            // Covers line 259: status ?? 429 when no numeric status is provided
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: { message: "Too many requests", status: undefined },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(
+                service.login("test@example.com", "password123"),
+            ).rejects.toMatchObject({
+                code: "RATE_LIMITED",
+                status: 429,
+            });
+        });
+
+        it("throws UNCONFIRMED_ACCOUNT with default status 400 when error.status is undefined", async () => {
+            // Covers line 282: status ?? 400 when no numeric status is provided
+            const mockSupabase = createMockSupabase({
+                signInWithPassword: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        message: "Email not confirmed",
+                        status: undefined,
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            await expect(
+                service.login("test@example.com", "password123"),
+            ).rejects.toMatchObject({
+                code: "UNCONFIRMED_ACCOUNT",
+                status: 400,
             });
         });
 
@@ -664,6 +742,35 @@ describe("SupabaseAuthService", () => {
                 "Logout failed: Service unavailable",
             );
         });
+
+        it("throws with undefined status when sign out error has non-numeric status", async () => {
+            // Covers line 190: typeof error.status === "number" ? error.status : undefined
+            const mockSupabase = createMockSupabase({
+                signOut: vi.fn().mockResolvedValue({
+                    error: {
+                        message: "Service unavailable",
+                        status: "bad" as unknown as number,
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            let error: unknown;
+            try {
+                await service.logout();
+            } catch (caughtError) {
+                error = caughtError;
+            }
+
+            expect(error).toBeInstanceOf(AuthServiceError);
+            expect(error).toMatchObject({
+                message: "Logout failed: Service unavailable",
+                status: undefined,
+            });
+        });
     });
 
     describe("getUser", () => {
@@ -687,6 +794,55 @@ describe("SupabaseAuthService", () => {
                 name: "Test User",
                 created_at: "2024-01-01T00:00:00.000Z",
                 updated_at: "2024-01-01T00:00:00.000Z",
+            });
+        });
+
+        it("normalizes null email to empty string", async () => {
+            // Covers line 241: user.email ?? ""
+            const mockSupabase = createMockSupabase({
+                getUser: vi.fn().mockResolvedValue({
+                    data: {
+                        user: {
+                            ...TEST_USER,
+                            email: null,
+                        },
+                    },
+                    error: null,
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            const result = await service.getUser();
+
+            expect(result).toMatchObject({ email: "" });
+        });
+
+        it("returns null and clears cookies when getUser reports a 403 invalid session", async () => {
+            // Covers line 294: error.status === 403 branch in isRecoverableInvalidSessionError
+            const mockSupabase = createMockSupabase({
+                getUser: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: {
+                        __isAuthError: true,
+                        name: "AuthApiError",
+                        message: "Forbidden",
+                        status: 403,
+                    },
+                }),
+            });
+            const service = new SupabaseAuthService(
+                mockSupabase,
+                createMockDb(),
+            );
+
+            const result = await service.getUser();
+
+            expect(result).toBeNull();
+            expect(mockSupabase.auth.signOut).toHaveBeenCalledWith({
+                scope: "local",
             });
         });
 

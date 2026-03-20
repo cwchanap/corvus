@@ -1556,6 +1556,44 @@ describe("WishlistService", () => {
                 expect(fakeDb.delete).not.toHaveBeenCalled();
             });
 
+            it("uses plural 'items' in error message when multiple items are invalid", async () => {
+                // Covers line 412: invalidCount === 1 ? "item" : "items" (the "items" plural branch)
+                const ownedItems = [{ id: "item-1" }];
+
+                const allMock = vi.fn().mockResolvedValue(ownedItems);
+                const selectWhereMock = vi.fn(() => ({ all: allMock }));
+                const selectFromMock = vi.fn(() => ({
+                    where: selectWhereMock,
+                }));
+                const selectMock = vi.fn(() => ({
+                    from: selectFromMock,
+                })) as Mock;
+
+                const deleteRunMock = vi.fn().mockResolvedValue(undefined);
+                const deleteWhereMock = vi.fn(() => ({ run: deleteRunMock }));
+                const deleteMock = vi.fn(() => ({
+                    where: deleteWhereMock,
+                })) as Mock;
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    delete: deleteMock,
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchDeleteItems(
+                    ["item-1", "item-2", "item-3"],
+                    "user-uuid-42",
+                );
+
+                expect(result).toEqual({
+                    processedCount: 1,
+                    failedCount: 2,
+                    success: true,
+                    errors: ["2 items not found or unauthorized"],
+                });
+            });
+
             it("deletes all items when all are valid", async () => {
                 const ownedItems = [
                     { id: "item-1" },
@@ -1851,6 +1889,59 @@ describe("WishlistService", () => {
                     failedCount: 1,
                     success: true,
                     errors: ["1 item not found or unauthorized"],
+                });
+            });
+
+            it("uses plural 'items' in error message when multiple items are invalid", async () => {
+                // Covers line 508: invalidCount === 1 ? "item" : "items" (the "items" plural branch)
+                const ownedItems = [{ id: "item-1" }];
+                const category = {
+                    id: "cat-1",
+                    user_id: "user-uuid-42",
+                    name: "Test",
+                };
+
+                const selectAllMock = vi.fn().mockResolvedValue(ownedItems);
+                const selectWhereMock1 = vi.fn(() => ({ all: selectAllMock }));
+                const selectFromMock1 = vi.fn(() => ({
+                    where: selectWhereMock1,
+                }));
+
+                const selectGetMock = vi.fn().mockResolvedValue(category);
+                const selectWhereMock2 = vi.fn(() => ({ get: selectGetMock }));
+                const selectFromMock2 = vi.fn(() => ({
+                    where: selectWhereMock2,
+                }));
+
+                const selectMock = vi
+                    .fn()
+                    .mockReturnValueOnce({ from: selectFromMock1 })
+                    .mockReturnValueOnce({ from: selectFromMock2 }) as Mock;
+
+                const updateRunMock = vi.fn().mockResolvedValue(undefined);
+                const updateWhereMock = vi.fn(() => ({ run: updateRunMock }));
+                const updateSetMock = vi.fn(() => ({ where: updateWhereMock }));
+                const updateMock = vi.fn(() => ({
+                    set: updateSetMock,
+                })) as Mock;
+
+                const fakeDb: Partial<DB> = {
+                    select: selectMock,
+                    update: updateMock,
+                };
+
+                const service = new WishlistService(fakeDb as DB);
+                const result = await service.batchMoveItems(
+                    ["item-1", "item-2", "item-3"],
+                    "user-uuid-42",
+                    "cat-1",
+                );
+
+                expect(result).toEqual({
+                    processedCount: 1,
+                    failedCount: 2,
+                    success: true,
+                    errors: ["2 items not found or unauthorized"],
                 });
             });
         });
