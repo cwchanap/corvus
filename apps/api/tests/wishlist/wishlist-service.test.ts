@@ -1556,7 +1556,7 @@ describe("WishlistService", () => {
                 expect(fakeDb.delete).not.toHaveBeenCalled();
             });
 
-            it("uses plural 'items' in error message when multiple items are invalid", async () => {
+            it("uses plural 'items' in batchDeleteItems error message when multiple items are invalid", async () => {
                 // Covers line 412: invalidCount === 1 ? "item" : "items" (the "items" plural branch)
                 const ownedItems = [{ id: "item-1" }];
 
@@ -1892,7 +1892,7 @@ describe("WishlistService", () => {
                 });
             });
 
-            it("uses plural 'items' in error message when multiple items are invalid", async () => {
+            it("uses plural 'items' in batchMoveItems error message when multiple items are invalid", async () => {
                 // Covers line 508: invalidCount === 1 ? "item" : "items" (the "items" plural branch)
                 const ownedItems = [{ id: "item-1" }];
                 const category = {
