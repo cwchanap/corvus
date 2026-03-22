@@ -5,6 +5,10 @@ import type { GraphQLContext } from "../../src/graphql/context";
 import { resolvers } from "../../src/graphql/resolvers";
 import type { DB } from "../../src/lib/db";
 import * as migrations from "../../src/lib/db/migrations";
+import {
+    AuthServiceError,
+    SupabaseAuthService,
+} from "../../src/lib/auth/service";
 
 vi.mock("../../src/lib/db/migrations", () => ({
     createDefaultCategories: vi.fn().mockResolvedValue(undefined),
@@ -1737,5 +1741,60 @@ describe("register resolver – remaining edge cases", () => {
             message: "Registration failed",
             extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// toLoginGraphQLError – null-coalescing fallback branches (lines 596 and 620)
+// ---------------------------------------------------------------------------
+describe("login resolver – toLoginGraphQLError status fallback", () => {
+    it("falls back to status 429 when AuthServiceError.status is undefined for RATE_LIMITED (covers line 596)", async () => {
+        // Bypass the Supabase client path to inject an AuthServiceError whose
+        // .status is intentionally undefined, forcing the `?? 429` branch.
+        const spy = vi
+            .spyOn(SupabaseAuthService.prototype, "login")
+            .mockRejectedValueOnce(
+                new AuthServiceError("Login failed: rate limited", {
+                    code: "RATE_LIMITED",
+                    // status intentionally omitted → undefined
+                }),
+            );
+
+        const context = createContext();
+        try {
+            await invokeLogin(context);
+            throw new Error("Expected invokeLogin to throw");
+        } catch (error) {
+            expect(error).toBeInstanceOf(GraphQLError);
+            expect(error).toMatchObject({
+                extensions: { code: "RATE_LIMITED", status: 429 },
+            });
+        } finally {
+            spy.mockRestore();
+        }
+    });
+
+    it("falls back to status 400 when AuthServiceError.status is undefined for UNCONFIRMED_ACCOUNT (covers line 620)", async () => {
+        const spy = vi
+            .spyOn(SupabaseAuthService.prototype, "login")
+            .mockRejectedValueOnce(
+                new AuthServiceError("Login failed: email not confirmed", {
+                    code: "UNCONFIRMED_ACCOUNT",
+                    // status intentionally omitted → undefined
+                }),
+            );
+
+        const context = createContext();
+        try {
+            await invokeLogin(context);
+            throw new Error("Expected invokeLogin to throw");
+        } catch (error) {
+            expect(error).toBeInstanceOf(GraphQLError);
+            expect(error).toMatchObject({
+                extensions: { code: "BAD_USER_INPUT", status: 400 },
+            });
+        } finally {
+            spy.mockRestore();
+        }
     });
 });
