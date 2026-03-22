@@ -88,6 +88,12 @@ describe("database schema", () => {
         it("has foreign key relation to wishlistCategories", () => {
             const config = getTableConfig(wishlistItems);
             expect(config.foreignKeys.length).toBeGreaterThanOrEqual(1);
+            // Calling fk.reference() exercises the `() => wishlistCategories.id` lambda
+            const fk = config.foreignKeys.find((fk) => {
+                const ref = fk.reference();
+                return ref.columns.some((c) => c.name === "category_id");
+            });
+            expect(fk).toBeDefined();
         });
     });
 
