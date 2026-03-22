@@ -50,7 +50,7 @@ describe("graphqlRequest", () => {
         expect(url).toBe("https://custom.example.com/graphql");
     });
 
-    it("uses the default endpoint when no options supplied", async () => {
+    it("uses the default endpoint when endpoint is not provided", async () => {
         const fetchImpl = makeFetch(200, { data: {} });
         await graphqlRequest("{ q }", undefined, { fetchImpl });
         const [url] = (fetchImpl as ReturnType<typeof vi.fn>).mock.calls[0] as [

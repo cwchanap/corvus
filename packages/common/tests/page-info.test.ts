@@ -184,8 +184,8 @@ describe("getCurrentPageInfo – web context", () => {
         expect(info.favicon).toBe("https://web.example.com/favicon.ico");
     });
 
-    it("returns undefined favicon when document is not defined (covers getFaviconUrl line 54)", async () => {
-        // window is defined but document is NOT → getFaviconUrl returns undefined early
+    it("returns undefined favicon when document is not defined in a web context", async () => {
+        // window is defined but document is NOT → favicon should be reported as undefined
         vi.stubGlobal("window", {
             location: { href: "https://web.example.com/" },
         });
@@ -203,6 +203,7 @@ describe("getCurrentPageInfo – web context", () => {
 describe("getCurrentPageInfo – error fallback", () => {
     afterEach(() => {
         removeChrome();
+        vi.unstubAllGlobals();
     });
 
     it("returns Unknown Page when neither chrome nor window is available", async () => {
@@ -224,7 +225,7 @@ describe("getCurrentPageInfo – error fallback", () => {
         expect(info.title).toBe("Unknown Page");
     });
 
-    it("returns window.location.href in catch fallback when window is defined (covers line 48 true branch)", async () => {
+    it("returns window.location.href in catch fallback when window is defined", async () => {
         // Chrome throws, but window IS defined → url comes from window.location.href
         stubChrome({
             tabs: {
@@ -238,12 +239,9 @@ describe("getCurrentPageInfo – error fallback", () => {
         const info = await getCurrentPageInfo();
         expect(info.title).toBe("Unknown Page");
         expect(info.url).toBe("https://fallback.example.com/");
-
-        vi.unstubAllGlobals();
-        removeChrome();
     });
 
-    it("returns empty url in catch fallback when window.location.href is empty (covers || '' branch on line 48)", async () => {
+    it("returns empty url in catch fallback when window.location.href is empty", async () => {
         stubChrome({
             tabs: {
                 query: vi.fn().mockRejectedValue(new Error("tabs failed")),
@@ -256,8 +254,5 @@ describe("getCurrentPageInfo – error fallback", () => {
         const info = await getCurrentPageInfo();
         expect(info.title).toBe("Unknown Page");
         expect(info.url).toBe("");
-
-        vi.unstubAllGlobals();
-        removeChrome();
     });
 });
