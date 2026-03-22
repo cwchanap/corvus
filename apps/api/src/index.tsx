@@ -78,6 +78,7 @@ app.get("*", async (c) => {
 export default app;
 
 // Enable HMR
+/* c8 ignore next 3 */
 if (import.meta.hot) {
   import.meta.hot.accept();
 }
