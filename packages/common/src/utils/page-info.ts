@@ -59,7 +59,6 @@ export async function getCurrentPageInfo(): Promise<PageInfo> {
 }
 
 function getFaviconUrl(): string | undefined {
-    /* c8 ignore next -- defensive guard; document.title access above would throw first */
     if (typeof document === "undefined") return undefined;
 
     // Try to find favicon link
