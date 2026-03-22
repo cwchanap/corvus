@@ -151,6 +151,17 @@ describe("Static asset catch-all route", () => {
         expect(assets.fetch).toHaveBeenCalledTimes(1);
     });
 
+    it("returns 404 when asset not found and no accept header (covers accept ?? '' branch)", async () => {
+        const assets = makeAssets({ status: 404 });
+        const res = await app.request(
+            "https://app.example.com/missing.bin",
+            {}, // no accept header → c.req.header("accept") returns null
+            { ...baseEnv, ASSETS: assets },
+        );
+        expect(res.status).toBe(404);
+        expect(assets.fetch).toHaveBeenCalledTimes(1);
+    });
+
     it("falls back to /index.html for HTML requests when asset not found", async () => {
         const assets: AssetsFetcher = {
             fetch: vi
