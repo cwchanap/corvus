@@ -34,9 +34,14 @@ export async function getCurrentPageInfo(): Promise<PageInfo> {
         // Fallback for web context
         if (typeof window !== "undefined") {
             return {
-                title: document.title || "Untitled Page",
+                title:
+                    (typeof document !== "undefined" && document.title) ||
+                    "Untitled Page",
                 url: window.location.href,
-                favicon: getFaviconUrl(),
+                favicon:
+                    typeof document !== "undefined"
+                        ? getFaviconUrl()
+                        : undefined,
             };
         }
 
