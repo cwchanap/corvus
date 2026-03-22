@@ -13,7 +13,6 @@ export default defineConfig({
                 "src/types.ts",
                 "src/types/**",
                 "src/graphql/types.ts",
-                "src/graphql/operations/**",
                 // Build/tool config files
                 "vitest.config.ts",
                 "eslint.config.js",
