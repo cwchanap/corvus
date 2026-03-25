@@ -163,7 +163,8 @@ describe("adaptItem", () => {
     });
 
     it("handles item with no links", () => {
-        const result = adaptItem({ ...graphqlItem, links: undefined });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = adaptItem({ ...graphqlItem, links: undefined } as any);
 
         expect(result.links).toBeUndefined();
     });

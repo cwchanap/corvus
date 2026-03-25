@@ -198,6 +198,11 @@ describe("getCategories", () => {
             options,
         );
     });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Forbidden"));
+        await expect(getCategories()).rejects.toThrow("Forbidden");
+    });
 });
 
 describe("getItem", () => {
@@ -236,6 +241,11 @@ describe("getItem", () => {
             options,
         );
     });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Not found"));
+        await expect(getItem("item-1")).rejects.toThrow("Not found");
+    });
 });
 
 describe("createCategory", () => {
@@ -265,6 +275,13 @@ describe("createCategory", () => {
             CREATE_CATEGORY_MUTATION,
             expect.anything(),
             options,
+        );
+    });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(createCategory({ name: "Books" })).rejects.toThrow(
+            "Unauthorized",
         );
     });
 });
@@ -309,6 +326,13 @@ describe("updateCategory", () => {
             options,
         );
     });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(updateCategory("cat-1", { name: "X" })).rejects.toThrow(
+            "Unauthorized",
+        );
+    });
 });
 
 describe("deleteCategory", () => {
@@ -347,6 +371,11 @@ describe("deleteCategory", () => {
             options,
         );
     });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(deleteCategory("cat-1")).rejects.toThrow("Unauthorized");
+    });
 });
 
 describe("createItem", () => {
@@ -376,6 +405,13 @@ describe("createItem", () => {
             CREATE_ITEM_MUTATION,
             expect.anything(),
             options,
+        );
+    });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(createItem({ title: "X" })).rejects.toThrow(
+            "Unauthorized",
         );
     });
 });
@@ -418,6 +454,13 @@ describe("updateItem", () => {
             options,
         );
     });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(updateItem("item-1", { title: "X" })).rejects.toThrow(
+            "Unauthorized",
+        );
+    });
 });
 
 describe("deleteItem", () => {
@@ -456,6 +499,11 @@ describe("deleteItem", () => {
             options,
         );
     });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(deleteItem("item-1")).rejects.toThrow("Unauthorized");
+    });
 });
 
 describe("addItemLink", () => {
@@ -490,6 +538,13 @@ describe("addItemLink", () => {
             expect.anything(),
             options,
         );
+    });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(
+            addItemLink("item-1", { url: "https://example.com" }),
+        ).rejects.toThrow("Unauthorized");
     });
 });
 
@@ -531,6 +586,13 @@ describe("updateItemLink", () => {
             options,
         );
     });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(updateItemLink("link-1", {})).rejects.toThrow(
+            "Unauthorized",
+        );
+    });
 });
 
 describe("deleteItemLink", () => {
@@ -569,6 +631,11 @@ describe("deleteItemLink", () => {
             options,
         );
     });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(deleteItemLink("link-1")).rejects.toThrow("Unauthorized");
+    });
 });
 
 describe("setPrimaryLink", () => {
@@ -605,6 +672,13 @@ describe("setPrimaryLink", () => {
             SET_PRIMARY_LINK_MUTATION,
             expect.anything(),
             options,
+        );
+    });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(setPrimaryLink("item-1", "link-1")).rejects.toThrow(
+            "Unauthorized",
         );
     });
 });
@@ -668,6 +742,13 @@ describe("batchDeleteItems", () => {
             options,
         );
     });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(batchDeleteItems({ itemIds: ["item-1"] })).rejects.toThrow(
+            "Unauthorized",
+        );
+    });
 });
 
 describe("batchMoveItems", () => {
@@ -728,5 +809,12 @@ describe("batchMoveItems", () => {
             expect.anything(),
             options,
         );
+    });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(
+            batchMoveItems({ itemIds: ["item-1"], categoryId: "cat-1" }),
+        ).rejects.toThrow("Unauthorized");
     });
 });

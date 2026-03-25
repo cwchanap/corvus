@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getCurrentUser, register, login, logout } from "./auth";
 import * as webClient from "./client";
+import {
+    ME_QUERY,
+    REGISTER_MUTATION,
+    LOGIN_MUTATION,
+    LOGOUT_MUTATION,
+} from "@repo/common/graphql/operations/auth";
 
 vi.mock("./client", () => ({
     graphqlRequest: vi.fn(),
@@ -25,7 +31,7 @@ describe("getCurrentUser", () => {
         const result = await getCurrentUser();
 
         expect(result).toEqual(mockUser);
-        expect(mockedRequest).toHaveBeenCalledOnce();
+        expect(mockedRequest).toHaveBeenCalledWith(ME_QUERY);
     });
 
     it("returns null when unauthenticated", async () => {
@@ -58,9 +64,9 @@ describe("register", () => {
         const result = await register(input);
 
         expect(result).toEqual(mockPayload);
-        expect(mockedRequest).toHaveBeenCalledOnce();
-        const callArgs = mockedRequest.mock.calls[0];
-        expect(callArgs[1]).toEqual({ input });
+        expect(mockedRequest).toHaveBeenCalledWith(REGISTER_MUTATION, {
+            input,
+        });
     });
 
     it("returns error payload when email already taken", async () => {
@@ -101,9 +107,7 @@ describe("login", () => {
         const result = await login(input);
 
         expect(result).toEqual(mockPayload);
-        expect(mockedRequest).toHaveBeenCalledOnce();
-        const callArgs = mockedRequest.mock.calls[0];
-        expect(callArgs[1]).toEqual({ input });
+        expect(mockedRequest).toHaveBeenCalledWith(LOGIN_MUTATION, { input });
     });
 
     it("returns error payload for invalid credentials", async () => {
@@ -141,7 +145,7 @@ describe("logout", () => {
         const result = await logout();
 
         expect(result).toBe(true);
-        expect(mockedRequest).toHaveBeenCalledOnce();
+        expect(mockedRequest).toHaveBeenCalledWith(LOGOUT_MUTATION);
     });
 
     it("returns false when logout fails", async () => {
