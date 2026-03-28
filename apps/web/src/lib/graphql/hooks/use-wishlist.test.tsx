@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@solidjs/testing-library";
-import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
+import { JSX } from "solid-js";
 import { createSignal } from "solid-js";
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
+import type {
+  WishlistPayload,
+  WishlistCategory,
+  WishlistItem,
+  WishlistItemLink,
+} from "../wishlist";
 import {
   useWishlist,
   useCategories,
@@ -84,11 +91,10 @@ function createTestClient() {
   });
 }
 
-function Wrapper(props: { children: unknown; client?: QueryClient }) {
-  const client = props.client ?? createTestClient();
+function Wrapper(props: { children: JSX.Element; client?: QueryClient }) {
   return (
-    <QueryClientProvider client={client}>
-      {props.children as any}
+    <QueryClientProvider client={props.client ?? createTestClient()}>
+      {props.children}
     </QueryClientProvider>
   );
 }
@@ -97,46 +103,53 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-const mockCategory = {
+const mockCategory: WishlistCategory = {
   id: "cat-1",
   name: "Electronics",
-  description: "",
-  position: 0,
-  createdAt: "",
-  updatedAt: "",
+  color: null,
+  userId: "user-1",
+  createdAt: "2024-01-01T00:00:00Z",
+  updatedAt: "2024-01-02T00:00:00Z",
 };
-const mockItem = {
+
+const mockItem: WishlistItem = {
   id: "item-1",
   title: "Laptop",
-  description: "",
-  price: 999,
-  currency: "USD",
-  priority: 1,
-  position: 0,
-  isPurchased: false,
+  description: null,
   categoryId: "cat-1",
+  favicon: null,
+  userId: "user-1",
+  createdAt: "2024-01-01T00:00:00Z",
+  updatedAt: "2024-01-02T00:00:00Z",
   links: [],
-  createdAt: "",
-  updatedAt: "",
 };
-const mockLink = {
+
+const mockLink: WishlistItemLink = {
   id: "link-1",
   url: "https://example.com",
-  description: "",
+  description: null,
   isPrimary: true,
   itemId: "item-1",
-  createdAt: "",
-  updatedAt: "",
+  createdAt: "2024-01-01T00:00:00Z",
+  updatedAt: "2024-01-02T00:00:00Z",
+};
+
+const mockWishlist: WishlistPayload = {
+  items: [mockItem],
+  categories: [mockCategory],
+  pagination: {
+    totalItems: 1,
+    page: 1,
+    pageSize: 10,
+    totalPages: 1,
+    hasNext: false,
+    hasPrevious: false,
+  },
 };
 
 describe("useWishlist", () => {
   it("fetches wishlist data", async () => {
-    const mockWishlist = {
-      items: [mockItem],
-      categories: [mockCategory],
-      pagination: null,
-    };
-    mocks.getWishlist.mockResolvedValueOnce(mockWishlist as any);
+    mocks.getWishlist.mockResolvedValueOnce(mockWishlist);
 
     function Component() {
       const query = useWishlist();
@@ -161,11 +174,7 @@ describe("useWishlist", () => {
   });
 
   it("passes filter and pagination to getWishlist", async () => {
-    mocks.getWishlist.mockResolvedValueOnce({
-      items: [],
-      categories: [],
-      pagination: null,
-    } as any);
+    mocks.getWishlist.mockResolvedValueOnce(mockWishlist);
 
     function Component() {
       const [filter] = createSignal({ search: "laptop" });
@@ -215,7 +224,7 @@ describe("useCategories", () => {
 
 describe("useItem", () => {
   it("fetches item by id", async () => {
-    mocks.getItem.mockResolvedValueOnce(mockItem as any);
+    mocks.getItem.mockResolvedValueOnce(mockItem);
 
     function Component() {
       const [id] = createSignal("item-1");
@@ -240,19 +249,16 @@ describe("useItem", () => {
 
 describe("useCreateCategory", () => {
   it("creates category and invalidates queries on success", async () => {
-    mocks.createCategory.mockResolvedValueOnce(mockCategory as any);
+    mocks.createCategory.mockResolvedValueOnce(mockCategory);
     const client = createTestClient();
     const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    const categoryInput = { name: "Books", description: "" };
 
     function Component() {
       const mutation = useCreateCategory();
       return (
         <div>
-          <button
-            onClick={() => mutation.mutate({ name: "Books", description: "" })}
-          >
-            Create
-          </button>
+          <button onClick={() => mutation.mutate(categoryInput)}>Create</button>
           <span>{mutation.isSuccess ? "success" : "idle"}</span>
         </div>
       );
@@ -268,13 +274,17 @@ describe("useCreateCategory", () => {
     await waitFor(() =>
       expect(screen.getByText("success")).toBeInTheDocument(),
     );
+    expect(mocks.createCategory).toHaveBeenCalledWith(
+      categoryInput,
+      expect.anything(),
+    );
     expect(invalidateSpy).toHaveBeenCalled();
   });
 });
 
 describe("useUpdateCategory", () => {
   it("updates category and invalidates queries on success", async () => {
-    mocks.updateCategory.mockResolvedValueOnce(mockCategory as any);
+    mocks.updateCategory.mockResolvedValueOnce(mockCategory);
     const client = createTestClient();
     const invalidateSpy = vi.spyOn(client, "invalidateQueries");
 
@@ -284,7 +294,10 @@ describe("useUpdateCategory", () => {
         <div>
           <button
             onClick={() =>
-              mutation.mutate({ id: "cat-1", input: { name: "Updated" } })
+              mutation.mutate({
+                id: "cat-1",
+                input: { name: "Updated" },
+              })
             }
           >
             Update
@@ -340,7 +353,7 @@ describe("useDeleteCategory", () => {
 
 describe("useCreateItem", () => {
   it("creates item and invalidates wishlist query on success", async () => {
-    mocks.createItem.mockResolvedValueOnce(mockItem as any);
+    mocks.createItem.mockResolvedValueOnce(mockItem);
     const client = createTestClient();
     const invalidateSpy = vi.spyOn(client, "invalidateQueries");
 
@@ -350,7 +363,10 @@ describe("useCreateItem", () => {
         <div>
           <button
             onClick={() =>
-              mutation.mutate({ title: "Laptop", categoryId: "cat-1" })
+              mutation.mutate({
+                title: "Laptop",
+                categoryId: "cat-1",
+              })
             }
           >
             Create
@@ -376,7 +392,7 @@ describe("useCreateItem", () => {
 
 describe("useUpdateItem", () => {
   it("updates item and invalidates relevant queries on success", async () => {
-    mocks.updateItem.mockResolvedValueOnce(mockItem as any);
+    mocks.updateItem.mockResolvedValueOnce(mockItem);
     const client = createTestClient();
     const invalidateSpy = vi.spyOn(client, "invalidateQueries");
 
@@ -448,7 +464,7 @@ describe("useDeleteItem", () => {
 
 describe("useAddItemLink", () => {
   it("adds item link and invalidates relevant queries on success", async () => {
-    mocks.addItemLink.mockResolvedValueOnce(mockLink as any);
+    mocks.addItemLink.mockResolvedValueOnce(mockLink);
     const client = createTestClient();
     const invalidateSpy = vi.spyOn(client, "invalidateQueries");
 
@@ -460,7 +476,10 @@ describe("useAddItemLink", () => {
             onClick={() =>
               mutation.mutate({
                 itemId: "item-1",
-                input: { url: "https://example.com", isPrimary: false },
+                input: {
+                  url: "https://example.com",
+                  isPrimary: false,
+                },
               })
             }
           >
@@ -490,7 +509,7 @@ describe("useAddItemLink", () => {
 
 describe("useUpdateItemLink", () => {
   it("updates item link and invalidates wishlist query on success", async () => {
-    mocks.updateItemLink.mockResolvedValueOnce(mockLink as any);
+    mocks.updateItemLink.mockResolvedValueOnce(mockLink);
     const client = createTestClient();
     const invalidateSpy = vi.spyOn(client, "invalidateQueries");
 
@@ -569,7 +588,10 @@ describe("useSetPrimaryLink", () => {
         <div>
           <button
             onClick={() =>
-              mutation.mutate({ itemId: "item-1", linkId: "link-1" })
+              mutation.mutate({
+                itemId: "item-1",
+                linkId: "link-1",
+              })
             }
           >
             Set Primary
