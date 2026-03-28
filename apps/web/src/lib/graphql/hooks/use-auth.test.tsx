@@ -166,7 +166,10 @@ describe("useRegister", () => {
       expect(screen.getByText("success")).toBeInTheDocument();
     });
 
-    expect(mockedRegister).toHaveBeenCalledWith(registerInput);
+    expect(mockedRegister).toHaveBeenCalledWith(
+      registerInput,
+      expect.anything(),
+    );
 
     // Cache should be updated with user
     const cachedUser = testClient.getQueryData(["auth", "me"]);
