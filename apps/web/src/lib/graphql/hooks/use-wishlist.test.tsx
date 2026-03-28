@@ -274,7 +274,10 @@ describe("useCreateCategory", () => {
     await waitFor(() =>
       expect(screen.getByText("success")).toBeInTheDocument(),
     );
-    expect(mocks.createCategory).toHaveBeenCalledWith(categoryInput);
+    expect(mocks.createCategory).toHaveBeenCalledWith(
+      categoryInput,
+      expect.anything(),
+    );
     expect(invalidateSpy).toHaveBeenCalled();
   });
 });
