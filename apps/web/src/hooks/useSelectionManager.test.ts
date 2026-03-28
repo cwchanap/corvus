@@ -93,6 +93,19 @@ describe("useSelectionManager", () => {
                 dispose();
             });
         });
+
+        it("toggling a non-existent id adds it to the selection set", () => {
+            createRoot((dispose) => {
+                const { toggleSelection, isSelected, selectedCount } =
+                    createManager();
+                // The implementation tracks any id in the set regardless of
+                // whether it matches an item; selectedItems() would return []
+                toggleSelection("non-existent");
+                expect(isSelected("non-existent")).toBe(true);
+                expect(selectedCount()).toBe(1);
+                dispose();
+            });
+        });
     });
 
     describe("selectAll", () => {
@@ -279,7 +292,7 @@ describe("useSelectionManager", () => {
         });
     });
 
-    describe("getSelectedIds", () => {
+    describe("selectedIds", () => {
         it("returns selected ids as array", () => {
             createRoot((dispose) => {
                 const { toggleSelection, selectedIds } = createManager();

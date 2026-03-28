@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@solidjs/testing-library";
+import { JSX } from "solid-js";
 import { AuthProvider, useAuth } from "./context";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 
@@ -15,10 +16,10 @@ function createTestQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
 }
 
-function TestWrapper(props: { children: unknown }) {
+function TestWrapper(props: { children: JSX.Element }) {
   return (
     <QueryClientProvider client={createTestQueryClient()}>
-      <AuthProvider>{props.children as any}</AuthProvider>
+      <AuthProvider>{props.children}</AuthProvider>
     </QueryClientProvider>
   );
 }
@@ -35,7 +36,7 @@ describe("AuthProvider", () => {
     mockedUseCurrentUser.mockReturnValue({
       data: mockUser,
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof useCurrentUser>);
 
     let capturedAuth: ReturnType<typeof useAuth> | undefined;
 
@@ -59,7 +60,7 @@ describe("AuthProvider", () => {
     mockedUseCurrentUser.mockReturnValue({
       data: null,
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof useCurrentUser>);
 
     let capturedAuth: ReturnType<typeof useAuth> | undefined;
 
@@ -82,7 +83,7 @@ describe("AuthProvider", () => {
     mockedUseCurrentUser.mockReturnValue({
       data: undefined,
       isLoading: true,
-    } as any);
+    } as unknown as ReturnType<typeof useCurrentUser>);
 
     let capturedAuth: ReturnType<typeof useAuth> | undefined;
 
