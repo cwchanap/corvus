@@ -50,7 +50,7 @@ describe("graphqlRequest (web client wrapper)", () => {
 
         const customFetch = vi.fn();
         await graphqlRequest("query { me { id } }", undefined, {
-            fetchFn: customFetch,
+            fetchImpl: customFetch,
         });
 
         expect(mockedBaseRequest).toHaveBeenCalledWith(
@@ -58,7 +58,7 @@ describe("graphqlRequest (web client wrapper)", () => {
             undefined,
             expect.objectContaining({
                 credentials: "include",
-                fetchFn: customFetch,
+                fetchImpl: customFetch,
             }),
         );
     });

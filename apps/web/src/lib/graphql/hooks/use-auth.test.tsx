@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@solidjs/testing-library";
+import { JSX } from "solid-js";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { useCurrentUser, useRegister, useLogin, useLogout } from "./use-auth";
 
@@ -27,11 +28,10 @@ function createTestQueryClient() {
   });
 }
 
-function Wrapper(props: { children: unknown; client?: QueryClient }) {
-  const client = props.client ?? createTestQueryClient();
+function Wrapper(props: { children: JSX.Element; client?: QueryClient }) {
   return (
-    <QueryClientProvider client={client}>
-      {props.children as any}
+    <QueryClientProvider client={props.client ?? createTestQueryClient()}>
+      {props.children}
     </QueryClientProvider>
   );
 }
@@ -136,20 +136,17 @@ describe("useRegister", () => {
     mockedRegister.mockResolvedValueOnce(mockPayload);
 
     const testClient = createTestQueryClient();
+    const registerInput = {
+      email: "alice@example.com",
+      password: "pw",
+      name: "Alice",
+    };
 
     function Component() {
       const mutation = useRegister();
       return (
         <div>
-          <button
-            onClick={() =>
-              mutation.mutate({
-                email: "alice@example.com",
-                password: "pw",
-                name: "Alice",
-              })
-            }
-          >
+          <button onClick={() => mutation.mutate(registerInput)}>
             Register
           </button>
           <span>{mutation.isSuccess ? "success" : "idle"}</span>
@@ -169,13 +166,22 @@ describe("useRegister", () => {
       expect(screen.getByText("success")).toBeInTheDocument();
     });
 
+    expect(mockedRegister).toHaveBeenCalledWith(
+      registerInput,
+      expect.anything(),
+    );
+
     // Cache should be updated with user
     const cachedUser = testClient.getQueryData(["auth", "me"]);
     expect(cachedUser).toEqual(mockUser);
   });
 
   it("does not update cache when registration fails", async () => {
-    const mockPayload = { success: false, user: null, error: "Email taken" };
+    const mockPayload = {
+      success: false,
+      user: null,
+      error: "Email taken",
+    };
     mockedRegister.mockResolvedValueOnce(mockPayload);
 
     const testClient = createTestQueryClient();
@@ -235,7 +241,10 @@ describe("useLogin", () => {
         <div>
           <button
             onClick={() =>
-              mutation.mutate({ email: "alice@example.com", password: "pw" })
+              mutation.mutate({
+                email: "alice@example.com",
+                password: "pw",
+              })
             }
           >
             Login
@@ -276,7 +285,10 @@ describe("useLogin", () => {
       return (
         <button
           onClick={() =>
-            mutation.mutate({ email: "bad@example.com", password: "wrong" })
+            mutation.mutate({
+              email: "bad@example.com",
+              password: "wrong",
+            })
           }
         >
           Login
