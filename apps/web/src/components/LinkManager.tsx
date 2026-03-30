@@ -23,6 +23,8 @@ interface LinkManagerProps {
   onRemoveAllLinks: () => void;
   emptyMessage?: string;
   emptySubMessage?: string;
+  /** Map of visible link index → duplicate warning (conflicting item title) or null */
+  duplicateWarnings?: Record<number, string | null>;
 }
 
 export function LinkManager(props: LinkManagerProps) {
@@ -94,6 +96,14 @@ export function LinkManager(props: LinkManagerProps) {
                   class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   required
                 />
+                <Show when={props.duplicateWarnings?.[index]}>
+                  {(title) => (
+                    <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      This URL is already saved under &ldquo;{title()}&rdquo;.
+                      You may still save it as a duplicate.
+                    </p>
+                  )}
+                </Show>
 
                 <Input
                   value={link().description}

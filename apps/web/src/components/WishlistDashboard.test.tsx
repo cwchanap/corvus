@@ -62,6 +62,8 @@ vi.mock("../lib/graphql/hooks/use-wishlist", () => ({
   useDeleteItemLink: () => mockDeleteItemLink,
   useBatchDeleteItems: () => mockBatchDeleteItems,
   useBatchMoveItems: () => mockBatchMoveItems,
+  useRecentItems: () => ({ data: () => undefined, isLoading: false }),
+  useCheckDuplicateUrl: () => ({ data: () => undefined }),
 }));
 
 vi.mock("../lib/graphql/hooks/use-auth", () => ({

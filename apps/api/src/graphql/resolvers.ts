@@ -36,6 +36,9 @@ export const resolvers: Resolvers = {
             // Parse filters
             const categoryId = args.filter?.categoryId ?? undefined;
             const search = args.filter?.search ?? undefined;
+            const status = args.filter?.status
+                ? args.filter.status.toLowerCase()
+                : undefined;
             const sortBy = args.filter?.sortBy ?? undefined;
             const sortDir = args.filter?.sortDir ?? undefined;
 
@@ -46,6 +49,7 @@ export const resolvers: Resolvers = {
                     offset,
                     categoryId,
                     search,
+                    status,
                     sortBy,
                     sortDir,
                 },
@@ -85,8 +89,10 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
-            const items = await wishlistService.getUserItems(context.user.id);
-            const item = items.find((i) => i.id === args.id);
+            const item = await wishlistService.getItemById(
+                context.user.id,
+                args.id,
+            );
 
             if (!item) {
                 return null;
@@ -107,6 +113,42 @@ export const resolvers: Resolvers = {
                 }
                 throw error;
             }
+        },
+        checkDuplicateUrl: async (_parent, args, context) => {
+            if (!context.user) {
+                throw new GraphQLError("Not authenticated", {
+                    extensions: { code: "UNAUTHENTICATED" },
+                });
+            }
+
+            const wishlistService = new WishlistService(context.db);
+            const result = await wishlistService.checkDuplicateUrl(
+                context.user.id,
+                args.url,
+                args.excludeItemId ?? undefined,
+            );
+
+            return {
+                isDuplicate: result.isDuplicate,
+                conflictingItem: result.conflictingItem
+                    ? mapItem(result.conflictingItem, [])
+                    : null,
+            };
+        },
+        recentItems: async (_parent, args, context) => {
+            if (!context.user) {
+                throw new GraphQLError("Not authenticated", {
+                    extensions: { code: "UNAUTHENTICATED" },
+                });
+            }
+
+            const wishlistService = new WishlistService(context.db);
+            const items = await wishlistService.getRecentItems(
+                context.user.id,
+                args.limit ?? 5,
+            );
+
+            return items.map((item) => mapItem(item, item.links));
         },
     },
     Mutation: {
@@ -245,18 +287,27 @@ export const resolvers: Resolvers = {
 
             const wishlistService = new WishlistService(context.db);
 
+            const itemData = {
+                user_id: context.user.id,
+                category_id: args.input.categoryId,
+                title: args.input.title,
+                description: args.input.description ?? null,
+                favicon: args.input.favicon ?? null,
+                status: args.input.status
+                    ? (args.input.status.toLowerCase() as
+                          | "want"
+                          | "purchased"
+                          | "archived")
+                    : ("want" as const),
+                priority: args.input.priority ?? null,
+            };
+
             // If URL is provided, use transactional method to create item and link atomically
             if (args.input.url) {
                 try {
                     const { item, link } =
                         await wishlistService.createItemWithPrimaryLink(
-                            {
-                                user_id: context.user.id,
-                                category_id: args.input.categoryId,
-                                title: args.input.title,
-                                description: args.input.description ?? null,
-                                favicon: args.input.favicon ?? null,
-                            },
+                            itemData,
                             {
                                 url: args.input.url,
                                 description: args.input.linkDescription ?? null,
@@ -275,13 +326,7 @@ export const resolvers: Resolvers = {
             }
 
             // If no URL, create item without link
-            const item = await wishlistService.createItem({
-                user_id: context.user.id,
-                category_id: args.input.categoryId,
-                title: args.input.title,
-                description: args.input.description ?? null,
-                favicon: args.input.favicon ?? null,
-            });
+            const item = await wishlistService.createItem(itemData);
 
             return mapItem(item, []);
         },
@@ -305,6 +350,16 @@ export const resolvers: Resolvers = {
                             : undefined,
                     description: args.input.description ?? undefined,
                     favicon: args.input.favicon ?? undefined,
+                    status: args.input.status
+                        ? (args.input.status.toLowerCase() as
+                              | "want"
+                              | "purchased"
+                              | "archived")
+                        : undefined,
+                    priority:
+                        "priority" in args.input
+                            ? (args.input.priority ?? null)
+                            : undefined,
                 },
             );
 

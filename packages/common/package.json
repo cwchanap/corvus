@@ -13,6 +13,7 @@
     "./storage/base": "./src/storage/base.ts",
     "./storage/browser": "./src/storage/browser.ts",
     "./utils/page-info": "./src/utils/page-info.ts",
+    "./utils/format-relative-time": "./src/utils/format-relative-time.ts",
     "./graphql": "./src/graphql/index.ts",
     "./graphql/client": "./src/graphql/client.ts",
     "./graphql/types": "./src/graphql/types.ts",

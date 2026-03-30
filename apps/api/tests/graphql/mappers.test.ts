@@ -36,6 +36,8 @@ const dbItem: WishlistItem = {
     title: "My Item",
     description: "A description",
     favicon: "https://example.com/favicon.ico",
+    status: "want" as const,
+    priority: null,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-02T00:00:00Z",
 };
@@ -113,6 +115,8 @@ describe("mapItem", () => {
             title: "My Item",
             description: "A description",
             favicon: "https://example.com/favicon.ico",
+            status: "WANT",
+            priority: null,
             createdAt: "2024-01-01T00:00:00Z",
             updatedAt: "2024-01-02T00:00:00Z",
             links: [],
