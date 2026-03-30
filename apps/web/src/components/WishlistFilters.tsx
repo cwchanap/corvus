@@ -3,12 +3,17 @@ import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
 
+export type StatusFilter = "ALL" | "WANT" | "PURCHASED" | "ARCHIVED";
+export type SortByOption = "date" | "title" | "priority" | "custom";
+
 interface WishlistFiltersProps {
   categoryName: string;
   searchQuery: Accessor<string>;
   setSearchQuery: Setter<string>;
-  sortBy: Accessor<"date" | "title" | "custom">;
-  setSortBy: Setter<"date" | "title" | "custom">;
+  sortBy: Accessor<SortByOption>;
+  setSortBy: Setter<SortByOption>;
+  statusFilter: Accessor<StatusFilter>;
+  setStatusFilter: Setter<StatusFilter>;
   onAddItem: () => void;
   isSelectionMode?: Accessor<boolean>;
   onToggleSelectionMode?: () => void;
@@ -56,18 +61,30 @@ export function WishlistFilters(props: WishlistFiltersProps) {
             class="w-full"
           />
         </div>
-        <div class="sm:w-48">
+        <div class="sm:w-40">
+          <Select
+            value={props.statusFilter()}
+            onChange={(e) =>
+              props.setStatusFilter(e.currentTarget.value as StatusFilter)
+            }
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="WANT">Want</option>
+            <option value="PURCHASED">Purchased</option>
+            <option value="ARCHIVED">Archived</option>
+          </Select>
+        </div>
+        <div class="sm:w-44">
           <Select
             value={props.sortBy()}
             onChange={(e) =>
-              props.setSortBy(
-                e.currentTarget.value as "date" | "title" | "custom",
-              )
+              props.setSortBy(e.currentTarget.value as SortByOption)
             }
           >
             <option value="custom">Custom Order</option>
             <option value="date">Sort by Date</option>
             <option value="title">Sort by Title</option>
+            <option value="priority">Sort by Priority</option>
           </Select>
         </div>
       </div>

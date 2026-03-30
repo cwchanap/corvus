@@ -26,7 +26,9 @@ import { AddItemDialog } from "./AddItemDialog";
 import { EditItemDialog } from "./EditItemDialog";
 import { ViewItemDialog } from "./ViewItemDialog";
 import { WishlistFilters } from "./WishlistFilters";
+import type { StatusFilter, SortByOption } from "./WishlistFilters";
 import { CategoryManager } from "./CategoryManager";
+import { RecentItemsWidget } from "./RecentItemsWidget";
 import {
   useWishlist,
   useDeleteItem,
@@ -116,10 +118,28 @@ function SortableWishlistItem(props: {
                 </Show>
 
                 <div class="flex flex-col gap-2 flex-1">
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 flex-wrap">
                     <h3 class="font-semibold text-card-foreground text-lg hover:text-primary transition-colors">
                       {props.item.title}
                     </h3>
+                    <Show
+                      when={props.item.status && props.item.status !== "want"}
+                    >
+                      <span
+                        class={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          props.item.status === "purchased"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                        }`}
+                      >
+                        {props.item.status}
+                      </span>
+                    </Show>
+                    <Show when={props.item.priority != null}>
+                      <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-medium">
+                        P{props.item.priority}
+                      </span>
+                    </Show>
                   </div>
 
                   <Show when={props.item.description}>
@@ -286,9 +306,8 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   );
   const [searchQuery, setSearchQuery] = createSignal("");
   const [debouncedSearch, setDebouncedSearch] = createSignal("");
-  const [sortBy, setSortBy] = createSignal<"date" | "title" | "custom">(
-    "custom",
-  );
+  const [sortBy, setSortBy] = createSignal<SortByOption>("custom");
+  const [statusFilter, setStatusFilter] = createSignal<StatusFilter>("ALL");
   const [page, setPage] = createSignal(1);
   const [addOpen, setAddOpen] = createSignal(false);
   const [editOpen, setEditOpen] = createSignal(false);
@@ -338,13 +357,16 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     const filter: Record<string, unknown> = {
       categoryId: selectedCategory() ?? undefined,
       search: debouncedSearch().trim() || undefined,
+      status: statusFilter() !== "ALL" ? statusFilter() : undefined,
     };
 
-    // Only include sortBy when user selected a real sort (not 'custom')
+    // Map local sort values to GraphQL sort keys
     const s = sortBy();
-    if (s && s !== "custom") {
-      filter.sortBy = s;
-    }
+    if (s === "date") filter.sortBy = "CREATED_AT";
+    else if (s === "title") filter.sortBy = "TITLE";
+    else if (s === "priority") filter.sortBy = "PRIORITY";
+    // "custom" → no sortBy (default server-side CREATED_AT DESC)
+
     return filter;
   });
 
@@ -410,6 +432,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     title: string;
     description?: string;
     category_id?: string;
+    priority?: number;
     links: Array<{
       url: string;
       description?: string;
@@ -422,6 +445,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         title: payload.title,
         categoryId: payload.category_id || undefined,
         description: payload.description,
+        priority: payload.priority,
       });
 
       // Add links to the item
@@ -445,9 +469,15 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     }
   };
 
-  // Reset page when sort changes
+  // Reset page when sort or status filter changes
   createEffect(
     on(sortBy, () => {
+      setPage(1);
+    }),
+  );
+
+  createEffect(
+    on(statusFilter, () => {
       setPage(1);
     }),
   );
@@ -555,6 +585,8 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     title: string;
     description?: string;
     category_id?: string | null;
+    status: import("@repo/common/types/wishlist-record").WishlistItemStatus;
+    priority?: number;
     links: Array<{
       id?: string;
       url: string;
@@ -572,6 +604,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
           title: payload.title,
           description: payload.description,
           categoryId: payload.category_id,
+          status:
+            payload.status.toUpperCase() as import("@repo/common/graphql/types").ItemStatus,
+          priority: payload.priority ?? null,
         },
       });
 
@@ -751,6 +786,8 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
               setSearchQuery={setSearchQuery}
               sortBy={sortBy}
               setSortBy={setSortBy}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
               onAddItem={() => setAddOpen(true)}
               isSelectionMode={selection.isSelectionMode}
               onToggleSelectionMode={handleToggleSelectionMode}
@@ -764,6 +801,11 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                 </div>
               </div>
             </Show>
+
+            <RecentItemsWidget
+              categories={categories()}
+              onViewItem={openViewDialog}
+            />
 
             <WishlistItemsSection
               wishlistQuery={wishlistQuery}

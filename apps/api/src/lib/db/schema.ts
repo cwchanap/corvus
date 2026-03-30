@@ -43,6 +43,10 @@ export const wishlistItems = sqliteTable(
         title: text("title").notNull(),
         description: text("description"),
         favicon: text("favicon"),
+        status: text("status", { enum: ["want", "purchased", "archived"] })
+            .notNull()
+            .default("want"),
+        priority: integer("priority"),
         created_at: text("created_at")
             .notNull()
             .default(sql`CURRENT_TIMESTAMP`),
@@ -52,6 +56,7 @@ export const wishlistItems = sqliteTable(
     },
     (table) => ({
         userIdIdx: index("wishlist_items_user_id_idx").on(table.user_id),
+        statusIdx: index("wishlist_items_status_idx").on(table.status),
     }),
 );
 

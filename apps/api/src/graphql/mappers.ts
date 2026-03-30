@@ -43,6 +43,10 @@ export function mapItem(dbItem: DBItem, links?: DBLink[]): WishlistItem {
         description: dbItem.description,
         categoryId: dbItem.category_id,
         favicon: dbItem.favicon,
+        status: (
+            dbItem.status ?? "want"
+        ).toUpperCase() as WishlistItem["status"],
+        priority: dbItem.priority ?? null,
         createdAt: dbItem.created_at,
         updatedAt: dbItem.updated_at,
         userId: dbItem.user_id,
