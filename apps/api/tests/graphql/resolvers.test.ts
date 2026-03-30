@@ -24,6 +24,7 @@ const mockWishlistService = {
     getUserWishlistData: vi.fn(),
     getUserCategories: vi.fn(),
     getUserItems: vi.fn(),
+    getItemById: vi.fn(),
     getItemLinks: vi.fn(),
     createCategory: vi.fn(),
     updateCategory: vi.fn(),
@@ -386,7 +387,7 @@ describe("Query.item", () => {
     });
 
     it("returns null when item not found", async () => {
-        mockWishlistService.getUserItems.mockResolvedValue([]);
+        mockWishlistService.getItemById.mockResolvedValue(undefined);
 
         const result = await invokeResolver(
             "Query",
@@ -399,7 +400,7 @@ describe("Query.item", () => {
     });
 
     it("returns mapped item with links when found", async () => {
-        mockWishlistService.getUserItems.mockResolvedValue([dbItem]);
+        mockWishlistService.getItemById.mockResolvedValue(dbItem);
         mockWishlistService.getItemLinks.mockResolvedValue([dbLink]);
 
         const result = await invokeResolver(
@@ -415,7 +416,7 @@ describe("Query.item", () => {
     });
 
     it("throws FORBIDDEN on WishlistAuthorizationError from getItemLinks", async () => {
-        mockWishlistService.getUserItems.mockResolvedValue([dbItem]);
+        mockWishlistService.getItemById.mockResolvedValue(dbItem);
         mockWishlistService.getItemLinks.mockRejectedValue(
             new WishlistAuthorizationError("Not authorized"),
         );
@@ -431,7 +432,7 @@ describe("Query.item", () => {
     });
 
     it("re-throws non-authorization errors from getItemLinks in Query.item", async () => {
-        mockWishlistService.getUserItems.mockResolvedValue([dbItem]);
+        mockWishlistService.getItemById.mockResolvedValue(dbItem);
         const dbError = new Error("DB read failed");
         mockWishlistService.getItemLinks.mockRejectedValue(dbError);
 

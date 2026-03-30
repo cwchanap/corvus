@@ -15,7 +15,7 @@ import {
     wishlistItems,
     wishlistItemLinks,
 } from "../db/schema";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { WishlistSortKey, SortDirection } from "../../graphql/types";
 
@@ -31,6 +31,8 @@ type ItemQueryOptions = {
     offset?: number;
     categoryId?: string | null;
     search?: string | null;
+    /** Specific status to filter by. Set to "ALL" to include archived items. Omit to exclude archived. */
+    status?: string | null;
     sortBy?: WishlistSortKey | null;
     sortDir?: SortDirection | null;
 };
@@ -167,6 +169,24 @@ export class WishlistService {
             filters.push(eq(wishlistItems.category_id, options.categoryId));
         }
 
+        if (options.status && options.status !== "ALL") {
+            filters.push(
+                eq(
+                    wishlistItems.status,
+                    options.status as "want" | "purchased" | "archived",
+                ),
+            );
+        } else if (!options.status) {
+            // Exclude archived items by default
+            filters.push(
+                ne(
+                    wishlistItems.status,
+                    "archived" as "want" | "purchased" | "archived",
+                ),
+            );
+        }
+        // options.status === "ALL" → no status filter applied
+
         if (options.search) {
             const escaped = this.escapeLikePattern(options.search);
             const pattern = `%${escaped}%`;
@@ -191,32 +211,40 @@ export class WishlistService {
         // Apply sorting based on enum values
         let orderedQuery;
 
-        // Map sort keys to database columns
-        // Note: NAME is intended for categories, not items - falls back to CREATED_AT for items
-        const getSortColumn = (sortKey?: WishlistSortKey | null) => {
-            switch (sortKey) {
-                case "CREATED_AT":
-                    return wishlistItems.created_at;
-                case "UPDATED_AT":
-                    return wishlistItems.updated_at;
-                case "TITLE":
-                    return wishlistItems.title;
-                case "NAME":
-                    // NAME doesn't apply to items, fallback to created_at
-                    return wishlistItems.created_at;
-                default:
-                    return wishlistItems.created_at; // Default fallback
-            }
-        };
-
-        const sortColumn = getSortColumn(sortBy);
         // Default to DESC when no sort direction specified (maintains backward compatibility)
         const isDescending = sortDir === "DESC" || (!sortBy && !sortDir);
 
-        if (isDescending) {
-            orderedQuery = query.orderBy(desc(sortColumn));
+        if (sortBy === "PRIORITY") {
+            // PRIORITY: nulls last, ascending (1 = highest priority)
+            orderedQuery = query.orderBy(
+                sql`${wishlistItems.priority} IS NULL`,
+                isDescending
+                    ? desc(wishlistItems.priority)
+                    : asc(wishlistItems.priority),
+            );
         } else {
-            orderedQuery = query.orderBy(asc(sortColumn));
+            // Map sort keys to database columns
+            // Note: NAME is intended for categories, not items - falls back to CREATED_AT for items
+            const getSortColumn = (sortKey?: WishlistSortKey | null) => {
+                switch (sortKey) {
+                    case "CREATED_AT":
+                        return wishlistItems.created_at;
+                    case "UPDATED_AT":
+                        return wishlistItems.updated_at;
+                    case "TITLE":
+                        return wishlistItems.title;
+                    default:
+                        return wishlistItems.created_at;
+                }
+            };
+
+            const sortColumn = getSortColumn(sortBy);
+
+            if (isDescending) {
+                orderedQuery = query.orderBy(desc(sortColumn));
+            } else {
+                orderedQuery = query.orderBy(asc(sortColumn));
+            }
         }
 
         if (
@@ -255,6 +283,22 @@ export class WishlistService {
             .all();
     }
 
+    async getItemById(
+        userId: string,
+        itemId: string,
+    ): Promise<WishlistItem | undefined> {
+        return await this.db
+            .select()
+            .from(wishlistItems)
+            .where(
+                and(
+                    eq(wishlistItems.id, itemId),
+                    eq(wishlistItems.user_id, userId),
+                ),
+            )
+            .get();
+    }
+
     async getUserItemsCount(
         userId: string,
         options: ItemQueryOptions = {},
@@ -267,6 +311,89 @@ export class WishlistService {
             .get();
 
         return result?.value ?? 0;
+    }
+
+    async checkDuplicateUrl(
+        userId: string,
+        url: string,
+        excludeItemId?: string,
+    ): Promise<{ isDuplicate: boolean; conflictingItem: WishlistItem | null }> {
+        const conditions = [
+            eq(wishlistItemLinks.url, url),
+            eq(wishlistItems.user_id, userId),
+        ];
+
+        if (excludeItemId) {
+            conditions.push(ne(wishlistItems.id, excludeItemId));
+        }
+
+        const result = await this.db
+            .select({ item: wishlistItems })
+            .from(wishlistItemLinks)
+            .innerJoin(
+                wishlistItems,
+                eq(wishlistItemLinks.item_id, wishlistItems.id),
+            )
+            .where(and(...conditions))
+            .limit(1)
+            .get();
+
+        if (!result) {
+            return { isDuplicate: false, conflictingItem: null };
+        }
+
+        return { isDuplicate: true, conflictingItem: result.item };
+    }
+
+    async getRecentItems(
+        userId: string,
+        limit = 5,
+    ): Promise<Array<WishlistItem & { links: WishlistItemLink[] }>> {
+        const items = await this.db
+            .select()
+            .from(wishlistItems)
+            .where(
+                and(
+                    eq(wishlistItems.user_id, userId),
+                    ne(
+                        wishlistItems.status,
+                        "archived" as "want" | "purchased" | "archived",
+                    ),
+                ),
+            )
+            .orderBy(desc(wishlistItems.created_at))
+            .limit(limit)
+            .all();
+
+        if (items.length === 0) {
+            return [];
+        }
+
+        const itemIds = items.map((item) => item.id);
+        const links = await this.db
+            .select()
+            .from(wishlistItemLinks)
+            .where(inArray(wishlistItemLinks.item_id, itemIds))
+            .orderBy(
+                desc(wishlistItemLinks.is_primary),
+                asc(wishlistItemLinks.created_at),
+            )
+            .all();
+
+        const linksByItemId = links.reduce<Record<string, WishlistItemLink[]>>(
+            (acc, link) => {
+                const collection = acc[link.item_id] ?? [];
+                collection.push(link);
+                acc[link.item_id] = collection;
+                return acc;
+            },
+            {},
+        );
+
+        return items.map((item) => ({
+            ...item,
+            links: linksByItemId[item.id] ?? [],
+        }));
     }
 
     async createItem(
@@ -627,6 +754,7 @@ export class WishlistService {
             offset = 0,
             categoryId,
             search,
+            status,
             sortBy,
             sortDir,
         } = options;
@@ -638,10 +766,11 @@ export class WishlistService {
                 offset,
                 categoryId,
                 search,
+                status,
                 sortBy,
                 sortDir,
             }),
-            this.getUserItemsCount(userId, { categoryId, search }),
+            this.getUserItemsCount(userId, { categoryId, search, status }),
         ]);
 
         const itemIds = items.map((item) => item.id);
