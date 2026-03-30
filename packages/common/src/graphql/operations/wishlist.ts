@@ -9,6 +9,7 @@ import type {
     GraphQLWishlistCategory,
     GraphQLWishlistItem,
     GraphQLWishlistItemLink,
+    GraphQLDuplicateUrlCheckResult,
     WishlistFilterInput,
     PaginationInput,
     CategoryInput,
@@ -40,6 +41,8 @@ export const WISHLIST_QUERY = `
         description
         categoryId
         favicon
+        status
+        priority
         userId
         createdAt
         updatedAt
@@ -86,6 +89,8 @@ export const ITEM_QUERY = `
       description
       categoryId
       favicon
+      status
+      priority
       userId
       createdAt
       updatedAt
@@ -97,6 +102,37 @@ export const ITEM_QUERY = `
         isPrimary
         createdAt
         updatedAt
+      }
+    }
+  }
+`;
+
+export const CHECK_DUPLICATE_URL_QUERY = `
+  query CheckDuplicateUrl($url: String!, $excludeItemId: ID) {
+    checkDuplicateUrl(url: $url, excludeItemId: $excludeItemId) {
+      isDuplicate
+      conflictingItem {
+        id
+        title
+        categoryId
+      }
+    }
+  }
+`;
+
+export const RECENT_ITEMS_QUERY = `
+  query RecentItems($limit: Int) {
+    recentItems(limit: $limit) {
+      id
+      title
+      categoryId
+      status
+      priority
+      createdAt
+      links {
+        id
+        url
+        isPrimary
       }
     }
   }
@@ -143,6 +179,8 @@ export const CREATE_ITEM_MUTATION = `
       description
       categoryId
       favicon
+      status
+      priority
       userId
       createdAt
       updatedAt
@@ -167,6 +205,8 @@ export const UPDATE_ITEM_MUTATION = `
       description
       categoryId
       favicon
+      status
+      priority
       userId
       createdAt
       updatedAt
@@ -425,4 +465,27 @@ export async function batchMoveItems(
         batchMoveItems: BatchOperationResult;
     }>(BATCH_MOVE_ITEMS_MUTATION, { input }, options);
     return data.batchMoveItems;
+}
+
+export async function checkDuplicateUrl(
+    url: string,
+    excludeItemId?: string,
+    options?: Partial<GraphQLClientOptions>,
+): Promise<GraphQLDuplicateUrlCheckResult> {
+    const data = await graphqlRequest<{
+        checkDuplicateUrl: GraphQLDuplicateUrlCheckResult;
+    }>(CHECK_DUPLICATE_URL_QUERY, { url, excludeItemId }, options);
+    return data.checkDuplicateUrl;
+}
+
+export async function getRecentItems(
+    limit?: number,
+    options?: Partial<GraphQLClientOptions>,
+): Promise<GraphQLWishlistItem[]> {
+    const data = await graphqlRequest<{ recentItems: GraphQLWishlistItem[] }>(
+        RECENT_ITEMS_QUERY,
+        { limit },
+        options,
+    );
+    return data.recentItems;
 }

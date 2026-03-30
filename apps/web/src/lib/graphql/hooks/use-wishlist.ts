@@ -11,6 +11,8 @@ import {
     getWishlist,
     getCategories,
     getItem,
+    checkDuplicateUrl,
+    getRecentItems,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -257,5 +259,25 @@ export function useBatchMoveItems() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["wishlist"] });
         },
+    }));
+}
+
+export function useCheckDuplicateUrl(
+    url: Accessor<string>,
+    excludeItemId?: Accessor<string | undefined>,
+) {
+    return createQuery(() => ({
+        queryKey: ["wishlist", "duplicate-check", url(), excludeItemId?.()],
+        queryFn: () => checkDuplicateUrl(url(), excludeItemId?.()),
+        enabled: url().length >= 8,
+        staleTime: 5_000,
+    }));
+}
+
+export function useRecentItems(limit?: Accessor<number>) {
+    return createQuery(() => ({
+        queryKey: ["wishlist", "recent", limit?.()],
+        queryFn: () => getRecentItems(limit?.()),
+        staleTime: 30_000,
     }));
 }

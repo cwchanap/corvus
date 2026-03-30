@@ -1,13 +1,15 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createSignal, createEffect, createMemo, For, Show } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
 import type {
   WishlistCategoryRecord,
   WishlistItemRecord,
+  WishlistItemStatus,
 } from "@repo/common/types/wishlist-record";
 import { LinkManager } from "./LinkManager";
 import { useLinkManager, type LinkItem } from "./useLinkManager";
+import { useCheckDuplicateUrl } from "../lib/graphql/hooks/use-wishlist";
 
 interface EditItemDialogProps {
   open: boolean;
@@ -17,6 +19,8 @@ interface EditItemDialogProps {
     title: string;
     description?: string;
     category_id?: string | null;
+    status: WishlistItemStatus;
+    priority?: number;
     links: Array<{
       id?: string;
       url: string;
@@ -35,8 +39,64 @@ export function EditItemDialog(props: EditItemDialogProps) {
   const [title, setTitle] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [categoryId, setCategoryId] = createSignal("");
+  const [status, setStatus] = createSignal<WishlistItemStatus>("want");
+  const [priority, setPriority] = createSignal<string>("");
+  const [activeCheck, setActiveCheck] = createSignal<{
+    url: string;
+    index: number;
+  } | null>(null);
+  const [warningsByUrl, setWarningsByUrl] = createSignal<
+    Record<string, string | null>
+  >({});
 
   const linkManager = useLinkManager();
+
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const handleUrlChange = (index: number, url: string) => {
+    const prevUrl = linkManager.links()[index]?.url ?? "";
+    linkManager.updateLink(index, "url", url);
+    if (prevUrl && prevUrl !== url) {
+      setWarningsByUrl((prev) => {
+        const next = { ...prev };
+        delete next[prevUrl];
+        return next;
+      });
+    }
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => setActiveCheck({ url, index }), 400);
+  };
+
+  const duplicateQuery = useCheckDuplicateUrl(
+    () => activeCheck()?.url ?? "",
+    () => props.item?.id,
+  );
+
+  createEffect(() => {
+    const check = activeCheck();
+    const data = duplicateQuery.data;
+    if (!check?.url || !data) return;
+    setWarningsByUrl((prev) => ({
+      ...prev,
+      [check.url]:
+        data.isDuplicate && data.conflictingItem
+          ? data.conflictingItem.title
+          : null,
+    }));
+  });
+
+  const visibleLinks = createMemo(() =>
+    linkManager.links().filter((l) => !l.isDeleted),
+  );
+
+  const duplicateWarnings = createMemo<Record<number, string | null>>(() => {
+    const byUrl = warningsByUrl();
+    const warnings: Record<number, string | null> = {};
+    visibleLinks().forEach((link, i) => {
+      warnings[i] = byUrl[link.url] ?? null;
+    });
+    return warnings;
+  });
 
   // Reset form when dialog opens/closes or item changes
   createEffect(() => {
@@ -44,6 +104,12 @@ export function EditItemDialog(props: EditItemDialogProps) {
       setTitle(props.item.title);
       setDescription(props.item.description || "");
       setCategoryId(props.item.category_id || "");
+      setStatus(props.item.status ?? "want");
+      setPriority(
+        props.item.priority != null ? String(props.item.priority) : "",
+      );
+      setActiveCheck(null);
+      setWarningsByUrl({});
 
       // Convert existing links
       const existingLinks: LinkItem[] = (props.item.links || []).map(
@@ -63,6 +129,8 @@ export function EditItemDialog(props: EditItemDialogProps) {
       setTitle("");
       setDescription("");
       setCategoryId("");
+      setStatus("want");
+      setPriority("");
       linkManager.resetLinks([]);
     }
   });
@@ -76,11 +144,18 @@ export function EditItemDialog(props: EditItemDialogProps) {
       .links()
       .filter((link: LinkItem) => !link.isDeleted);
 
+    const parsedPriority = priority() ? parseInt(priority(), 10) : undefined;
+
     props.onSubmit({
       id: props.item.id,
       title: title().trim(),
       description: description().trim() || undefined,
       category_id: categoryId().trim() || null,
+      status: status(),
+      priority:
+        parsedPriority && parsedPriority >= 1 && parsedPriority <= 5
+          ? parsedPriority
+          : undefined,
       links: activeLinks.map((link: LinkItem) => ({
         id: link.id,
         url: link.url.trim(),
@@ -157,15 +232,71 @@ export function EditItemDialog(props: EditItemDialogProps) {
                 </Select>
               </div>
 
+              {/* Status */}
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-foreground">
+                  Status
+                </label>
+                <div class="flex gap-3">
+                  <For
+                    each={
+                      ["want", "purchased", "archived"] as WishlistItemStatus[]
+                    }
+                  >
+                    {(s) => (
+                      <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="status"
+                          value={s}
+                          checked={status() === s}
+                          onChange={() => setStatus(s)}
+                          class="accent-primary"
+                        />
+                        <span class="text-sm capitalize text-foreground">
+                          {s}
+                        </span>
+                      </label>
+                    )}
+                  </For>
+                </div>
+              </div>
+
+              {/* Priority */}
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-foreground">
+                  Priority
+                </label>
+                <Select
+                  value={priority()}
+                  onChange={(e) => setPriority(e.currentTarget.value)}
+                  class="w-full"
+                >
+                  <option value="">Unset</option>
+                  <option value="1">1 — Highest</option>
+                  <option value="2">2 — High</option>
+                  <option value="3">3 — Medium</option>
+                  <option value="4">4 — Low</option>
+                  <option value="5">5 — Lowest</option>
+                </Select>
+              </div>
+
               {/* Links Section */}
               <LinkManager
                 links={linkManager.links()}
                 onAddLink={linkManager.addLink}
-                onUpdateLink={linkManager.updateLink}
+                onUpdateLink={(index, field, value) => {
+                  if (field === "url") {
+                    handleUrlChange(index, value as string);
+                  } else {
+                    linkManager.updateLink(index, field, value);
+                  }
+                }}
                 onRemoveLink={linkManager.removeLink}
                 onRemoveAllLinks={linkManager.removeAllLinks}
                 emptyMessage="No links added yet"
                 emptySubMessage="You can add links now or later after updating the item"
+                duplicateWarnings={duplicateWarnings()}
               />
 
               {/* Submit Actions */}
