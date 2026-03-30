@@ -78,12 +78,21 @@ export type CategoryUpdateInput = {
     name?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+/** Result of a duplicate URL check */
+export type DuplicateUrlCheckResult = {
+    __typename?: "DuplicateUrlCheckResult";
+    conflictingItem?: Maybe<WishlistItem>;
+    isDuplicate: Scalars["Boolean"]["output"];
+};
+
 /** Input for creating a wishlist item */
 export type ItemInput = {
     categoryId?: InputMaybe<Scalars["String"]["input"]>;
     description?: InputMaybe<Scalars["String"]["input"]>;
     favicon?: InputMaybe<Scalars["String"]["input"]>;
     linkDescription?: InputMaybe<Scalars["String"]["input"]>;
+    priority?: InputMaybe<Scalars["Int"]["input"]>;
+    status?: InputMaybe<ItemStatus>;
     title: Scalars["String"]["input"];
     url?: InputMaybe<Scalars["String"]["input"]>;
 };
@@ -102,11 +111,20 @@ export type ItemLinkUpdateInput = {
     url?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+/** Status of a wishlist item */
+export enum ItemStatus {
+    Archived = "ARCHIVED",
+    Purchased = "PURCHASED",
+    Want = "WANT",
+}
+
 /** Input for updating a wishlist item */
 export type ItemUpdateInput = {
     categoryId?: InputMaybe<Scalars["String"]["input"]>;
     description?: InputMaybe<Scalars["String"]["input"]>;
     favicon?: InputMaybe<Scalars["String"]["input"]>;
+    priority?: InputMaybe<Scalars["Int"]["input"]>;
+    status?: InputMaybe<ItemStatus>;
     title?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -242,16 +260,29 @@ export type Query = {
     __typename?: "Query";
     /** Get all categories for the current user */
     categories: Array<WishlistCategory>;
+    /** Check if a URL already exists in the user's wishlist */
+    checkDuplicateUrl: DuplicateUrlCheckResult;
     /** Get a specific wishlist item by ID */
     item?: Maybe<WishlistItem>;
     /** Get the current authenticated user */
     me?: Maybe<User>;
+    /** Get the most recently added items across all categories */
+    recentItems: Array<WishlistItem>;
     /** Get wishlist data with optional filters and pagination */
     wishlist: WishlistPayload;
 };
 
+export type QueryCheckDuplicateUrlArgs = {
+    excludeItemId?: InputMaybe<Scalars["ID"]["input"]>;
+    url: Scalars["String"]["input"];
+};
+
 export type QueryItemArgs = {
     id: Scalars["ID"]["input"];
+};
+
+export type QueryRecentItemsArgs = {
+    limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryWishlistArgs = {
@@ -301,6 +332,7 @@ export type WishlistFilterInput = {
     sortBy?: InputMaybe<WishlistSortKey>;
     /** Sort direction. Defaults to DESC if not specified. */
     sortDir?: InputMaybe<SortDirection>;
+    status?: InputMaybe<ItemStatus>;
 };
 
 /** A wishlist item */
@@ -312,6 +344,8 @@ export type WishlistItem = {
     favicon?: Maybe<Scalars["String"]["output"]>;
     id: Scalars["ID"]["output"];
     links: Array<WishlistItemLink>;
+    priority?: Maybe<Scalars["Int"]["output"]>;
+    status: ItemStatus;
     title: Scalars["String"]["output"];
     updatedAt: Scalars["String"]["output"];
     userId: Scalars["String"]["output"];
@@ -341,6 +375,7 @@ export type WishlistPayload = {
 export enum WishlistSortKey {
     CreatedAt = "CREATED_AT",
     Name = "NAME",
+    Priority = "PRIORITY",
     Title = "TITLE",
     UpdatedAt = "UPDATED_AT",
 }
@@ -462,11 +497,13 @@ export type ResolversTypes = ResolversObject<{
     Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
     CategoryInput: CategoryInput;
     CategoryUpdateInput: CategoryUpdateInput;
+    DuplicateUrlCheckResult: ResolverTypeWrapper<DuplicateUrlCheckResult>;
     ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
     Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
     ItemInput: ItemInput;
     ItemLinkInput: ItemLinkInput;
     ItemLinkUpdateInput: ItemLinkUpdateInput;
+    ItemStatus: ItemStatus;
     ItemUpdateInput: ItemUpdateInput;
     LoginInput: LoginInput;
     Mutation: ResolverTypeWrapper<{}>;
@@ -494,6 +531,7 @@ export type ResolversParentTypes = ResolversObject<{
     Boolean: Scalars["Boolean"]["output"];
     CategoryInput: CategoryInput;
     CategoryUpdateInput: CategoryUpdateInput;
+    DuplicateUrlCheckResult: DuplicateUrlCheckResult;
     ID: Scalars["ID"]["output"];
     Int: Scalars["Int"]["output"];
     ItemInput: ItemInput;
@@ -539,6 +577,20 @@ export type BatchOperationResultResolvers<
     failedCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
     processedCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
     success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+    __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type DuplicateUrlCheckResultResolvers<
+    ContextType = GraphQLContext,
+    ParentType extends
+        ResolversParentTypes["DuplicateUrlCheckResult"] = ResolversParentTypes["DuplicateUrlCheckResult"],
+> = ResolversObject<{
+    conflictingItem?: Resolver<
+        Maybe<ResolversTypes["WishlistItem"]>,
+        ParentType,
+        ContextType
+    >;
+    isDuplicate?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -658,6 +710,12 @@ export type QueryResolvers<
         ParentType,
         ContextType
     >;
+    checkDuplicateUrl?: Resolver<
+        ResolversTypes["DuplicateUrlCheckResult"],
+        ParentType,
+        ContextType,
+        RequireFields<QueryCheckDuplicateUrlArgs, "url">
+    >;
     item?: Resolver<
         Maybe<ResolversTypes["WishlistItem"]>,
         ParentType,
@@ -665,6 +723,12 @@ export type QueryResolvers<
         RequireFields<QueryItemArgs, "id">
     >;
     me?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+    recentItems?: Resolver<
+        Array<ResolversTypes["WishlistItem"]>,
+        ParentType,
+        ContextType,
+        Partial<QueryRecentItemsArgs>
+    >;
     wishlist?: Resolver<
         ResolversTypes["WishlistPayload"],
         ParentType,
@@ -727,6 +791,8 @@ export type WishlistItemResolvers<
         ParentType,
         ContextType
     >;
+    priority?: Resolver<Maybe<ResolversTypes["Int"]>, ParentType, ContextType>;
+    status?: Resolver<ResolversTypes["ItemStatus"], ParentType, ContextType>;
     title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
     updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
     userId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
@@ -778,6 +844,7 @@ export type WishlistPayloadResolvers<
 export type Resolvers<ContextType = GraphQLContext> = ResolversObject<{
     AuthPayload?: AuthPayloadResolvers<ContextType>;
     BatchOperationResult?: BatchOperationResultResolvers<ContextType>;
+    DuplicateUrlCheckResult?: DuplicateUrlCheckResultResolvers<ContextType>;
     Mutation?: MutationResolvers<ContextType>;
     PaginationInfo?: PaginationInfoResolvers<ContextType>;
     Query?: QueryResolvers<ContextType>;

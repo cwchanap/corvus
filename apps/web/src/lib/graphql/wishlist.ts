@@ -7,6 +7,8 @@ import {
     WISHLIST_QUERY,
     CATEGORIES_QUERY,
     ITEM_QUERY,
+    CHECK_DUPLICATE_URL_QUERY,
+    RECENT_ITEMS_QUERY,
     CREATE_CATEGORY_MUTATION,
     UPDATE_CATEGORY_MUTATION,
     DELETE_CATEGORY_MUTATION,
@@ -27,6 +29,7 @@ export type {
     GraphQLWishlistCategory as WishlistCategory,
     GraphQLWishlistItem as WishlistItem,
     GraphQLWishlistItemLink as WishlistItemLink,
+    GraphQLDuplicateUrlCheckResult as DuplicateUrlCheckResult,
     GraphQLPaginationInfo as PaginationInfo,
     GraphQLWishlistPayload as WishlistPayload,
     WishlistFilterInput,
@@ -183,4 +186,25 @@ export async function batchMoveItems(
         batchMoveItems: import("@repo/common/graphql/types").BatchOperationResult;
     }>(BATCH_MOVE_ITEMS_MUTATION, { input: { itemIds, categoryId } });
     return data.batchMoveItems;
+}
+
+export async function checkDuplicateUrl(
+    url: string,
+    excludeItemId?: string,
+): Promise<
+    import("@repo/common/graphql/types").GraphQLDuplicateUrlCheckResult
+> {
+    const data = await graphqlRequest<{
+        checkDuplicateUrl: import("@repo/common/graphql/types").GraphQLDuplicateUrlCheckResult;
+    }>(CHECK_DUPLICATE_URL_QUERY, { url, excludeItemId });
+    return data.checkDuplicateUrl;
+}
+
+export async function getRecentItems(
+    limit?: number,
+): Promise<import("@repo/common/graphql/types").GraphQLWishlistItem[]> {
+    const data = await graphqlRequest<{
+        recentItems: import("@repo/common/graphql/types").GraphQLWishlistItem[];
+    }>(RECENT_ITEMS_QUERY, { limit });
+    return data.recentItems;
 }

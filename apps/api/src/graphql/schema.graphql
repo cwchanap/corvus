@@ -44,6 +44,15 @@ type WishlistItemLink {
 }
 
 """
+Status of a wishlist item
+"""
+enum ItemStatus {
+  WANT
+  PURCHASED
+  ARCHIVED
+}
+
+"""
 A wishlist item
 """
 type WishlistItem {
@@ -53,9 +62,19 @@ type WishlistItem {
   title: String!
   description: String
   favicon: String
+  status: ItemStatus!
+  priority: Int
   links: [WishlistItemLink!]!
   createdAt: String!
   updatedAt: String!
+}
+
+"""
+Result of a duplicate URL check
+"""
+type DuplicateUrlCheckResult {
+  isDuplicate: Boolean!
+  conflictingItem: WishlistItem
 }
 
 """
@@ -122,6 +141,8 @@ input ItemInput {
   favicon: String
   url: String
   linkDescription: String
+  status: ItemStatus
+  priority: Int
 }
 
 """
@@ -132,6 +153,8 @@ input ItemUpdateInput {
   categoryId: String
   description: String
   favicon: String
+  status: ItemStatus
+  priority: Int
 }
 
 """
@@ -176,6 +199,7 @@ enum WishlistSortKey {
   UPDATED_AT
   NAME
   TITLE
+  PRIORITY
 }
 
 """
@@ -184,6 +208,7 @@ Input for filtering wishlist data
 input WishlistFilterInput {
   categoryId: String
   search: String
+  status: ItemStatus
   """
   Field to sort by. Defaults to CREATED_AT if not specified.
   """
@@ -254,6 +279,16 @@ type Query {
   Get a specific wishlist item by ID
   """
   item(id: ID!): WishlistItem
+
+  """
+  Check if a URL already exists in the user's wishlist
+  """
+  checkDuplicateUrl(url: String!, excludeItemId: ID): DuplicateUrlCheckResult!
+
+  """
+  Get the most recently added items across all categories
+  """
+  recentItems(limit: Int): [WishlistItem!]!
 }
 
 type Mutation {

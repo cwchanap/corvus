@@ -38,16 +38,25 @@ export interface GraphQLWishlistItemLink {
     updatedAt: string;
 }
 
+export type ItemStatus = "WANT" | "PURCHASED" | "ARCHIVED";
+
 export interface GraphQLWishlistItem {
     id: string;
     title: string;
     description: string | null;
     categoryId: string | null;
     favicon: string | null;
+    status: ItemStatus;
+    priority: number | null;
     userId: string;
     createdAt: string;
     updatedAt: string;
     links: GraphQLWishlistItemLink[];
+}
+
+export interface GraphQLDuplicateUrlCheckResult {
+    isDuplicate: boolean;
+    conflictingItem: GraphQLWishlistItem | null;
 }
 
 export interface GraphQLPaginationInfo {
@@ -80,6 +89,7 @@ export interface LoginInput {
 export interface WishlistFilterInput {
     categoryId?: string;
     search?: string;
+    status?: ItemStatus | "ALL";
     sortBy?: string;
     sortDir?: "ASC" | "DESC";
 }
@@ -106,6 +116,8 @@ export interface ItemInput {
     favicon?: string;
     url?: string;
     linkDescription?: string;
+    status?: ItemStatus;
+    priority?: number | null;
 }
 
 export interface ItemUpdateInput {
@@ -113,6 +125,8 @@ export interface ItemUpdateInput {
     categoryId?: string | null;
     description?: string;
     favicon?: string;
+    status?: ItemStatus;
+    priority?: number | null;
 }
 
 export interface ItemLinkInput {

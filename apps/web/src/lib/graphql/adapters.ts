@@ -53,6 +53,8 @@ export function adaptItem(graphql: GraphQLWishlistItem): WishlistItemRecord {
         title: graphql.title,
         description: graphql.description ?? undefined,
         favicon: graphql.favicon ?? undefined,
+        status: graphql.status.toLowerCase() as WishlistItemRecord["status"],
+        priority: graphql.priority ?? undefined,
         created_at: graphql.createdAt,
         updated_at: graphql.updatedAt,
         links: graphql.links?.map(adaptLink),

@@ -17,6 +17,8 @@ export interface WishlistItemLinkRecord {
     updated_at: string;
 }
 
+export type WishlistItemStatus = "want" | "purchased" | "archived";
+
 export interface WishlistItemRecord {
     id: string;
     user_id: string;
@@ -24,6 +26,8 @@ export interface WishlistItemRecord {
     title: string;
     description?: string;
     favicon?: string;
+    status: WishlistItemStatus;
+    priority?: number;
     created_at: string;
     updated_at: string;
     links?: WishlistItemLinkRecord[];
