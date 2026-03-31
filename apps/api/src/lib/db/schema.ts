@@ -83,5 +83,6 @@ export const wishlistItemLinks = sqliteTable(
     },
     (table) => ({
         itemIdIdx: index("wishlist_item_links_item_id_idx").on(table.item_id),
+        urlIdx: index("wishlist_item_links_url_idx").on(table.url),
     }),
 );

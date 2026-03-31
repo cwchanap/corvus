@@ -5,6 +5,7 @@
 export function formatRelativeTime(isoString: string): string {
     const now = Date.now();
     const then = new Date(isoString).getTime();
+    if (!Number.isFinite(then)) return "just now";
     const diffMs = now - then;
     if (diffMs < 0) return "just now";
     const diffSec = Math.floor(diffMs / 1000);

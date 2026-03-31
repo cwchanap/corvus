@@ -1,4 +1,4 @@
-import { createSignal, createEffect, createMemo, For, Show } from "solid-js";
+import { createSignal, createEffect, For, Show } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
@@ -9,7 +9,7 @@ import type {
 } from "@repo/common/types/wishlist-record";
 import { LinkManager } from "./LinkManager";
 import { useLinkManager, type LinkItem } from "./useLinkManager";
-import { useCheckDuplicateUrl } from "../lib/graphql/hooks/use-wishlist";
+import { useDuplicateUrlCheck } from "./useDuplicateUrlCheck";
 
 interface EditItemDialogProps {
   open: boolean;
@@ -41,61 +41,11 @@ export function EditItemDialog(props: EditItemDialogProps) {
   const [categoryId, setCategoryId] = createSignal("");
   const [status, setStatus] = createSignal<WishlistItemStatus>("want");
   const [priority, setPriority] = createSignal<string>("");
-  const [activeCheck, setActiveCheck] = createSignal<{
-    url: string;
-    index: number;
-  } | null>(null);
-  const [warningsByUrl, setWarningsByUrl] = createSignal<
-    Record<string, string | null>
-  >({});
-
   const linkManager = useLinkManager();
-
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const handleUrlChange = (index: number, url: string) => {
-    const prevUrl = linkManager.links()[index]?.url ?? "";
-    linkManager.updateLink(index, "url", url);
-    if (prevUrl && prevUrl !== url) {
-      setWarningsByUrl((prev) => {
-        const next = { ...prev };
-        delete next[prevUrl];
-        return next;
-      });
-    }
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => setActiveCheck({ url, index }), 400);
-  };
-
-  const duplicateQuery = useCheckDuplicateUrl(
-    () => activeCheck()?.url ?? "",
-    () => props.item?.id,
-  );
-
-  createEffect(() => {
-    const check = activeCheck();
-    const data = duplicateQuery.data;
-    if (!check?.url || !data) return;
-    setWarningsByUrl((prev) => ({
-      ...prev,
-      [check.url]:
-        data.isDuplicate && data.conflictingItem
-          ? data.conflictingItem.title
-          : null,
-    }));
-  });
-
-  const visibleLinks = createMemo(() =>
-    linkManager.links().filter((l) => !l.isDeleted),
-  );
-
-  const duplicateWarnings = createMemo<Record<number, string | null>>(() => {
-    const byUrl = warningsByUrl();
-    const warnings: Record<number, string | null> = {};
-    visibleLinks().forEach((link, i) => {
-      warnings[i] = byUrl[link.url] ?? null;
-    });
-    return warnings;
+  const duplicateUrlCheck = useDuplicateUrlCheck({
+    links: linkManager.links,
+    updateLink: linkManager.updateLink,
+    excludeItemId: () => props.item?.id,
   });
 
   // Reset form when dialog opens/closes or item changes
@@ -108,8 +58,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
       setPriority(
         props.item.priority != null ? String(props.item.priority) : "",
       );
-      setActiveCheck(null);
-      setWarningsByUrl({});
+      duplicateUrlCheck.reset();
 
       // Convert existing links
       const existingLinks: LinkItem[] = (props.item.links || []).map(
@@ -131,6 +80,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
       setCategoryId("");
       setStatus("want");
       setPriority("");
+      duplicateUrlCheck.reset();
       linkManager.resetLinks([]);
     }
   });
@@ -287,7 +237,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
                 onAddLink={linkManager.addLink}
                 onUpdateLink={(index, field, value) => {
                   if (field === "url") {
-                    handleUrlChange(index, value as string);
+                    duplicateUrlCheck.handleUrlChange(index, value as string);
                   } else {
                     linkManager.updateLink(index, field, value);
                   }
@@ -296,7 +246,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
                 onRemoveAllLinks={linkManager.removeAllLinks}
                 emptyMessage="No links added yet"
                 emptySubMessage="You can add links now or later after updating the item"
-                duplicateWarnings={duplicateWarnings()}
+                duplicateWarnings={duplicateUrlCheck.duplicateWarnings()}
               />
 
               {/* Submit Actions */}

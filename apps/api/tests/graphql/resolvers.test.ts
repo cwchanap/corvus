@@ -166,6 +166,8 @@ const dbItem = {
     title: "My Item",
     description: null,
     favicon: null,
+    status: "want" as const,
+    priority: null,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
 };
@@ -296,8 +298,9 @@ describe("Query.wishlist", () => {
                 filter: {
                     categoryId: "cat-1",
                     search: "laptop",
-                    sortBy: "title",
-                    sortDir: "asc",
+                    status: "PURCHASED",
+                    sortBy: "TITLE",
+                    sortDir: "ASC",
                 },
             },
             createAuthenticatedContext(),
@@ -308,8 +311,43 @@ describe("Query.wishlist", () => {
             expect.objectContaining({
                 categoryId: "cat-1",
                 search: "laptop",
-                sortBy: "title",
-                sortDir: "asc",
+                status: "purchased",
+                sortBy: "TITLE",
+                sortDir: "ASC",
+            }),
+        );
+    });
+
+    it("passes ALL status through to service unchanged", async () => {
+        mockWishlistService.getUserWishlistData.mockResolvedValue({
+            categories: [],
+            items: [],
+            pagination: {
+                total_items: 0,
+                page: 1,
+                page_size: 10,
+                total_pages: 0,
+                has_next: false,
+                has_previous: false,
+            },
+        });
+
+        await invokeResolver(
+            "Query",
+            "wishlist",
+            {
+                pagination: { page: 1, pageSize: 10 },
+                filter: {
+                    status: "ALL",
+                },
+            },
+            createAuthenticatedContext(),
+        );
+
+        expect(mockWishlistService.getUserWishlistData).toHaveBeenCalledWith(
+            "user-1",
+            expect.objectContaining({
+                status: "ALL",
             }),
         );
     });
