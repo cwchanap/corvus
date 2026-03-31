@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, expectTypeOf, vi, beforeEach } from "vitest";
 import {
     getWishlist,
     getCategories,
     getItem,
+    checkDuplicateUrl,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -21,6 +22,7 @@ import {
     WISHLIST_QUERY,
     CATEGORIES_QUERY,
     ITEM_QUERY,
+    CHECK_DUPLICATE_URL_QUERY,
     CREATE_CATEGORY_MUTATION,
     UPDATE_CATEGORY_MUTATION,
     DELETE_CATEGORY_MUTATION,
@@ -34,6 +36,7 @@ import {
     BATCH_DELETE_ITEMS_MUTATION,
     BATCH_MOVE_ITEMS_MUTATION,
 } from "@repo/common/graphql/operations/wishlist";
+import type { DuplicateUrlCheckResult } from "./wishlist";
 
 vi.mock("./client", () => ({
     graphqlRequest: vi.fn(),
@@ -156,6 +159,40 @@ describe("getItem", () => {
         mockedRequest.mockResolvedValueOnce({ item: null });
         const result = await getItem("nonexistent");
         expect(result).toBeNull();
+    });
+});
+
+describe("checkDuplicateUrl", () => {
+    it("returns duplicate url results", async () => {
+        const duplicateResult = {
+            isDuplicate: true,
+            conflictingItem: {
+                id: "item-1",
+                title: "Laptop",
+                categoryId: "cat-1",
+            },
+        };
+        mockedRequest.mockResolvedValueOnce({
+            checkDuplicateUrl: duplicateResult,
+        });
+
+        const result = await checkDuplicateUrl("https://example.com");
+
+        expect(result).toEqual(duplicateResult);
+        expect(mockedRequest).toHaveBeenCalledWith(CHECK_DUPLICATE_URL_QUERY, {
+            url: "https://example.com",
+            excludeItemId: undefined,
+        });
+    });
+
+    it("uses the narrowed duplicate item shape", () => {
+        expectTypeOf<
+            DuplicateUrlCheckResult["conflictingItem"]
+        >().toEqualTypeOf<{
+            id: string;
+            title: string;
+            categoryId: string | null;
+        } | null>();
     });
 });
 
