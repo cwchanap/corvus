@@ -73,7 +73,7 @@ The production system comprises three artifacts:
 
 The `wishlist_items` table in `apps/api/src/lib/db/schema.ts` contains:
 
-```
+```sql
 id            TEXT  PRIMARY KEY
 user_id       TEXT  NOT NULL
 category_id   TEXT  (nullable FK → wishlist_categories.id, SET NULL on delete)
@@ -86,7 +86,7 @@ updated_at    TEXT  NOT NULL
 
 The `wishlist_item_links` table provides the URL store:
 
-```
+```sql
 id            TEXT  PRIMARY KEY
 item_id       TEXT  NOT NULL FK → wishlist_items.id (CASCADE DELETE)
 url           TEXT  NOT NULL

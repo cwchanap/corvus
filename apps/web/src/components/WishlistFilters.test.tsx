@@ -80,8 +80,7 @@ describe("WishlistFilters", () => {
 
     it("should render sort dropdown", () => {
       renderWishlistFilters();
-      const selects = screen.getAllByRole("combobox") as HTMLSelectElement[];
-      const sortSelect = selects[selects.length - 1]!;
+      const sortSelect = screen.getByTestId("sort-dropdown");
       expect(sortSelect).toBeInTheDocument();
       expect(
         sortSelect.querySelector('option[value="custom"]'),
@@ -145,9 +144,7 @@ describe("WishlistFilters", () => {
     it("should display initial sort value", () => {
       const { sortBy } = renderWishlistFilters({ initialSortBy: "date" });
       expect(sortBy()).toBe("date");
-      // Verify the sort select is the last combobox and has the expected option
-      const selects = screen.getAllByRole("combobox") as HTMLSelectElement[];
-      const sortSelect = selects[selects.length - 1]!;
+      const sortSelect = screen.getByTestId("sort-dropdown");
       expect(sortSelect).toBeInTheDocument();
       expect(
         sortSelect.querySelector('option[value="date"]'),
@@ -164,9 +161,7 @@ describe("WishlistFilters", () => {
         const { sortBy } = renderWishlistFilters({
           initialSortBy: initialValue as SortByOption,
         });
-        // Use the second combobox (sort select is after status select)
-        const selects = screen.getAllByRole("combobox") as HTMLSelectElement[];
-        const sortSelect = selects[selects.length - 1]!;
+        const sortSelect = screen.getByTestId("sort-dropdown");
 
         fireEvent.change(sortSelect, { target: { value: newValue } });
         expect(sortBy()).toBe(newValue);
@@ -212,8 +207,7 @@ describe("WishlistFilters", () => {
       const searchInput = screen.getByPlaceholderText(
         "Search items...",
       ) as HTMLInputElement;
-      const allSelects = screen.getAllByRole("combobox") as HTMLSelectElement[];
-      const sortSelect = allSelects[allSelects.length - 1]!;
+      const sortSelect = screen.getByTestId("sort-dropdown");
 
       fireEvent.input(searchInput, { target: { value: "laptop" } });
       fireEvent.change(sortSelect, { target: { value: "title" } });
@@ -227,8 +221,7 @@ describe("WishlistFilters", () => {
         initialSearchQuery: "keyboard",
       });
 
-      const allSelects = screen.getAllByRole("combobox") as HTMLSelectElement[];
-      const sortSelect = allSelects[allSelects.length - 1]!;
+      const sortSelect = screen.getByTestId("sort-dropdown");
       fireEvent.change(sortSelect, { target: { value: "date" } });
 
       expect(searchQuery()).toBe("keyboard");

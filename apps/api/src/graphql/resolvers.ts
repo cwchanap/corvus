@@ -37,7 +37,9 @@ export const resolvers: Resolvers = {
             const categoryId = args.filter?.categoryId ?? undefined;
             const search = args.filter?.search ?? undefined;
             const status = args.filter?.status
-                ? args.filter.status.toLowerCase()
+                ? args.filter.status === "ALL"
+                    ? "ALL"
+                    : args.filter.status.toLowerCase()
                 : undefined;
             const sortBy = args.filter?.sortBy ?? undefined;
             const sortDir = args.filter?.sortDir ?? undefined;

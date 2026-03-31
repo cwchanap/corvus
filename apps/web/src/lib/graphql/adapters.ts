@@ -46,6 +46,12 @@ export function adaptLink(
 }
 
 export function adaptItem(graphql: GraphQLWishlistItem): WishlistItemRecord {
+    const normalizedStatus = (graphql.status ?? "").toLowerCase();
+    const status: WishlistItemRecord["status"] =
+        normalizedStatus === "purchased" || normalizedStatus === "archived"
+            ? normalizedStatus
+            : "want";
+
     return {
         id: graphql.id,
         user_id: graphql.userId,
@@ -53,7 +59,7 @@ export function adaptItem(graphql: GraphQLWishlistItem): WishlistItemRecord {
         title: graphql.title,
         description: graphql.description ?? undefined,
         favicon: graphql.favicon ?? undefined,
-        status: graphql.status.toLowerCase() as WishlistItemRecord["status"],
+        status,
         priority: graphql.priority ?? undefined,
         created_at: graphql.createdAt,
         updated_at: graphql.updatedAt,
