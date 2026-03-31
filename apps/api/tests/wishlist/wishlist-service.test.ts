@@ -839,7 +839,7 @@ describe("WishlistService", () => {
             expect(orderByMock).toHaveBeenCalledWith(desc(wishlistItems.title));
         });
 
-        it("getUserItems defaults PRIORITY sort to DESC when sortDir is omitted", async () => {
+        it("getUserItems defaults PRIORITY sort to ASC when sortDir is omitted", async () => {
             const items: WishlistItem[] = [];
 
             const allMock = vi.fn().mockResolvedValue(items);
@@ -859,7 +859,7 @@ describe("WishlistService", () => {
 
             expect(orderByMock).toHaveBeenCalledWith(
                 expect.anything(),
-                desc(wishlistItems.priority),
+                asc(wishlistItems.priority),
             );
         });
 

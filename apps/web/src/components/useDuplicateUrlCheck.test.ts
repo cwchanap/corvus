@@ -73,4 +73,88 @@ describe("useDuplicateUrlCheck", () => {
         expect(capturedUrlAccessor()).toBe("");
         dispose();
     });
+
+    it("keeps duplicate warnings while another visible link still uses the previous URL", () => {
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "https://duplicate.example/item",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+            {
+                url: "https://duplicate.example/item",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+        ]);
+
+        let handleUrlChange!: (index: number, url: string) => void;
+        let duplicateWarnings!: () => Record<number, string | null>;
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+            mockUseCheckDuplicateUrl.mockImplementation(
+                (urlAccessor: () => string) => ({
+                    get data() {
+                        const currentUrl = urlAccessor();
+                        if (!currentUrl) return undefined;
+                        if (currentUrl === "https://duplicate.example/item") {
+                            return {
+                                isDuplicate: true,
+                                conflictingItem: {
+                                    id: "item-1",
+                                    title: "Existing duplicate",
+                                    categoryId: "cat-1",
+                                },
+                            };
+                        }
+                        return {
+                            isDuplicate: false,
+                            conflictingItem: null,
+                        };
+                    },
+                }),
+            );
+
+            const hook = useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+            });
+
+            handleUrlChange = hook.handleUrlChange;
+            duplicateWarnings = hook.duplicateWarnings;
+        });
+
+        handleUrlChange(0, "https://duplicate.example/item");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()).toEqual({
+            0: "Existing duplicate",
+            1: "Existing duplicate",
+        });
+
+        handleUrlChange(0, "https://unique.example/item");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()).toEqual({
+            0: null,
+            1: "Existing duplicate",
+        });
+
+        dispose();
+    });
 });

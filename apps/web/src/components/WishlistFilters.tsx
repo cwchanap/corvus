@@ -3,7 +3,12 @@ import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
 
-export type StatusFilter = "ALL" | "WANT" | "PURCHASED" | "ARCHIVED";
+export type StatusFilter =
+  | "DEFAULT"
+  | "ALL"
+  | "WANT"
+  | "PURCHASED"
+  | "ARCHIVED";
 export type SortByOption = "date" | "title" | "priority" | "custom";
 
 interface WishlistFiltersProps {
@@ -63,11 +68,13 @@ export function WishlistFilters(props: WishlistFiltersProps) {
         </div>
         <div class="sm:w-40">
           <Select
+            data-testid="status-dropdown"
             value={props.statusFilter()}
             onChange={(e) =>
               props.setStatusFilter(e.currentTarget.value as StatusFilter)
             }
           >
+            <option value="DEFAULT">Default (hide archived)</option>
             <option value="ALL">All Statuses</option>
             <option value="WANT">Want</option>
             <option value="PURCHASED">Purchased</option>

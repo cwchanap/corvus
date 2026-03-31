@@ -28,7 +28,7 @@ describe("WishlistFilters", () => {
       overrides.initialSortBy ?? "custom",
     );
     const [statusFilter, setStatusFilter] = createSignal<StatusFilter>(
-      overrides.initialStatusFilter ?? "ALL",
+      overrides.initialStatusFilter ?? "DEFAULT",
     );
 
     const result = render(() => (
@@ -167,6 +167,27 @@ describe("WishlistFilters", () => {
         expect(sortBy()).toBe(newValue);
       },
     );
+  });
+
+  describe("Status Filter Dropdown", () => {
+    it("uses the provided initial status filter", () => {
+      const { statusFilter } = renderWishlistFilters({
+        initialStatusFilter: "WANT",
+      });
+
+      const statusSelect = screen.getByTestId("status-dropdown");
+      expect(statusSelect).toBeInTheDocument();
+      expect(statusFilter()).toBe("WANT");
+    });
+
+    it("updates the status filter when a new option is selected", () => {
+      const { statusFilter } = renderWishlistFilters();
+      const statusSelect = screen.getByTestId("status-dropdown");
+
+      fireEvent.change(statusSelect, { target: { value: "PURCHASED" } });
+
+      expect(statusFilter()).toBe("PURCHASED");
+    });
   });
 
   describe("Add Item Button", () => {
