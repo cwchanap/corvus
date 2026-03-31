@@ -6,6 +6,10 @@ describe("isValidUrl", () => {
         expect(isValidUrl("https://example.com/item")).toBe(true);
     });
 
+    it("accepts URLs with surrounding whitespace", () => {
+        expect(isValidUrl("  https://example.com/item  ")).toBe(true);
+    });
+
     it("rejects malformed URLs", () => {
         expect(isValidUrl("not a url")).toBe(false);
     });

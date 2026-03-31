@@ -11,6 +11,11 @@ export interface LinkItem {
   isDeleted?: boolean;
 }
 
+interface VisibleLinkItem {
+  link: LinkItem;
+  originalIndex: number;
+}
+
 interface LinkManagerProps {
   links: LinkItem[];
   onAddLink: () => void;
@@ -28,7 +33,10 @@ interface LinkManagerProps {
 }
 
 export function LinkManager(props: LinkManagerProps) {
-  const visibleLinks = () => props.links.filter((link) => !link.isDeleted);
+  const visibleLinks = (): VisibleLinkItem[] =>
+    props.links.flatMap((link, originalIndex) =>
+      link.isDeleted ? [] : [{ link, originalIndex }],
+    );
   const hasVisibleLinks = () => visibleLinks().length > 0;
 
   return (
@@ -73,13 +81,15 @@ export function LinkManager(props: LinkManagerProps) {
       >
         <div class="space-y-3">
           <Index each={visibleLinks()}>
-            {(link, index) => (
+            {(visibleLink, index) => (
               <div class="border border-border bg-muted/30 rounded-lg p-4 space-y-3">
                 <div class="flex items-center justify-end">
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => props.onRemoveLink(index)}
+                    onClick={() =>
+                      props.onRemoveLink(visibleLink().originalIndex)
+                    }
                     class="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs p-1"
                   >
                     Remove
@@ -88,9 +98,13 @@ export function LinkManager(props: LinkManagerProps) {
 
                 <Input
                   type="url"
-                  value={link().url}
+                  value={visibleLink().link.url}
                   onInput={(e) =>
-                    props.onUpdateLink(index, "url", e.currentTarget.value)
+                    props.onUpdateLink(
+                      visibleLink().originalIndex,
+                      "url",
+                      e.currentTarget.value,
+                    )
                   }
                   placeholder="Enter website URL"
                   class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
@@ -106,10 +120,10 @@ export function LinkManager(props: LinkManagerProps) {
                 </Show>
 
                 <Input
-                  value={link().description}
+                  value={visibleLink().link.description}
                   onInput={(e) =>
                     props.onUpdateLink(
-                      index,
+                      visibleLink().originalIndex,
                       "description",
                       e.currentTarget.value,
                     )

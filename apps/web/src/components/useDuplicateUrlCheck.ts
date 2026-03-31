@@ -36,6 +36,22 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
         }
     };
 
+    const visibleLinks = createMemo(() =>
+        options.links().filter((link) => !link.isDeleted),
+    );
+
+    const hasOtherVisibleLinkWithUrl = (
+        links: LinkItem[],
+        url: string,
+        excludeIndex: number,
+    ) =>
+        links.some(
+            (link, currentIndex) =>
+                currentIndex !== excludeIndex &&
+                !link.isDeleted &&
+                link.url === url,
+        );
+
     const cleanup = () => {
         clearDebounceTimer();
         setActiveCheck(null);
@@ -52,6 +68,14 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
 
         if (previousUrl && previousUrl !== url) {
             setWarningsByUrl((previous) => {
+                const nextLinks = options
+                    .links()
+                    .map((link, linkIndex) =>
+                        linkIndex === index ? { ...link, url } : link,
+                    );
+                if (hasOtherVisibleLinkWithUrl(nextLinks, previousUrl, index)) {
+                    return previous;
+                }
                 const next = { ...previous };
                 delete next[previousUrl];
                 return next;
@@ -83,10 +107,6 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
                     : null,
         }));
     });
-
-    const visibleLinks = createMemo(() =>
-        options.links().filter((link) => !link.isDeleted),
-    );
 
     const duplicateWarnings = createMemo<Record<number, string | null>>(() => {
         const warningsByCurrentUrl = warningsByUrl();
