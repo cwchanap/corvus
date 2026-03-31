@@ -6,6 +6,7 @@ import {
     type Accessor,
 } from "solid-js";
 import { useCheckDuplicateUrl } from "../lib/graphql/hooks/use-wishlist";
+import { isValidUrl } from "../lib/url";
 import type { LinkItem } from "./useLinkManager";
 
 interface UseDuplicateUrlCheckOptions {
@@ -18,22 +19,40 @@ interface UseDuplicateUrlCheckOptions {
     excludeItemId?: Accessor<string | undefined>;
 }
 
+interface DuplicateUrlCheck {
+    url: string;
+    index: number;
+}
+
+function normalizeUrl(url: string) {
+    return url.trim();
+}
+
 export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
-    const [activeCheck, setActiveCheck] = createSignal<{
-        url: string;
-        index: number;
-    } | null>(null);
+    const [activeCheck, setActiveCheck] =
+        createSignal<DuplicateUrlCheck | null>(null);
+    const [queuedChecks, setQueuedChecks] = createSignal<DuplicateUrlCheck[]>(
+        [],
+    );
     const [warningsByUrl, setWarningsByUrl] = createSignal<
         Record<string, string | null>
     >({});
 
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debounceTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
-    const clearDebounceTimer = () => {
+    const clearDebounceTimer = (index: number) => {
+        const debounceTimer = debounceTimers.get(index);
         if (debounceTimer) {
             clearTimeout(debounceTimer);
-            debounceTimer = null;
+            debounceTimers.delete(index);
         }
+    };
+
+    const clearDebounceTimers = () => {
+        debounceTimers.forEach((debounceTimer) => {
+            clearTimeout(debounceTimer);
+        });
+        debounceTimers.clear();
     };
 
     const visibleLinks = createMemo(() =>
@@ -49,11 +68,24 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
             (link, currentIndex) =>
                 currentIndex !== excludeIndex &&
                 !link.isDeleted &&
-                link.url === url,
+                normalizeUrl(link.url) === url,
         );
 
+    const removeQueuedCheck = (index: number) => {
+        setQueuedChecks((previous) =>
+            previous.filter((check) => check.index !== index),
+        );
+    };
+
+    const clearActiveCheck = (index: number) => {
+        if (activeCheck()?.index === index) {
+            setActiveCheck(null);
+        }
+    };
+
     const cleanup = () => {
-        clearDebounceTimer();
+        clearDebounceTimers();
+        setQueuedChecks([]);
         setActiveCheck(null);
     };
 
@@ -63,10 +95,11 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
     };
 
     const handleUrlChange = (index: number, url: string) => {
-        const previousUrl = options.links()[index]?.url ?? "";
+        const previousUrl = normalizeUrl(options.links()[index]?.url ?? "");
+        const normalizedUrl = normalizeUrl(url);
         options.updateLink(index, "url", url);
 
-        if (previousUrl && previousUrl !== url) {
+        if (previousUrl && previousUrl !== normalizedUrl) {
             setWarningsByUrl((previous) => {
                 const nextLinks = options
                     .links()
@@ -82,17 +115,41 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
             });
         }
 
-        clearDebounceTimer();
-        debounceTimer = setTimeout(() => {
-            setActiveCheck({ url, index });
-            debounceTimer = null;
-        }, 400);
+        clearDebounceTimer(index);
+        removeQueuedCheck(index);
+        clearActiveCheck(index);
+
+        if (normalizedUrl.length < 8 || !isValidUrl(normalizedUrl)) {
+            return;
+        }
+
+        debounceTimers.set(
+            index,
+            setTimeout(() => {
+                debounceTimers.delete(index);
+                setQueuedChecks((previous) => [
+                    ...previous.filter((check) => check.index !== index),
+                    { url: normalizedUrl, index },
+                ]);
+            }, 400),
+        );
     };
 
     const duplicateQuery = useCheckDuplicateUrl(
         () => activeCheck()?.url ?? "",
         options.excludeItemId,
     );
+
+    createEffect(() => {
+        const queue = queuedChecks();
+        if (activeCheck() || queue.length === 0) return;
+
+        const nextCheck = queue[0];
+        if (!nextCheck) return;
+
+        setQueuedChecks(queue.slice(1));
+        setActiveCheck(nextCheck);
+    });
 
     createEffect(() => {
         const check = activeCheck();
@@ -106,6 +163,7 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
                     ? data.conflictingItem.title
                     : null,
         }));
+        setActiveCheck(null);
     });
 
     const duplicateWarnings = createMemo<Record<number, string | null>>(() => {
@@ -113,7 +171,8 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
         const warnings: Record<number, string | null> = {};
 
         visibleLinks().forEach((link, index) => {
-            warnings[index] = warningsByCurrentUrl[link.url] ?? null;
+            warnings[index] =
+                warningsByCurrentUrl[normalizeUrl(link.url)] ?? null;
         });
 
         return warnings;
