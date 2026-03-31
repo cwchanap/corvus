@@ -125,14 +125,22 @@ export const RECENT_ITEMS_QUERY = `
     recentItems(limit: $limit) {
       id
       title
+      description
       categoryId
+      favicon
       status
       priority
+      userId
       createdAt
+      updatedAt
       links {
         id
         url
+        description
+        itemId
         isPrimary
+        createdAt
+        updatedAt
       }
     }
   }

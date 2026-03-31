@@ -211,8 +211,8 @@ export class WishlistService {
         // Apply sorting based on enum values
         let orderedQuery;
 
-        // Default to DESC when no sort direction specified (maintains backward compatibility)
-        const isDescending = sortDir === "DESC" || (!sortBy && !sortDir);
+        // Default to DESC whenever sortDir is omitted to match the GraphQL contract.
+        const isDescending = sortDir === "DESC" || !sortDir;
 
         if (sortBy === "PRIORITY") {
             // PRIORITY: nulls last, ascending (1 = highest priority)

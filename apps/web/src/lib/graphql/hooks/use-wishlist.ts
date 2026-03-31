@@ -26,6 +26,7 @@ import {
     batchDeleteItems,
     batchMoveItems,
 } from "../wishlist";
+import { isValidUrl } from "../../url";
 import type { Accessor } from "solid-js";
 import type {
     WishlistFilterInput,
@@ -269,7 +270,7 @@ export function useCheckDuplicateUrl(
     return createQuery(() => ({
         queryKey: ["wishlist", "duplicate-check", url(), excludeItemId?.()],
         queryFn: () => checkDuplicateUrl(url(), excludeItemId?.()),
-        enabled: url().length >= 8,
+        enabled: url().length >= 8 && isValidUrl(url()),
         staleTime: 5_000,
     }));
 }

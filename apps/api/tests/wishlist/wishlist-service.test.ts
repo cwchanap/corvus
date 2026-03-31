@@ -1,5 +1,5 @@
 import { describe, expect, it, Mock, vi } from "vitest";
-import { asc } from "drizzle-orm";
+import { asc, desc } from "drizzle-orm";
 import type { DB } from "../../src/lib/db";
 import type {
     WishlistCategory,
@@ -816,6 +816,51 @@ describe("WishlistService", () => {
             });
 
             expect(orderByMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("getUserItems defaults TITLE sort to DESC when sortDir is omitted", async () => {
+            const items: WishlistItem[] = [];
+
+            const allMock = vi.fn().mockResolvedValue(items);
+            const orderByMock = vi.fn(() => ({ all: allMock }));
+            const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await service.getUserItems("user-uuid-42", {
+                sortBy: "TITLE" as WishlistSortKey,
+            });
+
+            expect(orderByMock).toHaveBeenCalledWith(desc(wishlistItems.title));
+        });
+
+        it("getUserItems defaults PRIORITY sort to DESC when sortDir is omitted", async () => {
+            const items: WishlistItem[] = [];
+
+            const allMock = vi.fn().mockResolvedValue(items);
+            const orderByMock = vi.fn(() => ({ all: allMock }));
+            const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await service.getUserItems("user-uuid-42", {
+                sortBy: "PRIORITY" as WishlistSortKey,
+            });
+
+            expect(orderByMock).toHaveBeenCalledWith(
+                expect.anything(),
+                desc(wishlistItems.priority),
+            );
         });
 
         it("getItemsByCategory returns items for specific category", async () => {

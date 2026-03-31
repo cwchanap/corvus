@@ -42,6 +42,7 @@ const createMockMutation = () => ({
 // Note: vi.mock() creates a closure, so we must mutate these objects
 // rather than reassigning them to maintain test isolation
 const mockWishlistQuery = createMockWishlistQuery();
+const mockUseWishlist = vi.fn(() => mockWishlistQuery);
 const mockDeleteItem = createMockMutation();
 const mockCreateItem = createMockMutation();
 const mockUpdateItem = createMockMutation();
@@ -53,7 +54,7 @@ const mockBatchMoveItems = createMockMutation();
 const mockLogout = createMockMutation();
 
 vi.mock("../lib/graphql/hooks/use-wishlist", () => ({
-  useWishlist: () => mockWishlistQuery,
+  useWishlist: (...args: unknown[]) => mockUseWishlist(...args),
   useDeleteItem: () => mockDeleteItem,
   useCreateItem: () => mockCreateItem,
   useUpdateItem: () => mockUpdateItem,
@@ -62,8 +63,8 @@ vi.mock("../lib/graphql/hooks/use-wishlist", () => ({
   useDeleteItemLink: () => mockDeleteItemLink,
   useBatchDeleteItems: () => mockBatchDeleteItems,
   useBatchMoveItems: () => mockBatchMoveItems,
-  useRecentItems: () => ({ data: () => undefined, isLoading: false }),
-  useCheckDuplicateUrl: () => ({ data: () => undefined }),
+  useRecentItems: () => ({ data: undefined, isLoading: false }),
+  useCheckDuplicateUrl: () => ({ data: undefined }),
 }));
 
 vi.mock("../lib/graphql/hooks/use-auth", () => ({
@@ -138,6 +139,8 @@ vi.mock("./WishlistFilters", () => ({
     setSearchQuery: (value: string) => void;
     sortBy: () => "date" | "title" | "custom";
     setSortBy: (value: "date" | "title" | "custom") => void;
+    statusFilter: () => "ALL" | "WANT" | "PURCHASED" | "ARCHIVED";
+    setStatusFilter: (value: "ALL" | "WANT" | "PURCHASED" | "ARCHIVED") => void;
     onAddItem: () => void;
     isSelectionMode?: () => boolean;
     onToggleSelectionMode?: () => void;
@@ -176,6 +179,7 @@ describe("WishlistDashboard", () => {
     id: "item-1",
     title: "Laptop",
     description: "Gaming laptop",
+    status: "want",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     user_id: "user-uuid-1",
@@ -214,6 +218,7 @@ describe("WishlistDashboard", () => {
     // Reset mock properties to default values for test isolation
     // Using Object.assign() to mutate the original objects (not reassign)
     // because vi.mock() creates closures that capture the original references
+    mockUseWishlist.mockClear();
     Object.assign(mockWishlistQuery, createMockWishlistQuery());
     Object.assign(mockDeleteItem, createMockMutation());
     Object.assign(mockCreateItem, createMockMutation());
@@ -227,6 +232,20 @@ describe("WishlistDashboard", () => {
   });
 
   describe("Rendering", () => {
+    it("passes ALL status filter to the wishlist query by default", () => {
+      render(() => <WishlistDashboard user={mockUser} />);
+
+      const [filterAccessor] = mockUseWishlist.mock.calls[0] as [
+        () => Record<string, unknown>,
+      ];
+
+      expect(filterAccessor()).toEqual(
+        expect.objectContaining({
+          status: "ALL",
+        }),
+      );
+    });
+
     it("should render header with user name", () => {
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText("Corvus Wishlist")).toBeInTheDocument();
