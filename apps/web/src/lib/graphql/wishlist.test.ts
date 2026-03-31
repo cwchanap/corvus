@@ -185,6 +185,22 @@ describe("checkDuplicateUrl", () => {
         });
     });
 
+    it("trims duplicate-check urls before sending the request", async () => {
+        mockedRequest.mockResolvedValueOnce({
+            checkDuplicateUrl: {
+                isDuplicate: false,
+                conflictingItem: null,
+            },
+        });
+
+        await checkDuplicateUrl("  https://example.com/path  ", "item-1");
+
+        expect(mockedRequest).toHaveBeenCalledWith(CHECK_DUPLICATE_URL_QUERY, {
+            url: "https://example.com/path",
+            excludeItemId: "item-1",
+        });
+    });
+
     it("uses the narrowed duplicate item shape", () => {
         expectTypeOf<
             DuplicateUrlCheckResult["conflictingItem"]
