@@ -6,6 +6,7 @@ import type {
   WishlistCategoryRecord,
   WishlistItemRecord,
 } from "@repo/common/types/wishlist-record";
+import type { GraphQLWishlistItem } from "@repo/common/graphql/types";
 
 // Mock all the hooks and dependencies
 vi.mock("../lib/theme/context", () => ({
@@ -43,6 +44,14 @@ const createMockMutation = () => ({
 // rather than reassigning them to maintain test isolation
 const mockWishlistQuery = createMockWishlistQuery();
 const mockUseWishlist = vi.fn(() => mockWishlistQuery);
+const mockRecentItemsQuery = {
+  data: undefined as GraphQLWishlistItem[] | undefined,
+  isLoading: false,
+};
+const mockViewItemQuery = {
+  data: undefined as GraphQLWishlistItem | undefined,
+  isLoading: false,
+};
 const mockDeleteItem = createMockMutation();
 const mockCreateItem = createMockMutation();
 const mockUpdateItem = createMockMutation();
@@ -63,7 +72,8 @@ vi.mock("../lib/graphql/hooks/use-wishlist", () => ({
   useDeleteItemLink: () => mockDeleteItemLink,
   useBatchDeleteItems: () => mockBatchDeleteItems,
   useBatchMoveItems: () => mockBatchMoveItems,
-  useRecentItems: () => ({ data: undefined, isLoading: false }),
+  useRecentItems: () => mockRecentItemsQuery,
+  useItem: () => mockViewItemQuery,
   useCheckDuplicateUrl: () => ({ data: undefined }),
 }));
 
@@ -73,6 +83,27 @@ vi.mock("../lib/graphql/hooks/use-auth", () => ({
 
 vi.mock("../lib/graphql/adapters", () => ({
   adaptWishlistData: (data: unknown) => data,
+  adaptItem: (item: GraphQLWishlistItem): WishlistItemRecord => ({
+    id: item.id,
+    user_id: item.userId,
+    category_id: item.categoryId ?? undefined,
+    title: item.title,
+    description: item.description ?? undefined,
+    favicon: item.favicon ?? undefined,
+    status: item.status.toLowerCase() as WishlistItemRecord["status"],
+    priority: item.priority ?? undefined,
+    created_at: item.createdAt,
+    updated_at: item.updatedAt,
+    links: item.links.map((link) => ({
+      id: link.id,
+      url: link.url,
+      description: link.description ?? undefined,
+      item_id: link.itemId,
+      is_primary: link.isPrimary,
+      created_at: link.createdAt,
+      updated_at: link.updatedAt,
+    })),
+  }),
 }));
 
 // Mock dialog components
@@ -139,8 +170,10 @@ vi.mock("./WishlistFilters", () => ({
     setSearchQuery: (value: string) => void;
     sortBy: () => "date" | "title" | "custom";
     setSortBy: (value: "date" | "title" | "custom") => void;
-    statusFilter: () => "ALL" | "WANT" | "PURCHASED" | "ARCHIVED";
-    setStatusFilter: (value: "ALL" | "WANT" | "PURCHASED" | "ARCHIVED") => void;
+    statusFilter: () => "DEFAULT" | "ALL" | "WANT" | "PURCHASED" | "ARCHIVED";
+    setStatusFilter: (
+      value: "DEFAULT" | "ALL" | "WANT" | "PURCHASED" | "ARCHIVED",
+    ) => void;
     onAddItem: () => void;
     isSelectionMode?: () => boolean;
     onToggleSelectionMode?: () => void;
@@ -229,21 +262,19 @@ describe("WishlistDashboard", () => {
     Object.assign(mockBatchDeleteItems, createMockMutation());
     Object.assign(mockBatchMoveItems, createMockMutation());
     Object.assign(mockLogout, createMockMutation());
+    Object.assign(mockRecentItemsQuery, { data: undefined, isLoading: false });
+    Object.assign(mockViewItemQuery, { data: undefined, isLoading: false });
   });
 
   describe("Rendering", () => {
-    it("passes ALL status filter to the wishlist query by default", () => {
+    it("omits the status filter from the wishlist query by default", () => {
       render(() => <WishlistDashboard user={mockUser} />);
 
       const [filterAccessor] = mockUseWishlist.mock.calls[0] as [
         () => Record<string, unknown>,
       ];
 
-      expect(filterAccessor()).toEqual(
-        expect.objectContaining({
-          status: "ALL",
-        }),
-      );
+      expect(filterAccessor()).not.toHaveProperty("status");
     });
 
     it("should render header with user name", () => {
@@ -536,6 +567,35 @@ describe("WishlistDashboard", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("add-item-dialog")).toBeInTheDocument();
+      });
+    });
+
+    it("keeps the view dialog open for recent items outside the current list", async () => {
+      mockWishlistQuery.data = createMockWishlistData({
+        categories: [mockCategory],
+      });
+      mockRecentItemsQuery.data = [
+        {
+          id: "recent-1",
+          title: "Recent Laptop",
+          description: null,
+          categoryId: "cat-1",
+          favicon: null,
+          status: "WANT",
+          priority: null,
+          userId: "user-uuid-1",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          links: [],
+        },
+      ];
+
+      render(() => <WishlistDashboard user={mockUser} />);
+
+      fireEvent.click(screen.getByText("Recent Laptop"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("view-item-dialog")).toBeInTheDocument();
       });
     });
   });

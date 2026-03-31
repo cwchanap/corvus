@@ -55,9 +55,15 @@ export interface GraphQLWishlistItem {
     links: GraphQLWishlistItemLink[];
 }
 
+export interface GraphQLDuplicateUrlItem {
+    id: string;
+    title: string;
+    categoryId: string | null;
+}
+
 export interface GraphQLDuplicateUrlCheckResult {
     isDuplicate: boolean;
-    conflictingItem: GraphQLWishlistItem | null;
+    conflictingItem: GraphQLDuplicateUrlItem | null;
 }
 
 export interface GraphQLPaginationInfo {

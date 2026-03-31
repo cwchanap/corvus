@@ -39,9 +39,10 @@ import {
   useDeleteItemLink,
   useBatchDeleteItems,
   useBatchMoveItems,
+  useItem,
 } from "../lib/graphql/hooks/use-wishlist";
 import { useLogout } from "../lib/graphql/hooks/use-auth";
-import { adaptWishlistData } from "../lib/graphql/adapters";
+import { adaptItem, adaptWishlistData } from "../lib/graphql/adapters";
 import { useSelectionManager } from "../hooks/useSelectionManager";
 import { BulkActionBar } from "./BulkActionBar";
 
@@ -307,13 +308,14 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const [searchQuery, setSearchQuery] = createSignal("");
   const [debouncedSearch, setDebouncedSearch] = createSignal("");
   const [sortBy, setSortBy] = createSignal<SortByOption>("custom");
-  const [statusFilter, setStatusFilter] = createSignal<StatusFilter>("ALL");
+  const [statusFilter, setStatusFilter] = createSignal<StatusFilter>("DEFAULT");
   const [page, setPage] = createSignal(1);
   const [addOpen, setAddOpen] = createSignal(false);
   const [editOpen, setEditOpen] = createSignal(false);
   const [editingItem, setEditingItem] = createSignal<WishlistItem | null>(null);
   const [viewOpen, setViewOpen] = createSignal(false);
   const [viewingItem, setViewingItem] = createSignal<WishlistItem | null>(null);
+  const [viewingItemId, setViewingItemId] = createSignal("");
   const [categoryManagerOpen, setCategoryManagerOpen] = createSignal(false);
   const [bulkActionError, setBulkActionError] = createSignal<string | null>(
     null,
@@ -357,8 +359,11 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     const filter: Record<string, unknown> = {
       categoryId: selectedCategory() ?? undefined,
       search: debouncedSearch().trim() || undefined,
-      status: statusFilter(),
     };
+    const currentStatusFilter = statusFilter();
+    if (currentStatusFilter !== "DEFAULT") {
+      filter.status = currentStatusFilter;
+    }
 
     // Map local sort values to GraphQL sort keys
     const s = sortBy();
@@ -380,6 +385,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     () => filterMemo(),
     () => paginationMemo(),
   );
+  const viewingItemQuery = useItem(viewingItemId);
 
   // Adapt GraphQL data to component's expected format
   const wishlistData = createMemo(() => {
@@ -555,6 +561,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   });
 
   const openViewDialog = (item: WishlistItem) => {
+    setViewingItemId(item.id);
     setViewingItem(item);
     setViewOpen(true);
   };
@@ -562,6 +569,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const handleViewOpenChange = (open: boolean) => {
     setViewOpen(open);
     if (!open) {
+      setViewingItemId("");
       setViewingItem(null);
     }
   };
@@ -644,13 +652,21 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     if (!current) return;
 
     const updated = items().find((item) => item.id === current.id);
-    if (!updated) {
-      handleViewOpenChange(false);
+    if (updated && updated !== current) {
+      setViewingItem(updated);
       return;
     }
 
-    if (updated !== current) {
-      setViewingItem(updated);
+    const fetched = viewingItemQuery.data;
+    if (fetched && fetched.id === current.id) {
+      const adapted = adaptItem(fetched);
+      if (
+        adapted.updated_at !== current.updated_at ||
+        adapted.description !== current.description ||
+        adapted.links?.length !== current.links?.length
+      ) {
+        setViewingItem(adapted);
+      }
     }
   });
 

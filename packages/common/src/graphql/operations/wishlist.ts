@@ -9,6 +9,7 @@ import type {
     GraphQLWishlistCategory,
     GraphQLWishlistItem,
     GraphQLWishlistItemLink,
+    GraphQLDuplicateUrlItem,
     GraphQLDuplicateUrlCheckResult,
     WishlistFilterInput,
     PaginationInput,
@@ -481,7 +482,10 @@ export async function checkDuplicateUrl(
     options?: Partial<GraphQLClientOptions>,
 ): Promise<GraphQLDuplicateUrlCheckResult> {
     const data = await graphqlRequest<{
-        checkDuplicateUrl: GraphQLDuplicateUrlCheckResult;
+        checkDuplicateUrl: {
+            isDuplicate: boolean;
+            conflictingItem: GraphQLDuplicateUrlItem | null;
+        };
     }>(CHECK_DUPLICATE_URL_QUERY, { url, excludeItemId }, options);
     return data.checkDuplicateUrl;
 }

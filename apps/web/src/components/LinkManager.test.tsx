@@ -203,6 +203,29 @@ describe("LinkManager", () => {
     expect(removeButtons).toHaveLength(1);
   });
 
+  it("should update links using their original index when earlier links are deleted", () => {
+    const mockLinks: LinkItem[] = [
+      {
+        ...createMockLink("https://deleted.com", "Deleted link"),
+        isDeleted: true,
+      },
+      createMockLink("https://example.com", "Visible link", false, "2"),
+    ];
+
+    renderLinkManager({ links: mockLinks });
+
+    const urlInput = screen.getByPlaceholderText(
+      "Enter website URL",
+    ) as HTMLInputElement;
+    fireEvent.input(urlInput, { target: { value: "https://updated.com" } });
+
+    expect(mockOnUpdateLink).toHaveBeenCalledWith(
+      1,
+      "url",
+      "https://updated.com",
+    );
+  });
+
   it("should show empty state when all links are deleted", () => {
     const mockLinks: LinkItem[] = [
       {
