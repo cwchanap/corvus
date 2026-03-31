@@ -268,9 +268,14 @@ export function useCheckDuplicateUrl(
     excludeItemId?: Accessor<string | undefined>,
 ) {
     return createQuery(() => ({
-        queryKey: ["wishlist", "duplicate-check", url(), excludeItemId?.()],
-        queryFn: () => checkDuplicateUrl(url(), excludeItemId?.()),
-        enabled: url().length >= 8 && isValidUrl(url()),
+        queryKey: [
+            "wishlist",
+            "duplicate-check",
+            url().trim(),
+            excludeItemId?.(),
+        ],
+        queryFn: () => checkDuplicateUrl(url().trim(), excludeItemId?.()),
+        enabled: url().trim().length >= 8 && isValidUrl(url().trim()),
         staleTime: 5_000,
     }));
 }
