@@ -39,6 +39,7 @@ export interface GraphQLWishlistItemLink {
 }
 
 export type ItemStatus = "WANT" | "PURCHASED" | "ARCHIVED";
+export type WishlistFilterStatus = ItemStatus | "ALL";
 
 export interface GraphQLWishlistItem {
     id: string;
@@ -89,7 +90,7 @@ export interface LoginInput {
 export interface WishlistFilterInput {
     categoryId?: string;
     search?: string;
-    status?: ItemStatus | "ALL";
+    status?: WishlistFilterStatus;
     sortBy?: string;
     sortDir?: "ASC" | "DESC";
 }

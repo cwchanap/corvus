@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import {
   Card,
   CardContent,
@@ -21,11 +21,11 @@ interface RecentItemsWidgetProps {
 export function RecentItemsWidget(props: RecentItemsWidgetProps) {
   const recentQuery = useRecentItems();
 
-  const recentItems = () => {
+  const recentItems = createMemo(() => {
     const data = recentQuery.data;
     if (!data || data.length === 0) return [];
     return data.map(adaptItem);
-  };
+  });
 
   const getCategoryName = (categoryId: string | undefined) => {
     if (!categoryId) return "Uncategorized";

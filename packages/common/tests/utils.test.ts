@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { formatDate, debounce, sleep } from "../src/utils";
+import { formatRelativeTime } from "../src/utils/format-relative-time";
 
 describe("formatDate", () => {
     it("formats a date in long US format", () => {
@@ -64,6 +65,12 @@ describe("debounce", () => {
         expect(fn).toHaveBeenCalledTimes(2);
         expect(fn).toHaveBeenNthCalledWith(1, "first");
         expect(fn).toHaveBeenNthCalledWith(2, "second");
+    });
+});
+
+describe("formatRelativeTime", () => {
+    it("returns 'just now' for invalid timestamps", () => {
+        expect(formatRelativeTime("not-a-date")).toBe("just now");
     });
 });
 
