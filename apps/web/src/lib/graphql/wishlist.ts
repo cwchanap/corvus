@@ -194,9 +194,13 @@ export async function checkDuplicateUrl(
 ): Promise<
     import("@repo/common/graphql/types").GraphQLDuplicateUrlCheckResult
 > {
+    const normalizedUrl = url.trim();
     const data = await graphqlRequest<{
         checkDuplicateUrl: import("@repo/common/graphql/types").GraphQLDuplicateUrlCheckResult;
-    }>(CHECK_DUPLICATE_URL_QUERY, { url, excludeItemId });
+    }>(CHECK_DUPLICATE_URL_QUERY, {
+        url: normalizedUrl,
+        excludeItemId,
+    });
     return data.checkDuplicateUrl;
 }
 
