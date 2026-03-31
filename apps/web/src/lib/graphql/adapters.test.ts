@@ -1,8 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import type { GraphQLWishlistItem } from "@repo/common/graphql/types";
 import {
     adaptCategory,
-    adaptLink,
     adaptItem,
+    adaptLink,
     adaptPagination,
     adaptWishlistData,
 } from "./adapters";
@@ -26,12 +27,14 @@ const graphqlLink = {
     updatedAt: "2024-01-02T00:00:00Z",
 };
 
-const graphqlItem = {
+const graphqlItem: GraphQLWishlistItem = {
     id: "item-1",
     title: "Laptop",
     description: "A great laptop",
     categoryId: "cat-1",
     favicon: "https://example.com/favicon.ico",
+    status: "WANT",
+    priority: 3,
     userId: "user-1",
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-02T00:00:00Z",
@@ -64,7 +67,7 @@ describe("adaptCategory", () => {
     it("maps color as undefined when null", () => {
         const result = adaptCategory({
             ...graphqlCategory,
-            color: null as unknown as string,
+            color: null,
         });
 
         expect(result.color).toBeUndefined();
@@ -95,7 +98,7 @@ describe("adaptLink", () => {
     it("maps description as undefined when null", () => {
         const result = adaptLink({
             ...graphqlLink,
-            description: null as unknown as string,
+            description: null,
         });
 
         expect(result.description).toBeUndefined();
@@ -119,6 +122,8 @@ describe("adaptItem", () => {
             title: "Laptop",
             description: "A great laptop",
             favicon: "https://example.com/favicon.ico",
+            status: "want",
+            priority: 3,
             created_at: "2024-01-01T00:00:00Z",
             updated_at: "2024-01-02T00:00:00Z",
             links: [
@@ -135,10 +140,19 @@ describe("adaptItem", () => {
         });
     });
 
+    it("defaults missing status to 'want'", () => {
+        const item = {
+            ...graphqlItem,
+            status: undefined,
+        } as unknown as GraphQLWishlistItem;
+
+        expect(adaptItem(item).status).toBe("want");
+    });
+
     it("maps categoryId as undefined when null", () => {
         const result = adaptItem({
             ...graphqlItem,
-            categoryId: null as unknown as string,
+            categoryId: null,
         });
 
         expect(result.category_id).toBeUndefined();
@@ -147,7 +161,7 @@ describe("adaptItem", () => {
     it("maps description as undefined when null", () => {
         const result = adaptItem({
             ...graphqlItem,
-            description: null as unknown as string,
+            description: null,
         });
 
         expect(result.description).toBeUndefined();
@@ -156,15 +170,26 @@ describe("adaptItem", () => {
     it("maps favicon as undefined when null", () => {
         const result = adaptItem({
             ...graphqlItem,
-            favicon: null as unknown as string,
+            favicon: null,
         });
 
         expect(result.favicon).toBeUndefined();
     });
 
+    it("maps priority as undefined when null", () => {
+        const result = adaptItem({
+            ...graphqlItem,
+            priority: null,
+        });
+
+        expect(result.priority).toBeUndefined();
+    });
+
     it("handles item with no links", () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = adaptItem({ ...graphqlItem, links: undefined } as any);
+        const result = adaptItem({
+            ...graphqlItem,
+            links: undefined,
+        } as unknown as GraphQLWishlistItem);
 
         expect(result.links).toBeUndefined();
     });

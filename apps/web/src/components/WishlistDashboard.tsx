@@ -357,7 +357,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     const filter: Record<string, unknown> = {
       categoryId: selectedCategory() ?? undefined,
       search: debouncedSearch().trim() || undefined,
-      status: statusFilter() !== "ALL" ? statusFilter() : undefined,
+      status: statusFilter(),
     };
 
     // Map local sort values to GraphQL sort keys
@@ -471,13 +471,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
 
   // Reset page when sort or status filter changes
   createEffect(
-    on(sortBy, () => {
-      setPage(1);
-    }),
-  );
-
-  createEffect(
-    on(statusFilter, () => {
+    on([sortBy, statusFilter], () => {
       setPage(1);
     }),
   );

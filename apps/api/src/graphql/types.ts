@@ -332,8 +332,16 @@ export type WishlistFilterInput = {
     sortBy?: InputMaybe<WishlistSortKey>;
     /** Sort direction. Defaults to DESC if not specified. */
     sortDir?: InputMaybe<SortDirection>;
-    status?: InputMaybe<ItemStatus>;
+    status?: InputMaybe<WishlistFilterStatus>;
 };
+
+/** Status values accepted by wishlist filters. */
+export enum WishlistFilterStatus {
+    All = "ALL",
+    Archived = "ARCHIVED",
+    Purchased = "PURCHASED",
+    Want = "WANT",
+}
 
 /** A wishlist item */
 export type WishlistItem = {
@@ -516,6 +524,7 @@ export type ResolversTypes = ResolversObject<{
     User: ResolverTypeWrapper<User>;
     WishlistCategory: ResolverTypeWrapper<WishlistCategory>;
     WishlistFilterInput: WishlistFilterInput;
+    WishlistFilterStatus: WishlistFilterStatus;
     WishlistItem: ResolverTypeWrapper<WishlistItem>;
     WishlistItemLink: ResolverTypeWrapper<WishlistItemLink>;
     WishlistPayload: ResolverTypeWrapper<WishlistPayload>;

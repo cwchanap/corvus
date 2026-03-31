@@ -76,6 +76,7 @@ export function WishlistFilters(props: WishlistFiltersProps) {
         </div>
         <div class="sm:w-44">
           <Select
+            data-testid="sort-dropdown"
             value={props.sortBy()}
             onChange={(e) =>
               props.setSortBy(e.currentTarget.value as SortByOption)
