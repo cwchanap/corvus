@@ -45,6 +45,10 @@ export class WishlistService {
         return normalizeHttpUrl(url);
     }
 
+    private trimUrl(url: string): string {
+        return url.trim();
+    }
+
     private async assertItemOwnedByUser(
         requesterUserId: string,
         itemId: string,
@@ -328,30 +332,23 @@ export class WishlistService {
     ): Promise<{ isDuplicate: boolean; conflictingItem: WishlistItem | null }> {
         const normalizedUrl = this.normalizeLinkUrl(url);
         const conditions = [
-            eq(wishlistItems.user_id, userId),
-            ne(
-                wishlistItems.status,
-                "archived" as "want" | "purchased" | "archived",
-            ),
+            eq(wishlistItemLinks.normalized_url, normalizedUrl),
+            sql`exists(select 1 from ${wishlistItems} where ${wishlistItems.id} = ${wishlistItemLinks.item_id} and ${wishlistItems.user_id} = ${userId} and ${wishlistItems.status} != 'archived')`,
         ];
 
         if (excludeItemId) {
-            conditions.push(ne(wishlistItems.id, excludeItemId));
+            conditions.push(ne(wishlistItemLinks.item_id, excludeItemId));
         }
 
-        const results = await this.db
-            .select({ item: wishlistItems, linkUrl: wishlistItemLinks.url })
+        const result = await this.db
+            .select({ item: wishlistItems })
             .from(wishlistItemLinks)
             .innerJoin(
                 wishlistItems,
                 eq(wishlistItemLinks.item_id, wishlistItems.id),
             )
             .where(and(...conditions))
-            .all();
-
-        const result = results.find(
-            ({ linkUrl }) => this.normalizeLinkUrl(linkUrl) === normalizedUrl,
-        );
+            .get();
 
         if (!result) {
             return { isDuplicate: false, conflictingItem: null };
@@ -429,7 +426,7 @@ export class WishlistService {
         itemData: Omit<NewWishlistItem, "id" | "created_at" | "updated_at">,
         linkData: Omit<
             NewWishlistItemLink,
-            "id" | "item_id" | "created_at" | "updated_at"
+            "id" | "item_id" | "normalized_url" | "created_at" | "updated_at"
         >,
     ): Promise<{ item: WishlistItem; link: WishlistItemLink }> {
         const itemId = crypto.randomUUID();
@@ -447,7 +444,8 @@ export class WishlistService {
                     id: linkId,
                     item_id: itemId,
                     ...linkData,
-                    url: this.normalizeLinkUrl(linkData.url),
+                    url: this.trimUrl(linkData.url),
+                    normalized_url: this.normalizeLinkUrl(linkData.url),
                 })
                 .returning(),
         ]);
@@ -678,7 +676,10 @@ export class WishlistService {
 
     async createItemLink(
         requesterUserId: string,
-        linkData: Omit<NewWishlistItemLink, "id" | "created_at" | "updated_at">,
+        linkData: Omit<
+            NewWishlistItemLink,
+            "id" | "normalized_url" | "created_at" | "updated_at"
+        >,
     ): Promise<WishlistItemLink> {
         await this.assertItemOwnedByUser(requesterUserId, linkData.item_id);
         return await this.db
@@ -686,7 +687,8 @@ export class WishlistService {
             .values({
                 id: crypto.randomUUID(),
                 ...linkData,
-                url: this.normalizeLinkUrl(linkData.url),
+                url: this.trimUrl(linkData.url),
+                normalized_url: this.normalizeLinkUrl(linkData.url),
             })
             .returning()
             .get();
@@ -697,16 +699,19 @@ export class WishlistService {
         linkId: string,
         updates: WishlistItemLinkUpdate,
     ): Promise<WishlistItemLink | null> {
+        const setValues: Record<string, unknown> = {
+            ...updates,
+            updated_at: new Date().toISOString(),
+        };
+
+        if (typeof updates.url === "string") {
+            setValues.url = this.trimUrl(updates.url);
+            setValues.normalized_url = this.normalizeLinkUrl(updates.url);
+        }
+
         const row = await this.db
             .update(wishlistItemLinks)
-            .set({
-                ...updates,
-                url:
-                    typeof updates.url === "string"
-                        ? this.normalizeLinkUrl(updates.url)
-                        : updates.url,
-                updated_at: new Date().toISOString(),
-            })
+            .set(setValues)
             .where(
                 and(
                     eq(wishlistItemLinks.id, linkId),

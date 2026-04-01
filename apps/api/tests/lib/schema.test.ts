@@ -103,12 +103,14 @@ describe("database schema", () => {
             expect(config.name).toBe("wishlist_item_links");
         });
 
-        it("defines item_id and url indexes via index callback", () => {
+        it("defines item_id and normalized_url indexes via index callback", () => {
             const config = getTableConfig(wishlistItemLinks);
             expect(config.indexes.length).toBeGreaterThanOrEqual(1);
             const indexNames = config.indexes.map((idx) => idx.config.name);
             expect(indexNames).toContain("wishlist_item_links_item_id_idx");
-            expect(indexNames).toContain("wishlist_item_links_url_idx");
+            expect(indexNames).toContain(
+                "wishlist_item_links_normalized_url_idx",
+            );
         });
 
         it("has expected columns", () => {
@@ -117,6 +119,7 @@ describe("database schema", () => {
             expect(columnNames).toContain("id");
             expect(columnNames).toContain("item_id");
             expect(columnNames).toContain("url");
+            expect(columnNames).toContain("normalized_url");
             expect(columnNames).toContain("description");
             expect(columnNames).toContain("is_primary");
             expect(columnNames).toContain("created_at");
