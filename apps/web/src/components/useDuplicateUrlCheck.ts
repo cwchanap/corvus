@@ -6,7 +6,7 @@ import {
     type Accessor,
 } from "solid-js";
 import { useCheckDuplicateUrl } from "../lib/graphql/hooks/use-wishlist";
-import { isValidUrl } from "../lib/url";
+import { isValidUrl, normalizeHttpUrl } from "../lib/url";
 import type { LinkItem } from "./useLinkManager";
 
 interface UseDuplicateUrlCheckOptions {
@@ -25,7 +25,7 @@ interface DuplicateUrlCheck {
 }
 
 function normalizeUrl(url: string) {
-    return url.trim();
+    return normalizeHttpUrl(url);
 }
 
 export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
