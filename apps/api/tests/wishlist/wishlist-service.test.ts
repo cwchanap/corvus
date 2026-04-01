@@ -61,6 +61,7 @@ describe("WishlistService", () => {
                 id: "link-1",
                 item_id: "item-1",
                 url: "https://shop.example/headphones",
+                normalized_url: "https://shop.example/headphones",
                 description: "Primary retailer",
                 is_primary: true,
                 created_at: "2024-01-05T00:00:00.000Z",
@@ -70,6 +71,7 @@ describe("WishlistService", () => {
                 id: "link-2",
                 item_id: "item-1",
                 url: "https://shop2.example/headphones",
+                normalized_url: "https://shop2.example/headphones",
                 description: null,
                 is_primary: false,
                 created_at: "2024-01-05T01:00:00.000Z",
@@ -989,7 +991,8 @@ describe("WishlistService", () => {
             const mockLink: WishlistItemLink = {
                 id: "link-batch-uuid",
                 item_id: "item-batch-uuid",
-                url: "https://example.com/item",
+                url: "HTTPS://Example.com:443/item/",
+                normalized_url: "https://example.com/item",
                 description: null,
                 is_primary: true,
                 created_at: "2024-01-01T00:00:00.000Z",
@@ -1033,7 +1036,8 @@ describe("WishlistService", () => {
             expect(valuesMock).toHaveBeenNthCalledWith(
                 2,
                 expect.objectContaining({
-                    url: "https://example.com/item",
+                    url: "HTTPS://Example.com:443/item/",
+                    normalized_url: "https://example.com/item",
                     description: null,
                     is_primary: true,
                 }),
@@ -1158,6 +1162,7 @@ describe("WishlistService", () => {
                     id: "link-1",
                     item_id: "item-1",
                     url: "https://example.com/1",
+                    normalized_url: "https://example.com/1",
                     description: "Primary",
                     is_primary: true,
                     created_at: "2024-01-01T00:00:00.000Z",
@@ -1167,6 +1172,7 @@ describe("WishlistService", () => {
                     id: "link-2",
                     item_id: "item-1",
                     url: "https://example.com/2",
+                    normalized_url: "https://example.com/2",
                     description: "Secondary",
                     is_primary: false,
                     created_at: "2024-01-02T00:00:00.000Z",
@@ -1225,7 +1231,8 @@ describe("WishlistService", () => {
             const newLink: WishlistItemLink = {
                 id: "generated-uuid",
                 item_id: "item-1",
-                url: "https://example.com/new",
+                url: "HTTPS://Example.com:443/new/",
+                normalized_url: "https://example.com/new",
                 description: "New Link",
                 is_primary: false,
                 created_at: "2024-01-01T00:00:00.000Z",
@@ -1264,7 +1271,8 @@ describe("WishlistService", () => {
             expect(valuesMock).toHaveBeenCalledWith(
                 expect.objectContaining({
                     item_id: "item-1",
-                    url: "https://example.com/new",
+                    url: "HTTPS://Example.com:443/new/",
+                    normalized_url: "https://example.com/new",
                     description: "New Link",
                     is_primary: false,
                 }),
@@ -1277,7 +1285,8 @@ describe("WishlistService", () => {
             const updatedLink: WishlistItemLink = {
                 id: "link-1",
                 item_id: "item-1",
-                url: "https://example.com/updated",
+                url: "HTTPS://Example.com:443/updated/",
+                normalized_url: "https://example.com/updated",
                 description: "Updated Link",
                 is_primary: true,
                 created_at: "2024-01-01T00:00:00.000Z",
@@ -1309,7 +1318,8 @@ describe("WishlistService", () => {
             expect(setMock).toHaveBeenCalledTimes(1);
             expect(setMock).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    url: "https://example.com/updated",
+                    url: "HTTPS://Example.com:443/updated/",
+                    normalized_url: "https://example.com/updated",
                 }),
             );
             expect(whereMock).toHaveBeenCalledTimes(1);
@@ -1317,7 +1327,7 @@ describe("WishlistService", () => {
             expect(getMock).toHaveBeenCalledTimes(1);
         });
 
-        it("checkDuplicateUrl normalizes urls and excludes archived items", async () => {
+        it("checkDuplicateUrl uses indexed normalized_url lookup", async () => {
             const conflictingItem: WishlistItem = {
                 id: "item-1",
                 user_id: "user-uuid-42",
@@ -1331,13 +1341,10 @@ describe("WishlistService", () => {
                 updated_at: "2024-01-01T00:00:00.000Z",
             };
 
-            const allMock = vi.fn().mockResolvedValue([
-                {
-                    item: conflictingItem,
-                    linkUrl: "https://example.com/item",
-                },
-            ]);
-            const whereMock = vi.fn(() => ({ all: allMock }));
+            const getMock = vi.fn().mockResolvedValue({
+                item: conflictingItem,
+            });
+            const whereMock = vi.fn(() => ({ get: getMock }));
             const innerJoinMock = vi.fn(() => ({ where: whereMock }));
             const fromMock = vi.fn(() => ({ innerJoin: innerJoinMock }));
             const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
@@ -1358,7 +1365,32 @@ describe("WishlistService", () => {
                 conflictingItem,
             });
             expect(whereMock).toHaveBeenCalledTimes(1);
-            expect(allMock).toHaveBeenCalledTimes(1);
+            expect(getMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("checkDuplicateUrl returns no duplicate when no matching normalized_url found", async () => {
+            const getMock = vi.fn().mockResolvedValue(undefined);
+            const whereMock = vi.fn(() => ({ get: getMock }));
+            const innerJoinMock = vi.fn(() => ({ where: whereMock }));
+            const fromMock = vi.fn(() => ({ innerJoin: innerJoinMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.checkDuplicateUrl(
+                "user-uuid-42",
+                "https://example.com/unique-item",
+            );
+
+            expect(result).toEqual({
+                isDuplicate: false,
+                conflictingItem: null,
+            });
+            expect(whereMock).toHaveBeenCalledTimes(1);
+            expect(getMock).toHaveBeenCalledTimes(1);
         });
 
         it("updateItemLink returns null when link not found", async () => {
