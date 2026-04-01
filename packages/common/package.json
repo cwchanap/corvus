@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./api/wishlist-client": "./src/api/wishlist-client.ts",
+    "./url": "./src/url.ts",
     "./utils": "./src/utils.ts",
     "./types": "./src/types.ts",
     "./types/auth": "./src/types/auth.ts",

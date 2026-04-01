@@ -74,7 +74,7 @@ describe("useDuplicateUrlCheck", () => {
         dispose();
     });
 
-    it("normalizes whitespace before duplicate lookups and warning matching", () => {
+    it("normalizes duplicate lookups and warning matching", () => {
         const [links, setLinks] = createSignal<LinkItem[]>([
             {
                 url: "",
@@ -98,7 +98,7 @@ describe("useDuplicateUrlCheck", () => {
                             queriedUrls.push(urlAccessor());
                             if (
                                 urlAccessor() ===
-                                "https://duplicate.example/item"
+                                "https://duplicate.example/item?a=1&b=2"
                             ) {
                                 return {
                                     isDuplicate: true,
@@ -136,10 +136,10 @@ describe("useDuplicateUrlCheck", () => {
             duplicateWarnings = hook.duplicateWarnings;
         });
 
-        handleUrlChange(0, "  https://duplicate.example/item  ");
+        handleUrlChange(0, "  HTTPS://duplicate.example:443/item/?b=2&a=1  ");
         vi.advanceTimersByTime(400);
 
-        expect(queriedUrls).toContain("https://duplicate.example/item");
+        expect(queriedUrls).toContain("https://duplicate.example/item?a=1&b=2");
         expect(duplicateWarnings()).toEqual({
             0: "Existing duplicate",
         });
@@ -285,6 +285,88 @@ describe("useDuplicateUrlCheck", () => {
                             isDuplicate: false,
                             conflictingItem: null,
                         };
+                    },
+                }),
+            );
+
+            const hook = useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+            });
+
+            handleUrlChange = hook.handleUrlChange;
+            duplicateWarnings = hook.duplicateWarnings;
+        });
+
+        handleUrlChange(0, "https://duplicate.example/item");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()).toEqual({
+            0: "Existing duplicate",
+            1: "Existing duplicate",
+        });
+
+        handleUrlChange(0, "https://unique.example/item");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()).toEqual({
+            0: null,
+            1: "Existing duplicate",
+        });
+
+        dispose();
+    });
+
+    it("treats equivalent normalized urls as the same visible link", () => {
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "https://duplicate.example/item",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+            {
+                url: "HTTPS://duplicate.example:443/item/",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+        ]);
+
+        let handleUrlChange!: (index: number, url: string) => void;
+        let duplicateWarnings!: () => Record<number, string | null>;
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+            mockUseCheckDuplicateUrl.mockImplementation(
+                (urlAccessor: () => string) => ({
+                    get data() {
+                        if (
+                            urlAccessor() === "https://duplicate.example/item"
+                        ) {
+                            return {
+                                isDuplicate: true,
+                                conflictingItem: {
+                                    id: "item-1",
+                                    title: "Existing duplicate",
+                                    categoryId: "cat-1",
+                                },
+                            };
+                        }
+
+                        return undefined;
                     },
                 }),
             );
