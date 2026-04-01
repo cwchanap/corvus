@@ -22,6 +22,7 @@ import {
     BATCH_DELETE_ITEMS_MUTATION,
     BATCH_MOVE_ITEMS_MUTATION,
 } from "@repo/common/graphql/operations/wishlist";
+import { normalizeHttpUrl } from "@repo/common/url";
 import { graphqlRequest } from "./client";
 
 // Re-export shared types
@@ -194,7 +195,7 @@ export async function checkDuplicateUrl(
 ): Promise<
     import("@repo/common/graphql/types").GraphQLDuplicateUrlCheckResult
 > {
-    const normalizedUrl = url.trim();
+    const normalizedUrl = normalizeHttpUrl(url);
     const data = await graphqlRequest<{
         checkDuplicateUrl: import("@repo/common/graphql/types").GraphQLDuplicateUrlCheckResult;
     }>(CHECK_DUPLICATE_URL_QUERY, {

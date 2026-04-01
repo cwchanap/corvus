@@ -15,6 +15,7 @@ import {
     wishlistItems,
     wishlistItemLinks,
 } from "../db/schema";
+import { normalizeHttpUrl } from "@repo/common/url";
 import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { WishlistSortKey, SortDirection } from "../../graphql/types";
@@ -39,6 +40,10 @@ type ItemQueryOptions = {
 
 export class WishlistService {
     constructor(private db: DB) {}
+
+    private normalizeLinkUrl(url: string): string {
+        return normalizeHttpUrl(url);
+    }
 
     private async assertItemOwnedByUser(
         requesterUserId: string,
@@ -321,25 +326,32 @@ export class WishlistService {
         url: string,
         excludeItemId?: string,
     ): Promise<{ isDuplicate: boolean; conflictingItem: WishlistItem | null }> {
+        const normalizedUrl = this.normalizeLinkUrl(url);
         const conditions = [
-            eq(wishlistItemLinks.url, url),
             eq(wishlistItems.user_id, userId),
+            ne(
+                wishlistItems.status,
+                "archived" as "want" | "purchased" | "archived",
+            ),
         ];
 
         if (excludeItemId) {
             conditions.push(ne(wishlistItems.id, excludeItemId));
         }
 
-        const result = await this.db
-            .select({ item: wishlistItems })
+        const results = await this.db
+            .select({ item: wishlistItems, linkUrl: wishlistItemLinks.url })
             .from(wishlistItemLinks)
             .innerJoin(
                 wishlistItems,
                 eq(wishlistItemLinks.item_id, wishlistItems.id),
             )
             .where(and(...conditions))
-            .limit(1)
-            .get();
+            .all();
+
+        const result = results.find(
+            ({ linkUrl }) => this.normalizeLinkUrl(linkUrl) === normalizedUrl,
+        );
 
         if (!result) {
             return { isDuplicate: false, conflictingItem: null };
@@ -431,7 +443,12 @@ export class WishlistService {
                 .returning(),
             this.db
                 .insert(wishlistItemLinks)
-                .values({ id: linkId, item_id: itemId, ...linkData })
+                .values({
+                    id: linkId,
+                    item_id: itemId,
+                    ...linkData,
+                    url: this.normalizeLinkUrl(linkData.url),
+                })
                 .returning(),
         ]);
 
@@ -666,7 +683,11 @@ export class WishlistService {
         await this.assertItemOwnedByUser(requesterUserId, linkData.item_id);
         return await this.db
             .insert(wishlistItemLinks)
-            .values({ id: crypto.randomUUID(), ...linkData })
+            .values({
+                id: crypto.randomUUID(),
+                ...linkData,
+                url: this.normalizeLinkUrl(linkData.url),
+            })
             .returning()
             .get();
     }
@@ -678,7 +699,14 @@ export class WishlistService {
     ): Promise<WishlistItemLink | null> {
         const row = await this.db
             .update(wishlistItemLinks)
-            .set({ ...updates, updated_at: new Date().toISOString() })
+            .set({
+                ...updates,
+                url:
+                    typeof updates.url === "string"
+                        ? this.normalizeLinkUrl(updates.url)
+                        : updates.url,
+                updated_at: new Date().toISOString(),
+            })
             .where(
                 and(
                     eq(wishlistItemLinks.id, linkId),
