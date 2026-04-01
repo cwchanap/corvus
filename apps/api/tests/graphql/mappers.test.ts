@@ -46,6 +46,7 @@ const dbLink: WishlistItemLink = {
     id: "link-1",
     item_id: "item-1",
     url: "https://example.com",
+    normalized_url: "https://example.com",
     description: "Example link",
     is_primary: true,
     created_at: "2024-01-01T00:00:00Z",
