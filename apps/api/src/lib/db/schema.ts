@@ -70,6 +70,7 @@ export const wishlistItemLinks = sqliteTable(
                 onDelete: "cascade",
             }),
         url: text("url").notNull(),
+        normalized_url: text("normalized_url").notNull(),
         description: text("description"),
         is_primary: integer("is_primary", { mode: "boolean" })
             .notNull()
@@ -83,6 +84,8 @@ export const wishlistItemLinks = sqliteTable(
     },
     (table) => ({
         itemIdIdx: index("wishlist_item_links_item_id_idx").on(table.item_id),
-        urlIdx: index("wishlist_item_links_url_idx").on(table.url),
+        normalizedUrlIdx: index("wishlist_item_links_normalized_url_idx").on(
+            table.normalized_url,
+        ),
     }),
 );
