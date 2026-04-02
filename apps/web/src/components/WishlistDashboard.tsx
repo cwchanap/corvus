@@ -486,8 +486,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     try {
       await deleteItemMutation.mutateAsync(itemId);
       if (viewingItem()?.id === itemId) {
-        setViewOpen(false);
-        setViewingItem(null);
+        handleViewOpenChange(false);
       }
       // TanStack Query automatically refetches
     } catch (err) {
@@ -673,8 +672,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     }
 
     if (!updated && viewingItemQuery.isFetched && !fetched) {
-      setViewOpen(false);
-      setViewingItem(null);
+      handleViewOpenChange(false);
     }
   });
 

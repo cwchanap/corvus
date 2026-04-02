@@ -357,10 +357,13 @@ export class WishlistService {
         return { isDuplicate: true, conflictingItem: result.item };
     }
 
+    static MAX_RECENT_ITEMS = 50;
+
     async getRecentItems(
         userId: string,
         limit = 5,
     ): Promise<Array<WishlistItem & { links: WishlistItemLink[] }>> {
+        const safeLimit = Math.min(limit, WishlistService.MAX_RECENT_ITEMS);
         const items = await this.db
             .select()
             .from(wishlistItems)
@@ -374,7 +377,7 @@ export class WishlistService {
                 ),
             )
             .orderBy(desc(wishlistItems.created_at))
-            .limit(limit)
+            .limit(safeLimit)
             .all();
 
         if (items.length === 0) {
