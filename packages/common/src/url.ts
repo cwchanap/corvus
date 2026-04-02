@@ -13,7 +13,7 @@ export function normalizeHttpUrl(urlString: string): string {
         }
 
         parsed.protocol = parsed.protocol.toLowerCase();
-        parsed.hostname = parsed.hostname.toLowerCase();
+        parsed.hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
 
         if (
             (parsed.protocol === "http:" && parsed.port === "80") ||
