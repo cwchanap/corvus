@@ -14,10 +14,13 @@ function queryD1(sql: string, remote = false): LinkRow[] {
     return parsed?.[0]?.results ?? [];
 }
 
+function escapeSqlValue(value: string): string {
+    return value.replace(/'/g, "''");
+}
+
 function executeD1(sql: string, remote = false): void {
     const flag = remote ? "--remote" : "--local";
-    const escaped = sql.replace(/'/g, "''");
-    const cmd = `wrangler d1 execute corvus ${flag} --command="${escaped.replace(/"/g, '\\"')}"`;
+    const cmd = `wrangler d1 execute corvus ${flag} --command="${sql.replace(/"/g, '\\"')}"`;
     console.log(`Executing: ${cmd}`);
     execSync(cmd, { encoding: "utf-8", cwd: import.meta.dirname + "/.." });
 }
@@ -51,7 +54,7 @@ function main() {
 
     for (const { id, normalized_url } of updates) {
         executeD1(
-            `UPDATE wishlist_item_links SET normalized_url = '${normalized_url}' WHERE id = '${id}'`,
+            `UPDATE wishlist_item_links SET normalized_url = '${escapeSqlValue(normalized_url)}' WHERE id = '${escapeSqlValue(id)}'`,
             remote,
         );
     }
