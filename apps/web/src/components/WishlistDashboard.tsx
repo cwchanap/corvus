@@ -660,10 +660,12 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     const fetched = viewingItemQuery.data;
     if (fetched && fetched.id === current.id) {
       const adapted = adaptItem(fetched);
+      const linksChanged =
+        JSON.stringify(adapted.links) !== JSON.stringify(current.links);
       if (
         adapted.updated_at !== current.updated_at ||
         adapted.description !== current.description ||
-        adapted.links?.length !== current.links?.length
+        linksChanged
       ) {
         setViewingItem(adapted);
       }
