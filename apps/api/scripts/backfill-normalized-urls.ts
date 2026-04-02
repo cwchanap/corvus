@@ -29,6 +29,7 @@ function main() {
 
     const rows = queryD1(
         "SELECT id, url, normalized_url FROM wishlist_item_links",
+        remote,
     );
     console.log(`Found ${rows.length} link rows.`);
 
