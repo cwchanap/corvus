@@ -667,6 +667,12 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       ) {
         setViewingItem(adapted);
       }
+      return;
+    }
+
+    if (!updated && viewingItemQuery.isFetched && !fetched) {
+      setViewOpen(false);
+      setViewingItem(null);
     }
   });
 
