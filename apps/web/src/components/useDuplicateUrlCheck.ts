@@ -153,16 +153,23 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
 
     createEffect(() => {
         const check = activeCheck();
-        const data = duplicateQuery.data;
-        if (!check?.url || !data) return;
+        if (!check?.url) return;
 
-        setWarningsByUrl((previous) => ({
-            ...previous,
-            [check.url]:
-                data.isDuplicate && data.conflictingItem
-                    ? data.conflictingItem.title
-                    : null,
-        }));
+        const data = duplicateQuery.data;
+        const error = duplicateQuery.error;
+
+        if (!data && !error) return;
+
+        if (data) {
+            setWarningsByUrl((previous) => ({
+                ...previous,
+                [check.url]:
+                    data.isDuplicate && data.conflictingItem
+                        ? data.conflictingItem.title
+                        : null,
+            }));
+        }
+
         setActiveCheck(null);
     });
 
