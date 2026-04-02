@@ -269,7 +269,7 @@ As Jordan (Researcher), I want to assign priority levels 1–5 to items so that 
 
 **Database migration — `apps/api/drizzle/`:**
 
-Add a new migration file (e.g., `0006_item_status_priority.sql`) generated via `bun db:gen` from the updated Drizzle schema:
+Add migration files generated via `bun db:gen` from the updated Drizzle schema — `0006_url_index.sql` (URL index) and `0007_item_status_priority.sql` (status/priority columns):
 
 ```typescript
 // apps/api/src/lib/db/schema.ts additions to wishlistItems table
