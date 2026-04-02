@@ -1,12 +1,19 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { normalizeHttpUrl } from "@repo/common/url";
 
 type LinkRow = { id: string; url: string; normalized_url: string };
 
 function queryD1(sql: string, remote = false): LinkRow[] {
-    const flag = remote ? "--remote" : "--local";
-    const cmd = `wrangler d1 execute corvus ${flag} --command="${sql.replace(/"/g, '\\"')}" --json`;
-    const output = execSync(cmd, {
+    const args = [
+        "d1",
+        "execute",
+        "corvus",
+        remote ? "--remote" : "--local",
+        "--command",
+        sql,
+        "--json",
+    ];
+    const output = execFileSync("wrangler", args, {
         encoding: "utf-8",
         cwd: import.meta.dirname + "/..",
     });
@@ -19,10 +26,19 @@ function escapeSqlValue(value: string): string {
 }
 
 function executeD1(sql: string, remote = false): void {
-    const flag = remote ? "--remote" : "--local";
-    const cmd = `wrangler d1 execute corvus ${flag} --command="${sql.replace(/"/g, '\\"')}"`;
-    console.log(`Executing: ${cmd}`);
-    execSync(cmd, { encoding: "utf-8", cwd: import.meta.dirname + "/.." });
+    const args = [
+        "d1",
+        "execute",
+        "corvus",
+        remote ? "--remote" : "--local",
+        "--command",
+        sql,
+    ];
+    console.log("Executing D1 update...");
+    execFileSync("wrangler", args, {
+        encoding: "utf-8",
+        cwd: import.meta.dirname + "/..",
+    });
 }
 
 function main() {

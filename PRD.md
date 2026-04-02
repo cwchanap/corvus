@@ -213,9 +213,9 @@ type Query {
 
 **Service changes — `apps/api/src/lib/wishlist/service.ts`:**
 
-Add method `checkDuplicateUrl(userId: string, url: string, excludeItemId?: string)` that queries `wishlist_item_links` joining to `wishlist_items` where `wishlist_items.user_id = userId AND wishlist_item_links.url = url`. The `excludeItemId` parameter filters out the current item during edit flows.
+Add method `checkDuplicateUrl(userId: string, url: string, excludeItemId?: string)` that queries `wishlist_item_links` joining to `wishlist_items` where `wishlist_items.user_id = userId AND wishlist_item_links.normalized_url = <normalized input>`. The input URL should be normalized using `normalizeHttpUrl` before comparison. The `excludeItemId` parameter filters out the current item during edit flows.
 
-A database index on `wishlist_item_links.url` should be added via a new Drizzle migration (`apps/api/drizzle/`) to support efficient lookups. The index does not need to be unique because duplicate storage across items may be intentional.
+A database index on `wishlist_item_links.normalized_url` should be added via a new Drizzle migration (`apps/api/drizzle/`) to support efficient lookups. The index does not need to be unique because duplicate storage across items may be intentional. The backfill script at `apps/api/scripts/backfill-normalized-urls.ts` populates existing rows before the index is created.
 
 **GraphQL resolver — `apps/api/src/graphql/resolvers.ts`:**
 
@@ -237,7 +237,7 @@ Add a `useCheckDuplicateUrl` hook in `apps/web/src/lib/graphql/hooks/use-wishlis
 
 - **Dependency:** No schema migration is needed for the item/link tables themselves; only an additional index and GraphQL additions.
 - **Risk:** Debounce timing. Too short (< 200 ms) floods D1; too long (> 800 ms) feels unresponsive. Recommended: 400 ms debounce with a minimum URL length of 8 characters before triggering.
-- **Risk:** The `wishlist_item_links` table has no URL index today. Without it, the check performs a full table scan against the user's links. The index migration must land before the feature is enabled in production.
+- **Risk:** The `wishlist_item_links` table has no `normalized_url` index today. Without it, the check performs a full table scan against the user's links. The index migration must land before the feature is enabled in production. Run the `backfill-normalized-urls.ts` script to populate existing rows before creating the index.
 - **Extension consideration:** The extension's `LinkManager` equivalent should also receive this check. The shared `@repo/common/graphql/operations/wishlist.ts` operation string makes this straightforward.
 
 ---
