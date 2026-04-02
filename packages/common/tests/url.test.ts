@@ -20,6 +20,15 @@ describe("normalizeHttpUrl", () => {
         );
     });
 
+    it("strips www. prefix from hostname", () => {
+        expect(normalizeHttpUrl("https://www.example.com/item")).toBe(
+            "https://example.com/item",
+        );
+        expect(normalizeHttpUrl("https://WWW.Example.COM/item")).toBe(
+            "https://example.com/item",
+        );
+    });
+
     it("leaves unsupported or invalid urls trimmed but otherwise unchanged", () => {
         expect(normalizeHttpUrl("  ftp://example.com/file  ")).toBe(
             "ftp://example.com/file",
