@@ -311,9 +311,9 @@ describe("WishlistFilters", () => {
         overrides.initialSelectionMode ?? false,
       );
       const [searchQuery, setSearchQuery] = createSignal("");
-      const [sortBy, setSortBy] = createSignal<"date" | "title" | "custom">(
-        "custom",
-      );
+      const [sortBy, setSortBy] = createSignal<SortByOption>("custom");
+      const [statusFilter, setStatusFilter] =
+        createSignal<StatusFilter>("DEFAULT");
       const mockToggle = vi.fn(() => setIsSelectionMode((v) => !v));
 
       const result = render(() => (
@@ -323,6 +323,8 @@ describe("WishlistFilters", () => {
           setSearchQuery={setSearchQuery}
           sortBy={sortBy}
           setSortBy={setSortBy}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
           onAddItem={mockOnAddItem}
           isSelectionMode={isSelectionMode}
           onToggleSelectionMode={mockToggle}

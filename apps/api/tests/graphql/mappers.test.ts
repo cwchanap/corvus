@@ -159,4 +159,22 @@ describe("mapItem", () => {
         expect(result.description).toBeNull();
         expect(result.favicon).toBeNull();
     });
+
+    it("defaults status to WANT when status is null", () => {
+        const result = mapItem({
+            ...dbItem,
+            status: null as unknown as "want",
+        });
+        expect(result.status).toBe("WANT");
+    });
+
+    it("maps purchased status to uppercase", () => {
+        const result = mapItem({ ...dbItem, status: "purchased" as const });
+        expect(result.status).toBe("PURCHASED");
+    });
+
+    it("maps archived status to uppercase", () => {
+        const result = mapItem({ ...dbItem, status: "archived" as const });
+        expect(result.status).toBe("ARCHIVED");
+    });
 });

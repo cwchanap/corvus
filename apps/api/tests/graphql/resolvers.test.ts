@@ -39,6 +39,8 @@ const mockWishlistService = {
     setPrimaryLink: vi.fn(),
     batchDeleteItems: vi.fn(),
     batchMoveItems: vi.fn(),
+    checkDuplicateUrl: vi.fn(),
+    getRecentItems: vi.fn(),
 };
 
 vi.mock("../../src/lib/wishlist/service", async (importOriginal) => {
@@ -1835,5 +1837,362 @@ describe("login resolver – toLoginGraphQLError status fallback", () => {
         } finally {
             spy.mockRestore();
         }
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Query.checkDuplicateUrl
+// ---------------------------------------------------------------------------
+describe("Query.checkDuplicateUrl", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Query",
+                "checkDuplicateUrl",
+                { url: "https://example.com" },
+                createContext(),
+            ),
+        ).rejects.toThrow("Not authenticated");
+    });
+
+    it("returns duplicate check result from service", async () => {
+        mockWishlistService.checkDuplicateUrl.mockResolvedValueOnce({
+            isDuplicate: true,
+            conflictingItem: dbItem,
+        });
+
+        const ctx = createAuthenticatedContext();
+        const result = await invokeResolver(
+            "Query",
+            "checkDuplicateUrl",
+            { url: "https://example.com", excludeItemId: undefined },
+            ctx,
+        );
+
+        expect(result.isDuplicate).toBe(true);
+        expect(result.conflictingItem).toMatchObject({ id: "item-1" });
+        expect(mockWishlistService.checkDuplicateUrl).toHaveBeenCalledWith(
+            "user-1",
+            "https://example.com",
+            undefined,
+        );
+    });
+
+    it("passes excludeItemId to service", async () => {
+        mockWishlistService.checkDuplicateUrl.mockResolvedValueOnce({
+            isDuplicate: false,
+            conflictingItem: null,
+        });
+
+        const ctx = createAuthenticatedContext();
+        const result = await invokeResolver(
+            "Query",
+            "checkDuplicateUrl",
+            { url: "https://example.com", excludeItemId: "item-42" },
+            ctx,
+        );
+
+        expect(result.isDuplicate).toBe(false);
+        expect(result.conflictingItem).toBeNull();
+        expect(mockWishlistService.checkDuplicateUrl).toHaveBeenCalledWith(
+            "user-1",
+            "https://example.com",
+            "item-42",
+        );
+    });
+
+    it("returns null conflictingItem when no duplicate found", async () => {
+        mockWishlistService.checkDuplicateUrl.mockResolvedValueOnce({
+            isDuplicate: false,
+            conflictingItem: null,
+        });
+
+        const ctx = createAuthenticatedContext();
+        const result = await invokeResolver(
+            "Query",
+            "checkDuplicateUrl",
+            { url: "https://example.com" },
+            ctx,
+        );
+
+        expect(result.isDuplicate).toBe(false);
+        expect(result.conflictingItem).toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Query.recentItems
+// ---------------------------------------------------------------------------
+describe("Query.recentItems", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws UNAUTHENTICATED when not logged in", async () => {
+        await expect(
+            invokeResolver(
+                "Query",
+                "recentItems",
+                { limit: 5 },
+                createContext(),
+            ),
+        ).rejects.toThrow("Not authenticated");
+    });
+
+    it("returns recent items with links from service", async () => {
+        const recentItems = [{ ...dbItem, links: [dbLink] }];
+
+        mockWishlistService.getRecentItems.mockResolvedValueOnce(recentItems);
+
+        const ctx = createAuthenticatedContext();
+        const result = await invokeResolver(
+            "Query",
+            "recentItems",
+            { limit: 5 },
+            ctx,
+        );
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({ id: "item-1" });
+        expect(mockWishlistService.getRecentItems).toHaveBeenCalledWith(
+            "user-1",
+            5,
+        );
+    });
+
+    it("defaults limit to 5 when not provided", async () => {
+        mockWishlistService.getRecentItems.mockResolvedValueOnce([]);
+
+        const ctx = createAuthenticatedContext();
+        await invokeResolver("Query", "recentItems", {}, ctx);
+
+        expect(mockWishlistService.getRecentItems).toHaveBeenCalledWith(
+            "user-1",
+            5,
+        );
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.createItem additional input fields
+// ---------------------------------------------------------------------------
+describe("Mutation.createItem additional input fields", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("passes description, favicon, status, and priority to service", async () => {
+        const createdItem = {
+            ...dbItem,
+            description: "A nice thing",
+            favicon: "https://example.com/icon.png",
+            status: "purchased" as const,
+            priority: 3,
+        };
+        mockWishlistService.createItem.mockResolvedValueOnce(createdItem);
+
+        const ctx = createAuthenticatedContext();
+        const result = await invokeResolver(
+            "Mutation",
+            "createItem",
+            {
+                input: {
+                    title: "My Item",
+                    description: "A nice thing",
+                    favicon: "https://example.com/icon.png",
+                    status: "PURCHASED",
+                    priority: 3,
+                    categoryId: "cat-1",
+                },
+            },
+            ctx,
+        );
+
+        expect(mockWishlistService.createItem).toHaveBeenCalledWith(
+            expect.objectContaining({
+                description: "A nice thing",
+                favicon: "https://example.com/icon.png",
+                status: "purchased",
+                priority: 3,
+            }),
+        );
+        expect(result).toMatchObject({
+            description: "A nice thing",
+            favicon: "https://example.com/icon.png",
+        });
+    });
+
+    it("passes linkDescription when creating item with URL", async () => {
+        const item = { ...dbItem };
+        const link = { ...dbLink, description: "My link description" };
+        mockWishlistService.createItemWithPrimaryLink.mockResolvedValueOnce({
+            item,
+            link,
+        });
+
+        const ctx = createAuthenticatedContext();
+        const result = await invokeResolver(
+            "Mutation",
+            "createItem",
+            {
+                input: {
+                    title: "My Item",
+                    url: "https://example.com",
+                    linkDescription: "My link description",
+                },
+            },
+            ctx,
+        );
+
+        expect(
+            mockWishlistService.createItemWithPrimaryLink,
+        ).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+                description: "My link description",
+            }),
+        );
+    });
+
+    it("defaults status to 'want' when not provided", async () => {
+        mockWishlistService.createItem.mockResolvedValueOnce(dbItem);
+
+        const ctx = createAuthenticatedContext();
+        await invokeResolver(
+            "Mutation",
+            "createItem",
+            {
+                input: { title: "My Item" },
+            },
+            ctx,
+        );
+
+        expect(mockWishlistService.createItem).toHaveBeenCalledWith(
+            expect.objectContaining({ status: "want" }),
+        );
+    });
+
+    it("lowercases status value", async () => {
+        mockWishlistService.createItem.mockResolvedValueOnce(dbItem);
+
+        const ctx = createAuthenticatedContext();
+        await invokeResolver(
+            "Mutation",
+            "createItem",
+            {
+                input: { title: "My Item", status: "ARCHIVED" },
+            },
+            ctx,
+        );
+
+        expect(mockWishlistService.createItem).toHaveBeenCalledWith(
+            expect.objectContaining({ status: "archived" }),
+        );
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.updateItem additional input fields
+// ---------------------------------------------------------------------------
+describe("Mutation.updateItem additional input fields", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("passes favicon, status, and priority to service", async () => {
+        mockWishlistService.updateItem.mockResolvedValueOnce({
+            ...dbItem,
+            favicon: "https://example.com/icon.png",
+            status: "purchased" as const,
+            priority: 3,
+        });
+        mockWishlistService.getItemLinks.mockResolvedValueOnce([dbLink]);
+
+        const ctx = createAuthenticatedContext();
+        const result = await invokeResolver(
+            "Mutation",
+            "updateItem",
+            {
+                id: "item-1",
+                input: {
+                    favicon: "https://example.com/icon.png",
+                    status: "PURCHASED",
+                    priority: 3,
+                },
+            },
+            ctx,
+        );
+
+        expect(mockWishlistService.updateItem).toHaveBeenCalledWith(
+            "item-1",
+            "user-1",
+            expect.objectContaining({
+                favicon: "https://example.com/icon.png",
+                status: "purchased",
+                priority: 3,
+            }),
+        );
+    });
+
+    it("passes undefined priority when priority is not in input", async () => {
+        mockWishlistService.updateItem.mockResolvedValueOnce(dbItem);
+        mockWishlistService.getItemLinks.mockResolvedValueOnce([]);
+
+        const ctx = createAuthenticatedContext();
+        await invokeResolver(
+            "Mutation",
+            "updateItem",
+            {
+                id: "item-1",
+                input: { title: "Updated" },
+            },
+            ctx,
+        );
+
+        expect(mockWishlistService.updateItem).toHaveBeenCalledWith(
+            "item-1",
+            "user-1",
+            expect.objectContaining({ priority: undefined }),
+        );
+    });
+
+    it("passes null priority when priority is explicitly null in input", async () => {
+        mockWishlistService.updateItem.mockResolvedValueOnce(dbItem);
+        mockWishlistService.getItemLinks.mockResolvedValueOnce([]);
+
+        const ctx = createAuthenticatedContext();
+        await invokeResolver(
+            "Mutation",
+            "updateItem",
+            {
+                id: "item-1",
+                input: { priority: null },
+            },
+            ctx,
+        );
+
+        expect(mockWishlistService.updateItem).toHaveBeenCalledWith(
+            "item-1",
+            "user-1",
+            expect.objectContaining({ priority: null }),
+        );
+    });
+
+    it("lowercases status value", async () => {
+        mockWishlistService.updateItem.mockResolvedValueOnce(dbItem);
+        mockWishlistService.getItemLinks.mockResolvedValueOnce([]);
+
+        const ctx = createAuthenticatedContext();
+        await invokeResolver(
+            "Mutation",
+            "updateItem",
+            {
+                id: "item-1",
+                input: { status: "ARCHIVED" },
+            },
+            ctx,
+        );
+
+        expect(mockWishlistService.updateItem).toHaveBeenCalledWith(
+            "item-1",
+            "user-1",
+            expect.objectContaining({ status: "archived" }),
+        );
     });
 });
