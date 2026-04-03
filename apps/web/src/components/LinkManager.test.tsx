@@ -307,4 +307,129 @@ describe("LinkManager", () => {
     ) as HTMLInputElement;
     expect(urlInput.required).toBe(true);
   });
+
+  describe("duplicateWarnings", () => {
+    it("shows warning message for links with duplicate URL", () => {
+      const links = [
+        {
+          url: "https://example.com/product",
+          description: "",
+          isPrimary: true,
+          isDeleted: false,
+        },
+      ];
+
+      render(() => (
+        <LinkManager
+          links={links}
+          onAddLink={() => {}}
+          onUpdateLink={() => {}}
+          onRemoveLink={() => {}}
+          onRemoveAllLinks={() => {}}
+          duplicateWarnings={{ 0: "Other Item" }}
+        />
+      ));
+
+      expect(
+        screen.getByText(/This URL is already saved under/, { exact: false }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/You may still save it as a duplicate/, {
+          exact: false,
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("does not show warning for links without a warning", () => {
+      const links = [
+        {
+          url: "https://example.com/product",
+          description: "",
+          isPrimary: true,
+          isDeleted: false,
+        },
+        {
+          url: "https://example.com/other",
+          description: "",
+          isPrimary: false,
+          isDeleted: false,
+        },
+      ];
+
+      render(() => (
+        <LinkManager
+          links={links}
+          onAddLink={() => {}}
+          onUpdateLink={() => {}}
+          onRemoveLink={() => {}}
+          onRemoveAllLinks={() => {}}
+          duplicateWarnings={{ 0: "Duplicate Item" }}
+        />
+      ));
+
+      const warnings = screen.queryAllByText(
+        /This URL is already saved under/,
+        {
+          exact: false,
+        },
+      );
+      expect(warnings).toHaveLength(1);
+    });
+
+    it("does not show warning when duplicateWarnings is not provided", () => {
+      const links = [
+        {
+          url: "https://example.com/product",
+          description: "",
+          isPrimary: true,
+          isDeleted: false,
+        },
+      ];
+
+      render(() => (
+        <LinkManager
+          links={links}
+          onAddLink={() => {}}
+          onUpdateLink={() => {}}
+          onRemoveLink={() => {}}
+          onRemoveAllLinks={() => {}}
+        />
+      ));
+
+      const urlInput = screen.getByDisplayValue("https://example.com/product");
+      expect(urlInput).toBeInTheDocument();
+      expect(
+        screen.queryByText(/This URL is already saved under/, { exact: false }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("does not show warning when warning value is null", () => {
+      const links = [
+        {
+          url: "https://example.com/product",
+          description: "",
+          isPrimary: true,
+          isDeleted: false,
+        },
+      ];
+
+      render(() => (
+        <LinkManager
+          links={links}
+          onAddLink={() => {}}
+          onUpdateLink={() => {}}
+          onRemoveLink={() => {}}
+          onRemoveAllLinks={() => {}}
+          duplicateWarnings={{ 0: null }}
+        />
+      ));
+
+      expect(
+        screen.getByDisplayValue("https://example.com/product"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(/This URL is already saved under/, { exact: false }),
+      ).not.toBeInTheDocument();
+    });
+  });
 });
