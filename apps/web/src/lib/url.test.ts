@@ -13,6 +13,26 @@ describe("isValidUrl", () => {
     it("rejects malformed URLs", () => {
         expect(isValidUrl("not a url")).toBe(false);
     });
+
+    it("rejects empty strings", () => {
+        expect(isValidUrl("")).toBe(false);
+    });
+
+    it("accepts http:// protocol", () => {
+        expect(isValidUrl("http://example.com/item")).toBe(true);
+    });
+
+    it("rejects ftp:// protocol", () => {
+        expect(isValidUrl("ftp://example.com/file")).toBe(false);
+    });
+
+    it("rejects data: protocol", () => {
+        expect(isValidUrl("data:text/html,<h1>Hi</h1>")).toBe(false);
+    });
+
+    it("rejects javascript: protocol", () => {
+        expect(isValidUrl("javascript:void(0)")).toBe(false);
+    });
 });
 
 describe("normalizeHttpUrl", () => {

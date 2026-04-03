@@ -328,6 +328,335 @@ describe("useDuplicateUrlCheck", () => {
         dispose();
     });
 
+    it("reset clears pending debounce timers", () => {
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+        ]);
+
+        let handleUrlChange!: (index: number, url: string) => void;
+        let duplicateWarnings!: () => Record<number, string | null>;
+        let reset!: () => void;
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+            mockUseCheckDuplicateUrl.mockImplementation(
+                (urlAccessor: () => string) => ({
+                    data: undefined,
+                }),
+            );
+
+            const hook = useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+            });
+
+            handleUrlChange = hook.handleUrlChange;
+            duplicateWarnings = hook.duplicateWarnings;
+            reset = hook.reset;
+        });
+
+        handleUrlChange(0, "https://example.com/item");
+        reset();
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()).toEqual({
+            0: null,
+        });
+
+        dispose();
+    });
+
+    it("does not include deleted links in duplicate warnings", () => {
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "https://example.com/deleted",
+                description: "",
+                isPrimary: true,
+                isDeleted: true,
+                isNew: true,
+            },
+        ]);
+
+        let handleUrlChange!: (index: number, url: string) => void;
+        let duplicateWarnings!: () => Record<number, string | null>;
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+            mockUseCheckDuplicateUrl.mockImplementation(
+                (urlAccessor: () => string) => ({
+                    get data() {
+                        return undefined;
+                    },
+                }),
+            );
+
+            const hook = useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+            });
+
+            handleUrlChange = hook.handleUrlChange;
+            duplicateWarnings = hook.duplicateWarnings;
+        });
+
+        handleUrlChange(0, "https://example.com/deleted");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()).toEqual({});
+
+        dispose();
+    });
+
+    it("does not check URLs shorter than 8 characters after normalization", () => {
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+        ]);
+
+        let handleUrlChange!: (index: number, url: string) => void;
+        let duplicateWarnings!: () => Record<number, string | null>;
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+            mockUseCheckDuplicateUrl.mockImplementation(
+                (urlAccessor: () => string) => ({
+                    get data() {
+                        return undefined;
+                    },
+                }),
+            );
+
+            const hook = useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+            });
+
+            handleUrlChange = hook.handleUrlChange;
+            duplicateWarnings = hook.duplicateWarnings;
+        });
+
+        handleUrlChange(0, "abc");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()).toEqual({
+            0: null,
+        });
+
+        dispose();
+    });
+
+    it("does not check invalid URLs", () => {
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+        ]);
+
+        let handleUrlChange!: (index: number, url: string) => void;
+        let duplicateWarnings!: () => Record<number, string | null>;
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+            mockUseCheckDuplicateUrl.mockImplementation(
+                (urlAccessor: () => string) => ({
+                    get data() {
+                        return undefined;
+                    },
+                }),
+            );
+
+            const hook = useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+            });
+
+            handleUrlChange = hook.handleUrlChange;
+            duplicateWarnings = hook.duplicateWarnings;
+        });
+
+        handleUrlChange(0, "not-a-valid-url-at-all-nope");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()).toEqual({
+            0: null,
+        });
+
+        dispose();
+    });
+
+    it("passes excludeItemId to duplicate check", () => {
+        mockUseCheckDuplicateUrl.mockImplementation(
+            (urlAccessor: () => string) => ({
+                get data() {
+                    return undefined;
+                },
+            }),
+        );
+
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+        ]);
+
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+
+            useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+                excludeItemId: () => "item-42",
+            });
+        });
+
+        expect(mockUseCheckDuplicateUrl).toHaveBeenCalledWith(
+            expect.any(Function),
+            expect.any(Function),
+        );
+
+        const excludeItemIdAccessor = mockUseCheckDuplicateUrl.mock.calls[0][1];
+        expect(excludeItemIdAccessor()).toBe("item-42");
+
+        dispose();
+    });
+
+    it("handles duplicate check errors gracefully", () => {
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+        ]);
+
+        let handleUrlChange!: (index: number, url: string) => void;
+        let duplicateWarnings!: () => Record<number, string | null>;
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+            mockUseCheckDuplicateUrl.mockImplementation(
+                (urlAccessor: () => string) => ({
+                    get data() {
+                        return undefined;
+                    },
+                    get error() {
+                        if (
+                            urlAccessor() ===
+                            "https://example.com/valid-product-url"
+                        ) {
+                            return new Error("Network error");
+                        }
+                        return undefined;
+                    },
+                }),
+            );
+
+            const hook = useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+            });
+
+            handleUrlChange = hook.handleUrlChange;
+            duplicateWarnings = hook.duplicateWarnings;
+        });
+
+        handleUrlChange(0, "https://example.com/valid-product-url");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()[0]).toBeFalsy();
+
+        dispose();
+    });
+
     it("treats equivalent normalized urls as the same visible link", () => {
         const [links, setLinks] = createSignal<LinkItem[]>([
             {
