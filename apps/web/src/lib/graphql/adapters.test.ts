@@ -308,3 +308,28 @@ describe("adaptWishlistData", () => {
         expect(result.items[1].title).toBe("Novel");
     });
 });
+
+describe("adaptItem status variants", () => {
+    it("maps PURCHASED status to lowercase", () => {
+        const result = adaptItem({ ...graphqlItem, status: "PURCHASED" });
+        expect(result.status).toBe("purchased");
+    });
+
+    it("maps ARCHIVED status to lowercase", () => {
+        const result = adaptItem({ ...graphqlItem, status: "ARCHIVED" });
+        expect(result.status).toBe("archived");
+    });
+
+    it("defaults empty string status to want", () => {
+        const result = adaptItem({ ...graphqlItem, status: "" as "WANT" });
+        expect(result.status).toBe("want");
+    });
+
+    it("defaults null status to want", () => {
+        const result = adaptItem({
+            ...graphqlItem,
+            status: null as unknown as "WANT",
+        });
+        expect(result.status).toBe("want");
+    });
+});

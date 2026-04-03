@@ -25,6 +25,8 @@ import {
   useSetPrimaryLink,
   useBatchDeleteItems,
   useBatchMoveItems,
+  useCheckDuplicateUrl,
+  useRecentItems,
 } from "./use-wishlist";
 
 // Mock wishlist operations
@@ -44,6 +46,8 @@ vi.mock("../wishlist", () => ({
   setPrimaryLink: vi.fn(),
   batchDeleteItems: vi.fn(),
   batchMoveItems: vi.fn(),
+  checkDuplicateUrl: vi.fn(),
+  getRecentItems: vi.fn(),
 }));
 
 import {
@@ -62,6 +66,8 @@ import {
   setPrimaryLink,
   batchDeleteItems,
   batchMoveItems,
+  checkDuplicateUrl,
+  getRecentItems,
 } from "../wishlist";
 
 const mocks = {
@@ -80,6 +86,8 @@ const mocks = {
   setPrimaryLink: vi.mocked(setPrimaryLink),
   batchDeleteItems: vi.mocked(batchDeleteItems),
   batchMoveItems: vi.mocked(batchMoveItems),
+  checkDuplicateUrl: vi.mocked(checkDuplicateUrl),
+  getRecentItems: vi.mocked(getRecentItems),
 };
 
 function createTestClient() {
@@ -692,5 +700,167 @@ describe("useBatchMoveItems", () => {
       expect(screen.getByText("success")).toBeInTheDocument(),
     );
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["wishlist"] });
+  });
+});
+
+describe("useCheckDuplicateUrl", () => {
+  it("fetches duplicate check result", async () => {
+    mocks.checkDuplicateUrl.mockResolvedValueOnce({
+      isDuplicate: true,
+      conflictingItem: {
+        id: "item-42",
+        title: "Existing",
+        categoryId: "cat-1",
+      },
+    });
+
+    function Component() {
+      const [url] = createSignal("https://example.com/product");
+      const query = useCheckDuplicateUrl(url);
+      return (
+        <div>
+          {query.isLoading
+            ? "loading"
+            : query.data?.isDuplicate
+              ? "duplicate"
+              : "unique"}
+        </div>
+      );
+    }
+
+    render(() => (
+      <Wrapper>
+        <Component />
+      </Wrapper>
+    ));
+
+    await waitFor(() =>
+      expect(screen.getByText("duplicate")).toBeInTheDocument(),
+    );
+    expect(mocks.checkDuplicateUrl).toHaveBeenCalledWith(
+      "https://example.com/product",
+      undefined,
+    );
+  });
+
+  it("passes excludeItemId when provided", async () => {
+    mocks.checkDuplicateUrl.mockResolvedValueOnce({
+      isDuplicate: false,
+      conflictingItem: null,
+    });
+
+    function Component() {
+      const [url] = createSignal("https://example.com/product");
+      const [excludeId] = createSignal("item-1");
+      const query = useCheckDuplicateUrl(url, excludeId);
+      return (
+        <div>
+          {query.isLoading
+            ? "loading"
+            : query.data?.isDuplicate
+              ? "dup"
+              : "unique"}
+        </div>
+      );
+    }
+
+    render(() => (
+      <Wrapper>
+        <Component />
+      </Wrapper>
+    ));
+
+    await waitFor(() => expect(screen.getByText("unique")).toBeInTheDocument());
+    expect(mocks.checkDuplicateUrl).toHaveBeenCalledWith(
+      "https://example.com/product",
+      "item-1",
+    );
+  });
+
+  it("is disabled for short URLs", async () => {
+    function Component() {
+      const [url] = createSignal("");
+      const query = useCheckDuplicateUrl(url);
+      return (
+        <div>
+          {query.fetchStatus === "idle" && !query.data ? "disabled" : "active"}
+        </div>
+      );
+    }
+
+    render(() => (
+      <Wrapper>
+        <Component />
+      </Wrapper>
+    ));
+
+    expect(screen.getByText("disabled")).toBeInTheDocument();
+    expect(mocks.checkDuplicateUrl).not.toHaveBeenCalled();
+  });
+
+  it("is disabled for invalid URLs", async () => {
+    function Component() {
+      const [url] = createSignal("not-a-valid-url-at-all");
+      const query = useCheckDuplicateUrl(url);
+      return (
+        <div>
+          {query.fetchStatus === "idle" && !query.data ? "disabled" : "active"}
+        </div>
+      );
+    }
+
+    render(() => (
+      <Wrapper>
+        <Component />
+      </Wrapper>
+    ));
+
+    expect(screen.getByText("disabled")).toBeInTheDocument();
+    expect(mocks.checkDuplicateUrl).not.toHaveBeenCalled();
+  });
+});
+
+describe("useRecentItems", () => {
+  it("fetches recent items", async () => {
+    mocks.getRecentItems.mockResolvedValueOnce([mockItem]);
+
+    function Component() {
+      const query = useRecentItems();
+      return (
+        <div>
+          {query.isLoading ? "loading" : `items: ${query.data?.length ?? 0}`}
+        </div>
+      );
+    }
+
+    render(() => (
+      <Wrapper>
+        <Component />
+      </Wrapper>
+    ));
+
+    await waitFor(() =>
+      expect(screen.getByText("items: 1")).toBeInTheDocument(),
+    );
+    expect(mocks.getRecentItems).toHaveBeenCalledWith(undefined);
+  });
+
+  it("passes limit accessor to getRecentItems", async () => {
+    mocks.getRecentItems.mockResolvedValueOnce([]);
+
+    function Component() {
+      const [limit] = createSignal(10);
+      const query = useRecentItems(limit);
+      return <div>{query.isLoading ? "loading" : "done"}</div>;
+    }
+
+    render(() => (
+      <Wrapper>
+        <Component />
+      </Wrapper>
+    ));
+
+    await waitFor(() => expect(screen.getByText("done")).toBeInTheDocument());
+    expect(mocks.getRecentItems).toHaveBeenCalledWith(10);
   });
 });

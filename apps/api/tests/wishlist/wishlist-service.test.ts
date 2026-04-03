@@ -1,5 +1,5 @@
 import { describe, expect, it, Mock, vi } from "vitest";
-import { asc, desc } from "drizzle-orm";
+import { asc, desc, inArray } from "drizzle-orm";
 import type { DB } from "../../src/lib/db";
 import type {
     WishlistCategory,
@@ -2114,6 +2114,271 @@ describe("WishlistService", () => {
                     errors: ["2 items not found or unauthorized"],
                 });
             });
+        });
+    });
+
+    describe("getRecentItems", () => {
+        it("returns recent items with links", async () => {
+            const items: WishlistItem[] = [
+                {
+                    id: "item-1",
+                    user_id: "user-1",
+                    category_id: null,
+                    title: "Recent Item",
+                    description: null,
+                    favicon: null,
+                    status: "want" as const,
+                    priority: null,
+                    created_at: "2024-01-05T00:00:00.000Z",
+                    updated_at: "2024-01-05T00:00:00.000Z",
+                },
+            ];
+
+            const links: WishlistItemLink[] = [
+                {
+                    id: "link-1",
+                    item_id: "item-1",
+                    url: "https://example.com",
+                    normalized_url: "https://example.com",
+                    description: null,
+                    is_primary: true,
+                    created_at: "2024-01-05T00:00:00.000Z",
+                    updated_at: "2024-01-05T00:00:00.000Z",
+                },
+            ];
+
+            const itemsAllMock = vi.fn().mockResolvedValue(items);
+            const itemsLimitMock = vi.fn(() => ({ all: itemsAllMock }));
+            const itemsOrderByMock = vi.fn(() => ({ limit: itemsLimitMock }));
+            const itemsWhereMock = vi.fn(() => ({
+                orderBy: itemsOrderByMock,
+            }));
+            const itemsFromMock = vi.fn(() => ({ where: itemsWhereMock }));
+
+            const linksAllMock = vi.fn().mockResolvedValue(links);
+            const linksOrderByMock = vi.fn(() => ({ all: linksAllMock }));
+            const linksWhereMock = vi.fn(() => ({ orderBy: linksOrderByMock }));
+            const linksFromMock = vi.fn(() => ({ where: linksWhereMock }));
+
+            let selectCallCount = 0;
+            const selectMock = vi.fn(() => {
+                selectCallCount++;
+                if (selectCallCount === 1) return { from: itemsFromMock };
+                return { from: linksFromMock };
+            }) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.getRecentItems("user-1", 5);
+
+            expect(result).toHaveLength(1);
+            expect(result[0]).toEqual({
+                ...items[0],
+                links: links,
+            });
+            expect(selectMock).toHaveBeenCalledTimes(2);
+            expect(linksWhereMock).toHaveBeenCalledTimes(1);
+            expect(linksFromMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("returns empty array when no items", async () => {
+            const itemsAllMock = vi.fn().mockResolvedValue([]);
+            const itemsLimitMock = vi.fn(() => ({ all: itemsAllMock }));
+            const itemsOrderByMock = vi.fn(() => ({ limit: itemsLimitMock }));
+            const itemsWhereMock = vi.fn(() => ({
+                orderBy: itemsOrderByMock,
+            }));
+            const itemsFromMock = vi.fn(() => ({ where: itemsWhereMock }));
+
+            const selectMock = vi.fn(() => ({ from: itemsFromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.getRecentItems("user-1", 5);
+
+            expect(result).toEqual([]);
+            expect(selectMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("clamps limit to MAX_RECENT_ITEMS (50)", async () => {
+            const itemsAllMock = vi.fn().mockResolvedValue([]);
+            const itemsLimitMock = vi.fn(() => ({ all: itemsAllMock }));
+            const itemsOrderByMock = vi.fn(() => ({ limit: itemsLimitMock }));
+            const itemsWhereMock = vi.fn(() => ({
+                orderBy: itemsOrderByMock,
+            }));
+            const itemsFromMock = vi.fn(() => ({ where: itemsWhereMock }));
+
+            const selectMock = vi.fn(() => ({ from: itemsFromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await service.getRecentItems("user-1", 100);
+
+            expect(itemsLimitMock).toHaveBeenCalledWith(50);
+        });
+    });
+
+    describe("getItemById", () => {
+        it("returns item when found", async () => {
+            const item: WishlistItem = {
+                id: "item-1",
+                user_id: "user-1",
+                category_id: null,
+                title: "Found Item",
+                description: null,
+                favicon: null,
+                status: "want" as const,
+                priority: null,
+                created_at: "2024-01-05T00:00:00.000Z",
+                updated_at: "2024-01-05T00:00:00.000Z",
+            };
+
+            const getMock = vi.fn().mockResolvedValue(item);
+            const whereMock = vi.fn(() => ({ get: getMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.getItemById("user-1", "item-1");
+
+            expect(result).toEqual(item);
+            expect(getMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("returns undefined when not found", async () => {
+            const getMock = vi.fn().mockResolvedValue(undefined);
+            const whereMock = vi.fn(() => ({ get: getMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.getItemById("user-1", "nonexistent");
+
+            expect(result).toBeUndefined();
+        });
+    });
+
+    describe("getUserItems additional sorting and filtering", () => {
+        it("sorts by PRIORITY with DESC direction", async () => {
+            const items: WishlistItem[] = [];
+
+            const allMock = vi.fn().mockResolvedValue(items);
+            const orderByMock = vi.fn(() => ({ all: allMock }));
+            const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await service.getUserItems("user-uuid-42", {
+                sortBy: "PRIORITY" as WishlistSortKey,
+                sortDir: "DESC" as SortDirection,
+            });
+
+            expect(orderByMock).toHaveBeenCalledWith(
+                expect.anything(),
+                desc(wishlistItems.priority),
+            );
+        });
+
+        it("applies specific status filter (not ALL)", async () => {
+            const allMock = vi.fn().mockResolvedValue([]);
+            const orderByMock = vi.fn(() => ({ all: allMock }));
+            const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await service.getUserItems("user-uuid-42", {
+                status: "purchased",
+            });
+
+            expect(whereMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("with ALL status does not add status filter", async () => {
+            const allMock = vi.fn().mockResolvedValue([]);
+            const orderByMock = vi.fn(() => ({ all: allMock }));
+            const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await service.getUserItems("user-uuid-42", {
+                status: "ALL",
+            });
+
+            expect(whereMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("with default status excludes archived", async () => {
+            const allMock = vi.fn().mockResolvedValue([]);
+            const orderByMock = vi.fn(() => ({ all: allMock }));
+            const whereMock = vi.fn(() => ({ orderBy: orderByMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await service.getUserItems("user-uuid-42");
+
+            expect(whereMock).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe("getUserItemsCount", () => {
+        it("returns count with filter options", async () => {
+            const getMock = vi.fn().mockResolvedValue({ value: 3 });
+            const whereMock = vi.fn(() => ({ get: getMock }));
+            const fromMock = vi.fn(() => ({ where: whereMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.getUserItemsCount("user-uuid-42", {
+                categoryId: "cat-1",
+                search: "test",
+            });
+
+            expect(result).toBe(3);
+            expect(selectMock).toHaveBeenCalledTimes(1);
+            expect(whereMock).toHaveBeenCalledTimes(1);
+            expect(getMock).toHaveBeenCalledTimes(1);
         });
     });
 });
