@@ -87,13 +87,14 @@ updated_at    TEXT  NOT NULL
 The `wishlist_item_links` table provides the URL store:
 
 ```sql
-id            TEXT  PRIMARY KEY
-item_id       TEXT  NOT NULL FK → wishlist_items.id (CASCADE DELETE)
-url           TEXT  NOT NULL
-description   TEXT  (nullable)
-is_primary    INTEGER (boolean)
-created_at    TEXT  NOT NULL
-updated_at    TEXT  NOT NULL
+id              TEXT  PRIMARY KEY
+item_id         TEXT  NOT NULL FK → wishlist_items.id (CASCADE DELETE)
+url             TEXT  NOT NULL
+normalized_url  TEXT  NOT NULL  (normalized form of url for duplicate detection; indexed)
+description     TEXT  (nullable)
+is_primary      INTEGER (boolean)
+created_at      TEXT  NOT NULL
+updated_at      TEXT  NOT NULL
 ```
 
 There is no index or constraint preventing duplicate URLs within or across items. There is no status, priority, or notes field. There is no public-sharing mechanism and no export endpoint.
@@ -385,11 +386,9 @@ As Sam (Active Collector), I want to see what I recently added at the top of my 
 
 #### Technical Requirements
 
-**API — no new endpoint required.**
+**API — dedicated `recentItems` query.**
 
-The widget can reuse the existing `wishlist` GraphQL query with `pagination: { page: 1, pageSize: 5 }` and `filter: { sortBy: CREATED_AT, sortDir: DESC }` (no category filter). This query already exists and is efficiently covered by the `wishlist_items_user_id_idx` index.
-
-An alternative is a dedicated `recentItems(limit: Int): [WishlistItem!]!` query for semantic clarity and to avoid the overhead of fetching categories and pagination metadata. The dedicated query is recommended as it simplifies the widget's data model.
+We implement a new `recentItems(limit: Int): [WishlistItem!]!` GraphQL query for the widget. This avoids fetching categories and pagination metadata that the existing `wishlist` query returns. The existing `wishlist` query and `wishlist_items_user_id_idx` index remain available for the main list view but are not used by the widget.
 
 **GraphQL schema — `apps/api/src/graphql/schema.graphql`:**
 
@@ -609,7 +608,7 @@ The primary URL input field triggers `useFetchUrlMetadata` when the URL changes 
 - **Risk:** Many websites block bots by User-Agent or require JavaScript rendering. The feature should set a neutral `User-Agent` header (`Corvus/1.0`) and gracefully degrade when sites return 403 or non-HTML responses.
 - **Risk:** Response body size. Some pages have very large `<head>` sections. Capping the read at 100 kB and using an early-exit parser avoids Worker memory issues.
 - **Risk:** Production rate limiting requires a Cloudflare KV namespace. This must be provisioned before production deployment and added as a binding in `wrangler.jsonc`.
-- **Dependency:** The `og:image` is stored in `wishlist_items.favicon`. This field currently holds a favicon URL (16–32px). Storing a full og:image URL in this field changes its semantic meaning. Consider whether a schema migration to rename the column to `thumbnail` is worthwhile, or whether a separate `og_image TEXT` column should be added. A separate column is cleaner and avoids ambiguity; a migration adding `og_image TEXT` to `wishlist_items` is low-risk.
+- **Dependency:** A new `og_image TEXT` column will be added to `wishlist_items` to store full-size Open Graph images, keeping `wishlist_items.favicon` reserved for small favicons (16–32px). This avoids overloading the `favicon` column with a different semantic meaning. The migration is low-risk — a single nullable `og_image TEXT` column addition.
 
 ---
 
@@ -974,7 +973,7 @@ Features are grouped by dependency chains and risk profile. High-value, low-risk
 
 **Deliverables:**
 
-- Drizzle migration adding `wishlist_item_links.url` index.
+- Drizzle migration adding `wishlist_item_links.normalized_url` index.
 - `checkDuplicateUrl` GraphQL query, resolver, and service method.
 - Duplicate URL warning in `LinkManager.tsx` and `AddItemDialog.tsx`.
 - `recentItems` GraphQL query with `RecentItemsWidget.tsx`.
@@ -1036,7 +1035,7 @@ Features are grouped by dependency chains and risk profile. High-value, low-risk
 
 ### Performance
 
-- **F-01 duplicate check:** Round-trip latency from URL input blur to warning display must be under 500 ms at median for users with up to 500 items. The index on `wishlist_item_links.url` is required to achieve this against D1.
+- **F-01 duplicate check:** Round-trip latency from URL input blur to warning display must be under 500 ms at median for users with up to 500 items. The index on `wishlist_item_links.normalized_url` is required to achieve this against D1.
 - **F-05 metadata fetch:** The Cloudflare Worker fetch to the target URL must complete within the 5 s timeout. The Worker's CPU time limit is 10 ms per subrequest in the free tier; the fetch itself is wall-clock time and does not count against CPU limits.
 - **F-07 export:** Exporting a wishlist of up to 200 items must complete within 5 seconds including all paginated API calls. For larger wishlists, a progress indicator must be shown.
 - **F-08 public share page:** Initial server-rendered HTML for the public share page must be delivered in under 2 seconds (TTFB) from Cloudflare's edge.

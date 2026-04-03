@@ -363,7 +363,10 @@ export class WishlistService {
         userId: string,
         limit = 5,
     ): Promise<Array<WishlistItem & { links: WishlistItemLink[] }>> {
-        const safeLimit = Math.min(limit, WishlistService.MAX_RECENT_ITEMS);
+        const safeLimit = Math.max(
+            0,
+            Math.min(limit, WishlistService.MAX_RECENT_ITEMS),
+        );
         const items = await this.db
             .select()
             .from(wishlistItems)
