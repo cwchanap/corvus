@@ -220,11 +220,17 @@ export class WishlistService {
         // Apply sorting based on enum values
         let orderedQuery;
 
-        // Default to DESC whenever sortDir is omitted, except PRIORITY where 1 is highest.
-        const isDescending =
-            sortBy === "PRIORITY"
-                ? sortDir === "DESC"
-                : sortDir === "DESC" || !sortDir;
+        // When sortDir is omitted, TITLE defaults ASC; everything else defaults DESC.
+        let isDescending: boolean;
+        if (sortDir) {
+            isDescending = sortDir === "DESC";
+        } else if (sortBy === "PRIORITY") {
+            isDescending = false;
+        } else if (sortBy === "TITLE") {
+            isDescending = false;
+        } else {
+            isDescending = true;
+        }
 
         if (sortBy === "PRIORITY") {
             // PRIORITY: nulls last, ascending (1 = highest priority)
