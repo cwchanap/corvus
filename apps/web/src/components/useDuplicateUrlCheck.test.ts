@@ -346,7 +346,7 @@ describe("useDuplicateUrlCheck", () => {
         createRoot((rootDispose) => {
             dispose = rootDispose;
             mockUseCheckDuplicateUrl.mockImplementation(
-                (urlAccessor: () => string) => ({
+                (_urlAccessor: () => string) => ({
                     data: undefined,
                 }),
             );
@@ -401,7 +401,7 @@ describe("useDuplicateUrlCheck", () => {
         createRoot((rootDispose) => {
             dispose = rootDispose;
             mockUseCheckDuplicateUrl.mockImplementation(
-                (urlAccessor: () => string) => ({
+                (_urlAccessor: () => string) => ({
                     get data() {
                         return undefined;
                     },
@@ -453,7 +453,7 @@ describe("useDuplicateUrlCheck", () => {
         createRoot((rootDispose) => {
             dispose = rootDispose;
             mockUseCheckDuplicateUrl.mockImplementation(
-                (urlAccessor: () => string) => ({
+                (_urlAccessor: () => string) => ({
                     get data() {
                         return undefined;
                     },
@@ -507,7 +507,7 @@ describe("useDuplicateUrlCheck", () => {
         createRoot((rootDispose) => {
             dispose = rootDispose;
             mockUseCheckDuplicateUrl.mockImplementation(
-                (urlAccessor: () => string) => ({
+                (_urlAccessor: () => string) => ({
                     get data() {
                         return undefined;
                     },
@@ -546,7 +546,7 @@ describe("useDuplicateUrlCheck", () => {
 
     it("passes excludeItemId to duplicate check", () => {
         mockUseCheckDuplicateUrl.mockImplementation(
-            (urlAccessor: () => string) => ({
+            (_urlAccessor: () => string) => ({
                 get data() {
                     return undefined;
                 },
