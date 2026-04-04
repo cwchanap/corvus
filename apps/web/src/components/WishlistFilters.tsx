@@ -69,6 +69,7 @@ export function WishlistFilters(props: WishlistFiltersProps) {
         <div class="sm:w-40">
           <Select
             data-testid="status-dropdown"
+            aria-label="Filter by status"
             value={props.statusFilter()}
             onChange={(e) =>
               props.setStatusFilter(e.currentTarget.value as StatusFilter)
@@ -84,6 +85,7 @@ export function WishlistFilters(props: WishlistFiltersProps) {
         <div class="sm:w-44">
           <Select
             data-testid="sort-dropdown"
+            aria-label="Sort by"
             value={props.sortBy()}
             onChange={(e) =>
               props.setSortBy(e.currentTarget.value as SortByOption)

@@ -183,10 +183,10 @@ export function EditItemDialog(props: EditItemDialogProps) {
               </div>
 
               {/* Status */}
-              <div class="space-y-2">
-                <label class="text-sm font-medium text-foreground">
+              <fieldset class="space-y-2">
+                <legend class="text-sm font-medium text-foreground">
                   Status
-                </label>
+                </legend>
                 <div class="flex gap-3">
                   <For
                     each={
@@ -210,7 +210,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
                     )}
                   </For>
                 </div>
-              </div>
+              </fieldset>
 
               {/* Priority */}
               <div class="space-y-2">
