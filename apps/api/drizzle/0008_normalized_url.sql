@@ -1,10 +1,12 @@
 -- Add normalized_url column with temporary default for existing rows
 ALTER TABLE `wishlist_item_links` ADD `normalized_url` text DEFAULT '' NOT NULL;--> statement-breakpoint
 
--- Backfill: best-effort normalization using SQLite string functions.
--- Handles: lowercase, strip default ports (:443/:80), remove www. prefix, trim trailing slashes.
--- Edge cases (query-param sorting) are caught by the JS backfill script if needed.
--- New writes set this correctly at runtime via normalizeHttpUrl().
+-- Backfill: approximate normalization using SQLite string functions.
+-- Handles: lowercase hostname, strip default ports (:443/:80), remove www. prefix, trim trailing slashes.
+-- IMPORTANT: This is intentionally a rough approximation. SQL cannot sort query parameters
+-- or fully parse URLs. Running `bun db:backfill-normalized-urls` (local) or
+-- `bun db:backfill-normalized-urls:remote` (production) is MANDATORY after applying this
+-- migration to re-normalize every row with the exact runtime normalizeHttpUrl() function.
 UPDATE `wishlist_item_links` SET `normalized_url` =
     RTRIM(
         REPLACE(
