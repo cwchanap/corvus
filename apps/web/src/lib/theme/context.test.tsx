@@ -205,6 +205,7 @@ describe("ThemeProvider – system theme change listener", () => {
     expect(screen.getByTestId("resolved").textContent).toBe("light");
 
     // Simulate system preference switching to dark
+    expect(capturedHandler).toBeDefined();
     capturedHandler!({ matches: true } as MediaQueryListEvent);
 
     expect(screen.getByTestId("resolved").textContent).toBe("dark");
@@ -233,6 +234,7 @@ describe("ThemeProvider – system theme change listener", () => {
 
     expect(screen.getByTestId("resolved").textContent).toBe("dark");
 
+    expect(capturedHandler).toBeDefined();
     capturedHandler!({ matches: false } as MediaQueryListEvent);
 
     expect(screen.getByTestId("resolved").textContent).toBe("light");
