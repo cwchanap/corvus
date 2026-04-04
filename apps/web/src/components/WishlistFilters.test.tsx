@@ -312,7 +312,7 @@ describe("WishlistFilters", () => {
       expect(screen.queryByText("Select")).not.toBeInTheDocument();
     });
 
-    it("shows Select button when in selection mode even if hasItems is false", () => {
+    it("shows Cancel button when in selection mode even if hasItems is false", () => {
       renderWithSelection({ hasItems: false, initialSelectionMode: true });
       expect(screen.getByText("Cancel")).toBeInTheDocument();
     });

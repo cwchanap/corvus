@@ -16,7 +16,9 @@ vi.mock("@solidjs/meta", () => ({
 }));
 
 vi.mock("../lib/theme/context", () => ({
-  ThemeProvider: (props: { children: unknown }) => props.children,
+  ThemeProvider: (props: { children: unknown }) => (
+    <>{props.children as never}</>
+  ),
 }));
 
 vi.mock("../lib/auth/context", () => ({
