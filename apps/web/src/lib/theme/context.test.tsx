@@ -178,3 +178,86 @@ describe("useTheme", () => {
     }).toThrow("useTheme must be used within a ThemeProvider");
   });
 });
+
+describe("ThemeProvider – system theme change listener", () => {
+  it("updates resolved theme when system preference changes to dark", () => {
+    let capturedHandler: ((e: MediaQueryListEvent) => void) | null = null;
+
+    mockMatchMedia.mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(
+        (_event: string, handler: (e: MediaQueryListEvent) => void) => {
+          capturedHandler = handler;
+        },
+      ),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    render(() => (
+      <ThemeProvider defaultTheme="system">
+        <Consumer />
+      </ThemeProvider>
+    ));
+
+    // Initially resolved to light (matches: false)
+    expect(screen.getByTestId("resolved").textContent).toBe("light");
+
+    // Simulate system preference switching to dark
+    capturedHandler!({ matches: true } as MediaQueryListEvent);
+
+    expect(screen.getByTestId("resolved").textContent).toBe("dark");
+  });
+
+  it("updates resolved theme when system preference changes to light", () => {
+    let capturedHandler: ((e: MediaQueryListEvent) => void) | null = null;
+
+    mockMatchMedia.mockImplementation((query: string) => ({
+      matches: true, // starts dark
+      media: query,
+      addEventListener: vi.fn(
+        (_event: string, handler: (e: MediaQueryListEvent) => void) => {
+          capturedHandler = handler;
+        },
+      ),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    render(() => (
+      <ThemeProvider defaultTheme="system">
+        <Consumer />
+      </ThemeProvider>
+    ));
+
+    expect(screen.getByTestId("resolved").textContent).toBe("dark");
+
+    capturedHandler!({ matches: false } as MediaQueryListEvent);
+
+    expect(screen.getByTestId("resolved").textContent).toBe("light");
+  });
+
+  it("registers a change event listener on the matchMedia object", () => {
+    const mockAddEventListener = vi.fn();
+
+    mockMatchMedia.mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: mockAddEventListener,
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    render(() => (
+      <ThemeProvider>
+        <Consumer />
+      </ThemeProvider>
+    ));
+
+    expect(mockAddEventListener).toHaveBeenCalledWith(
+      "change",
+      expect.any(Function),
+    );
+  });
+});
