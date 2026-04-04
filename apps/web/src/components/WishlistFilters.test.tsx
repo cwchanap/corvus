@@ -268,4 +268,81 @@ describe("WishlistFilters", () => {
       expect(searchQuery()).toBe(longQuery);
     });
   });
+
+  describe("Selection Mode", () => {
+    const renderWithSelection = (
+      overrides: {
+        hasItems?: boolean;
+        initialSelectionMode?: boolean;
+      } = {},
+    ) => {
+      const [isSelectionMode, setIsSelectionMode] = createSignal(
+        overrides.initialSelectionMode ?? false,
+      );
+      const [searchQuery, setSearchQuery] = createSignal("");
+      const [sortBy, setSortBy] = createSignal<"date" | "title" | "custom">(
+        "custom",
+      );
+      const mockToggle = vi.fn(() => setIsSelectionMode((v) => !v));
+
+      const result = render(() => (
+        <WishlistFilters
+          categoryName="Test"
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          onAddItem={mockOnAddItem}
+          isSelectionMode={isSelectionMode}
+          onToggleSelectionMode={mockToggle}
+          hasItems={overrides.hasItems ?? true}
+        />
+      ));
+
+      return { ...result, isSelectionMode, mockToggle };
+    };
+
+    it("shows Select button when hasItems is true and onToggleSelectionMode provided", () => {
+      renderWithSelection({ hasItems: true });
+      expect(screen.getByText("Select")).toBeInTheDocument();
+    });
+
+    it("hides Select button when hasItems is false and selection mode is off", () => {
+      renderWithSelection({ hasItems: false, initialSelectionMode: false });
+      expect(screen.queryByText("Select")).not.toBeInTheDocument();
+    });
+
+    it("shows Select button when in selection mode even if hasItems is false", () => {
+      renderWithSelection({ hasItems: false, initialSelectionMode: true });
+      expect(screen.getByText("Cancel")).toBeInTheDocument();
+    });
+
+    it("shows Cancel button when in selection mode", () => {
+      renderWithSelection({ hasItems: true, initialSelectionMode: true });
+      expect(screen.getByText("Cancel")).toBeInTheDocument();
+    });
+
+    it("hides Add Item button when in selection mode", () => {
+      renderWithSelection({ hasItems: true, initialSelectionMode: true });
+      expect(screen.queryByText("Add Item")).not.toBeInTheDocument();
+    });
+
+    it("calls onToggleSelectionMode when Select button is clicked", () => {
+      const { mockToggle } = renderWithSelection({ hasItems: true });
+      fireEvent.click(screen.getByText("Select"));
+      expect(mockToggle).toHaveBeenCalledTimes(1);
+    });
+
+    it("toggles from Select to Cancel after click", () => {
+      renderWithSelection({ hasItems: true });
+      expect(screen.getByText("Select")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("Select"));
+      expect(screen.getByText("Cancel")).toBeInTheDocument();
+    });
+
+    it("does not show Select button when onToggleSelectionMode is not provided", () => {
+      renderWishlistFilters();
+      expect(screen.queryByText("Select")).not.toBeInTheDocument();
+    });
+  });
 });
