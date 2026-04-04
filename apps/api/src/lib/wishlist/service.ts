@@ -339,7 +339,7 @@ export class WishlistService {
         const normalizedUrl = this.normalizeLinkUrl(url);
         const conditions = [
             eq(wishlistItemLinks.normalized_url, normalizedUrl),
-            sql`exists(select 1 from ${wishlistItems} where ${wishlistItems.id} = ${wishlistItemLinks.item_id} and ${wishlistItems.user_id} = ${userId})`,
+            eq(wishlistItems.user_id, userId),
         ];
 
         if (excludeItemId) {

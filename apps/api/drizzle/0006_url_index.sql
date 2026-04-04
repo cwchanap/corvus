@@ -1,1 +1,1 @@
-CREATE INDEX `wishlist_item_links_url_idx` ON `wishlist_item_links` (`url`);
+-- No-op: duplicate-detection queries use `normalized_url`, which is indexed in 0008_normalized_url.sql.
