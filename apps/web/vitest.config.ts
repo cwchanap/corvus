@@ -13,6 +13,18 @@ export default defineConfig({
             provider: "v8",
             reporter: ["text", "json-summary", "html", "lcov"],
             reportsDirectory: "./tests/.coverage",
+            exclude: [
+                "app.config.ts",
+                "postcss.config.js",
+                "tailwind.config.js",
+                "vitest.config.ts",
+                "eslint.config.js",
+                "scripts/**",
+                "src/entry-client.tsx",
+                "src/entry-server.tsx",
+                "src/app.tsx",
+                "src/**/*.d.ts",
+            ],
         },
         typecheck: {
             enabled: false,
