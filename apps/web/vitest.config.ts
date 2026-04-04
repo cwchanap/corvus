@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, coverageConfigDefaults } from "vitest/config";
 import solid from "vite-plugin-solid";
 
 export default defineConfig({
@@ -14,6 +14,7 @@ export default defineConfig({
             reporter: ["text", "json-summary", "html", "lcov"],
             reportsDirectory: "./tests/.coverage",
             exclude: [
+                ...coverageConfigDefaults.exclude,
                 "app.config.ts",
                 "postcss.config.js",
                 "tailwind.config.js",
