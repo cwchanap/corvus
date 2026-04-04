@@ -267,20 +267,20 @@ export function useCheckDuplicateUrl(
     url: Accessor<string>,
     excludeItemId?: Accessor<string | undefined>,
 ) {
-    return createQuery(() => ({
-        queryKey: [
-            "wishlist",
-            "duplicate-check",
-            normalizeHttpUrl(url()),
-            excludeItemId?.(),
-        ],
-        queryFn: () =>
-            checkDuplicateUrl(normalizeHttpUrl(url()), excludeItemId?.()),
-        enabled:
-            normalizeHttpUrl(url()).length >= 8 &&
-            isValidUrl(normalizeHttpUrl(url())),
-        staleTime: 5_000,
-    }));
+    return createQuery(() => {
+        const normalized = normalizeHttpUrl(url());
+        return {
+            queryKey: [
+                "wishlist",
+                "duplicate-check",
+                normalized,
+                excludeItemId?.(),
+            ],
+            queryFn: () => checkDuplicateUrl(normalized, excludeItemId?.()),
+            enabled: normalized.length >= 8 && isValidUrl(normalized),
+            staleTime: 5_000,
+        };
+    });
 }
 
 export function useRecentItems(limit?: Accessor<number>) {
