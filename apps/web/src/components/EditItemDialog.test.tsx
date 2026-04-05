@@ -253,7 +253,7 @@ describe("EditItemDialog", () => {
     expect(screen.getByText("No category")).toBeInTheDocument();
   });
 
-  it("resets form when dialog closes", async () => {
+  it("resets form to original item values when dialog is closed and reopened", async () => {
     const [open, setOpen] = createSignal(true);
 
     render(() => (
@@ -271,11 +271,21 @@ describe("EditItemDialog", () => {
     ) as HTMLInputElement;
     fireEvent.input(titleInput, { target: { value: "Modified title" } });
 
-    // Close dialog
+    // Close dialog and wait for it to unmount
     setOpen(false);
-
     await waitFor(() => {
       expect(screen.queryByText("Edit Wishlist Item")).not.toBeInTheDocument();
+    });
+
+    // Reopen dialog
+    setOpen(true);
+
+    // Verify form resets to the original item values
+    await waitFor(() => {
+      const resetTitleInput = screen.getByPlaceholderText(
+        "Item title",
+      ) as HTMLInputElement;
+      expect(resetTitleInput.value).toBe("Existing Item");
     });
   });
 

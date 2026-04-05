@@ -43,10 +43,8 @@ describe("CategoryManager", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCreateCategoryMutation.mutateAsync = vi.fn().mockResolvedValue({});
-    mockCreateCategoryMutation.isPending = false;
-    mockDeleteCategoryMutation.mutateAsync = vi.fn().mockResolvedValue({});
-    mockDeleteCategoryMutation.isPending = false;
+    mockCreateCategoryMutation.mutateAsync.mockReset().mockResolvedValue({});
+    mockDeleteCategoryMutation.mutateAsync.mockReset().mockResolvedValue({});
   });
 
   it("renders the Manage Categories heading", () => {
@@ -296,9 +294,8 @@ describe("CategoryManager", () => {
       <CategoryManager categories={mockCategories} onRefetch={mockOnRefetch} />
     ));
 
-    // Category color dots should be rendered (they have inline background-color style)
-    const colorDots = document.querySelectorAll(".w-4.h-4.rounded-full");
-    expect(colorDots.length).toBeGreaterThanOrEqual(2);
+    const colorDots = screen.getAllByTestId("category-color");
+    expect(colorDots).toHaveLength(2);
   });
 
   it("renders random color button", () => {
