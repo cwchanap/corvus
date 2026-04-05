@@ -1327,6 +1327,49 @@ describe("WishlistService", () => {
             expect(getMock).toHaveBeenCalledTimes(1);
         });
 
+        it("updateItemLink ignores caller-supplied normalized_url when url is unchanged", async () => {
+            const updatedLink: WishlistItemLink = {
+                id: "link-1",
+                item_id: "item-1",
+                url: "https://example.com/original",
+                normalized_url: "https://example.com/original",
+                description: "Updated Link",
+                is_primary: true,
+                created_at: "2024-01-01T00:00:00.000Z",
+                updated_at: "2024-01-02T00:00:00.000Z",
+            };
+
+            const getMock = vi.fn().mockResolvedValue(updatedLink);
+            const returningMock = vi.fn(() => ({ get: getMock }));
+            const whereMock = vi.fn(() => ({ returning: returningMock }));
+            const setMock = vi.fn(() => ({ where: whereMock }));
+            const updateMock = vi.fn(() => ({ set: setMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                update: updateMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.updateItemLink(
+                "user-uuid-42",
+                "link-1",
+                {
+                    description: "Updated Link",
+                    normalized_url: "https://attacker.example/override",
+                } as Parameters<WishlistService["updateItemLink"]>[2] & {
+                    normalized_url: string;
+                },
+            );
+
+            expect(result).toEqual(updatedLink);
+            expect(setMock.mock.calls[0]?.[0]).not.toHaveProperty(
+                "normalized_url",
+            );
+            expect(setMock.mock.calls[0]?.[0]).toMatchObject({
+                description: "Updated Link",
+            });
+        });
+
         it("checkDuplicateUrl uses indexed normalized_url lookup", async () => {
             const conflictingItem: WishlistItem = {
                 id: "item-1",

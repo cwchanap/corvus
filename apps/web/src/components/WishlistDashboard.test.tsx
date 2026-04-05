@@ -61,6 +61,14 @@ const mockDeleteItemLink = createMockMutation();
 const mockBatchDeleteItems = createMockMutation();
 const mockBatchMoveItems = createMockMutation();
 const mockLogout = createMockMutation();
+const mockAddItemPayload = {
+  title: "Archived Lamp",
+  description: "Stored as archived",
+  category_id: "cat-1",
+  status: "archived" as const,
+  priority: 2,
+  links: [],
+};
 
 vi.mock("../lib/graphql/hooks/use-wishlist", () => ({
   useWishlist: (...args: unknown[]) => mockUseWishlist(...args),
@@ -117,7 +125,15 @@ vi.mock("./AddItemDialog", () => ({
     submitting?: boolean;
   }) => (
     <Show when={props.open}>
-      <div data-testid="add-item-dialog">Add Item Dialog</div>
+      <div data-testid="add-item-dialog">
+        Add Item Dialog
+        <button
+          type="button"
+          onClick={() => props.onSubmit(mockAddItemPayload)}
+        >
+          Submit mock add item
+        </button>
+      </div>
     </Show>
   ),
 }));
@@ -567,6 +583,33 @@ describe("WishlistDashboard", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("add-item-dialog")).toBeInTheDocument();
+      });
+    });
+
+    it("passes status from the add dialog payload to the create item mutation", async () => {
+      mockWishlistQuery.data = createMockWishlistData();
+      mockCreateItem.mutateAsync.mockResolvedValueOnce({ id: "new-item" });
+
+      render(() => <WishlistDashboard user={mockUser} />);
+
+      fireEvent.click(screen.getByText("Add Item"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("add-item-dialog")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Submit mock add item"));
+
+      await waitFor(() => {
+        expect(mockCreateItem.mutateAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "Archived Lamp",
+            description: "Stored as archived",
+            categoryId: "cat-1",
+            status: "ARCHIVED",
+            priority: 2,
+          }),
+        );
       });
     });
 
