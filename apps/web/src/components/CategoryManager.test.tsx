@@ -118,7 +118,7 @@ describe("CategoryManager", () => {
 
     const input = screen.getByPlaceholderText("Category name...");
     fireEvent.input(input, { target: { value: "Keyboard Category" } });
-    fireEvent.keyPress(input, { key: "Enter", code: "Enter", charCode: 13 });
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
     await waitFor(() => {
       expect(mockCreateCategoryMutation.mutateAsync).toHaveBeenCalledWith(
@@ -134,7 +134,7 @@ describe("CategoryManager", () => {
 
     const input = screen.getByPlaceholderText("Category name...");
     fireEvent.input(input, { target: { value: "   " } });
-    fireEvent.keyPress(input, { key: "Enter", code: "Enter", charCode: 13 });
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
     await waitFor(() => {
       expect(mockCreateCategoryMutation.mutateAsync).not.toHaveBeenCalled();

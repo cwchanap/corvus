@@ -127,7 +127,7 @@ export function CategoryManager(props: CategoryManagerProps) {
                 placeholder="Category name..."
                 value={newCategoryName()}
                 onInput={(e) => setNewCategoryName(e.currentTarget.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
+                onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
                 class="flex-1"
               />
               <input

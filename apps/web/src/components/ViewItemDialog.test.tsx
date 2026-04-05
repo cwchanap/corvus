@@ -278,7 +278,7 @@ describe("ViewItemDialog", () => {
 
     const primaryLink = screen.getByText("Example site") as HTMLAnchorElement;
     expect(primaryLink.tagName).toBe("A");
-    expect(primaryLink.href).toBe("https://example.com/");
+    expect(primaryLink).toHaveAttribute("href", "https://example.com");
     expect(primaryLink.target).toBe("_blank");
     expect(primaryLink.rel).toContain("noopener");
   });
@@ -297,6 +297,6 @@ describe("ViewItemDialog", () => {
       "https://secondary.com",
     ) as HTMLAnchorElement;
     expect(secondaryLink.tagName).toBe("A");
-    expect(secondaryLink.href).toBe("https://secondary.com/");
+    expect(secondaryLink).toHaveAttribute("href", "https://secondary.com");
   });
 });
