@@ -4,6 +4,13 @@ import { createSignal } from "solid-js";
 import { AddItemDialog } from "./AddItemDialog";
 import type { WishlistCategoryRecord } from "@repo/common/types/wishlist-record";
 
+const mockUseDuplicateUrlCheck = vi.fn();
+
+vi.mock("./useDuplicateUrlCheck", () => ({
+  useDuplicateUrlCheck: (...args: unknown[]) =>
+    mockUseDuplicateUrlCheck(...args),
+}));
+
 const mockCategories: WishlistCategoryRecord[] = [
   {
     id: "cat-1",
@@ -29,6 +36,12 @@ describe("AddItemDialog", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseDuplicateUrlCheck.mockReturnValue({
+      handleUrlChange: vi.fn(),
+      duplicateWarnings: () => ({}),
+      reset: vi.fn(),
+      cleanup: vi.fn(),
+    });
   });
 
   it("renders nothing when open is false", () => {
@@ -274,7 +287,6 @@ describe("AddItemDialog", () => {
     ) as HTMLInputElement;
     fireEvent.input(titleInput, { target: { value: "Some title" } });
 
-    // Close and wait for dialog to unmount before reopening
     setOpen(false);
     await waitFor(() => {
       expect(
@@ -361,6 +373,36 @@ describe("AddItemDialog", () => {
         expect.objectContaining({
           title: "Test item",
           description: undefined,
+        }),
+      );
+    });
+  });
+
+  it("submits the selected status in the add item payload", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(() => (
+      <AddItemDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        categories={mockCategories}
+      />
+    ));
+
+    fireEvent.input(screen.getByPlaceholderText("Item title"), {
+      target: { value: "Desk Lamp" },
+    });
+    fireEvent.change(screen.getByLabelText("Status"), {
+      target: { value: "purchased" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add Item" }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Desk Lamp",
+          status: "purchased",
         }),
       );
     });

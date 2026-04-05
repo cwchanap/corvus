@@ -97,7 +97,7 @@ created_at      TEXT  NOT NULL
 updated_at      TEXT  NOT NULL
 ```
 
-There is no index or constraint preventing duplicate URLs within or across items. There is no status, priority, or notes field. There is no public-sharing mechanism and no export endpoint.
+`wishlist_item_links.normalized_url` is already indexed, but there is still no uniqueness constraint preventing duplicate URLs within or across items. There is no status, priority, or notes field. There is no public-sharing mechanism and no export endpoint.
 
 ### Pain Points
 
@@ -388,7 +388,7 @@ As Sam (Active Collector), I want to see what I recently added at the top of my 
 
 **API — dedicated `recentItems` query.**
 
-We implement a new `recentItems(limit: Int): [WishlistItem!]!` GraphQL query for the widget. This avoids fetching categories and pagination metadata that the existing `wishlist` query returns. The existing `wishlist` query and `wishlist_items_user_id_idx` index remain available for the main list view but are not used by the widget.
+We implement a new `recentItems(limit: Int): [WishlistItem!]!` GraphQL query for the widget. This avoids fetching categories and pagination metadata that the existing `wishlist` query returns. The backend work is still low complexity, but it does require a service-layer `getRecentItems` method, resolver wiring in `apps/api/src/graphql/resolvers.ts`, and unit tests or API documentation updates so the endpoint stays discoverable. The existing `wishlist` query and `wishlist_items_user_id_idx` index remain available for the main list view but are not used by the widget, and no DB schema changes are required for this feature.
 
 **GraphQL schema — `apps/api/src/graphql/schema.graphql`:**
 
@@ -530,7 +530,7 @@ Add a "Markdown supported" helper text below the description textarea. No functi
 
 #### Feature Overview
 
-When a user types or pastes a URL into the primary URL field of the Add Item dialog, the API fetches the URL's `<title>` tag and `og:image` meta tag. The title is offered to the user as a pre-filled value for the item's title field, and the og:image is stored as a thumbnail. The user can accept, edit, or ignore the suggestion.
+When a user types or pastes a URL into the primary URL field of the Add Item dialog, the API fetches the URL's `<title>` tag and `og:image` meta tag. The title is offered to the user as a pre-filled value for the item's title field, and the `og:image` is stored in `wishlist_items.og_image` for thumbnail display. The user can accept, edit, or ignore the suggestion.
 
 #### User Story
 
@@ -540,7 +540,7 @@ As Sam (Active Collector), when I paste a product URL into the Add Item form, I 
 
 1. When a URL is entered in the primary URL field of `AddItemDialog` and the field loses focus (or 800 ms after typing stops), a loading spinner appears and the title field shows a "Fetching…" placeholder.
 2. If the fetch succeeds and the title field is currently empty or still has the default value, the fetched page title is pre-filled into the title field. The user can overwrite it.
-3. If an `og:image` URL is returned and is a valid absolute URL, it is stored as the item's `favicon` field (repurposing the existing field as a thumbnail). Note: the field is named `favicon` in the current schema but is already displayed as an image; the behaviour is extended, not changed.
+3. If an `og:image` URL is returned and is a valid absolute URL, it is stored in `wishlist_items.og_image` and used for thumbnail rendering. `wishlist_items.favicon` remains reserved for small site icons.
 4. If the fetch fails (network error, timeout after 5 s, non-HTML content type, or the URL is localhost/private IP), no error is shown to the user and the title field remains editable.
 5. The feature is rate-limited on the server: a single user cannot trigger more than 20 metadata fetch requests per minute.
 6. The fetch is performed server-side (via the API worker) to avoid CORS restrictions and to protect the user's IP address.
@@ -584,7 +584,7 @@ export async function fetchUrlMetadata(url: string): Promise<UrlMetadata> {
 }
 ```
 
-The implementation uses `new URL(url)` to validate the URL, then uses `fetch(url, { signal: AbortSignal.timeout(5000) })`. The response body is read up to 100 kB and parsed for `<title>` and `og:image` using a lightweight string search (no full HTML parser dependency to keep the Worker bundle small). The `og:image` URL must be an absolute URL before being returned.
+The implementation uses `new URL(url)` to validate the URL, then uses `fetch(url, { signal: AbortSignal.timeout(5000) })`. The response body is read up to 100 kB and parsed for `<title>` and `og:image` using a lightweight string search (no full HTML parser dependency to keep the Worker bundle small). The `og:image` URL must be an absolute URL before being returned and persisted to `wishlist_items.og_image`.
 
 Private IP ranges (10.x.x.x, 172.16–31.x.x, 192.168.x.x), localhost, and `.local` domains must be blocked to prevent SSRF.
 
@@ -965,18 +965,18 @@ Features are grouped by dependency chains and risk profile. High-value, low-risk
 
 ### Phase 1 — Foundation and Quick Wins (Sprints 1–2, estimated 2–3 weeks)
 
-| Feature                       | Why first                                                                                                                                                 |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| F-01: Duplicate URL Detection | Pure additive: one new query, one index migration, one client-side hook. No schema changes to existing tables. High user value, low risk.                 |
-| F-03: Recently Added Widget   | No backend changes required. New `recentItems` query is low complexity. Delivers immediate dashboard value.                                               |
-| F-05: URL Metadata Auto-Fetch | Additive: new server-side utility + one GraphQL query. No schema changes if og_image is stored in existing `favicon` field (or a simple column addition). |
+| Feature                       | Why first                                                                                                                                                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F-01: Duplicate URL Detection | Pure additive: one new query, one index migration, one client-side hook. No schema changes to existing tables. High user value, low risk.                                                                 |
+| F-03: Recently Added Widget   | Low complexity. Add the `recentItems` GraphQL query, its resolver wiring, and a service-layer `getRecentItems` method; no DB schema changes are required, but the endpoint still needs tests or API docs. |
+| F-05: URL Metadata Auto-Fetch | Additive: new server-side utility + one GraphQL query + a nullable `wishlist_items.og_image` column for thumbnail storage.                                                                                |
 
 **Deliverables:**
 
 - Drizzle migration adding `wishlist_item_links.normalized_url` index.
 - `checkDuplicateUrl` GraphQL query, resolver, and service method.
 - Duplicate URL warning in `LinkManager.tsx` and `AddItemDialog.tsx`.
-- `recentItems` GraphQL query with `RecentItemsWidget.tsx`.
+- `recentItems` GraphQL query, resolver, service method, and `RecentItemsWidget.tsx`, with tests or API docs updated for the endpoint.
 - `fetchUrlMetadata` GraphQL query with server-side URL fetcher.
 - Auto-populate title in `AddItemDialog.tsx`.
 

@@ -1,11 +1,15 @@
 import { GraphQLError } from "graphql";
-import type { Resolvers } from "./types";
+import type { Resolvers, WishlistItem as GraphQLWishlistItem } from "./types";
 import { AuthServiceError, SupabaseAuthService } from "../lib/auth/service";
 import {
     WishlistService,
     WishlistAuthorizationError,
 } from "../lib/wishlist/service";
 import { mapUser, mapCategory, mapItem, mapLink } from "./mappers";
+
+type WishlistItemWithLinksState = GraphQLWishlistItem & {
+    __linksLoaded?: boolean;
+};
 
 /**
  * GraphQL resolvers
@@ -133,7 +137,7 @@ export const resolvers: Resolvers = {
             return {
                 isDuplicate: result.isDuplicate,
                 conflictingItem: result.conflictingItem
-                    ? mapItem(result.conflictingItem, [])
+                    ? mapItem(result.conflictingItem)
                     : null,
             };
         },
@@ -581,11 +585,17 @@ export const resolvers: Resolvers = {
                 });
             }
 
+            const wishlistItem = parent as WishlistItemWithLinksState;
+            const loadedLinks = Array.isArray(wishlistItem.links)
+                ? wishlistItem.links
+                : null;
+
             // If links are already loaded, return them
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if ((parent as any).links) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                return (parent as any).links;
+            if (
+                loadedLinks &&
+                (wishlistItem.__linksLoaded || loadedLinks.length > 0)
+            ) {
+                return loadedLinks;
             }
 
             // Otherwise, lazy-load links

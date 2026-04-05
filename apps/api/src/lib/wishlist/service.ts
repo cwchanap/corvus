@@ -715,10 +715,12 @@ export class WishlistService {
             ...updates,
             updated_at: new Date().toISOString(),
         };
+        delete setValues.normalized_url;
 
         if (typeof updates.url === "string") {
-            setValues.url = this.trimUrl(updates.url);
-            setValues.normalized_url = this.normalizeLinkUrl(updates.url);
+            const trimmedUrl = this.trimUrl(updates.url);
+            setValues.url = trimmedUrl;
+            setValues.normalized_url = this.normalizeLinkUrl(trimmedUrl);
         }
 
         const row = await this.db

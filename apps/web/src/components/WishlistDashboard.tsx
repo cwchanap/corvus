@@ -20,6 +20,7 @@ import {
 import type {
   WishlistCategoryRecord,
   WishlistItemRecord,
+  WishlistItemStatus,
 } from "@repo/common/types/wishlist-record";
 import { useTheme } from "../lib/theme/context";
 import { AddItemDialog } from "./AddItemDialog";
@@ -438,6 +439,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
     title: string;
     description?: string;
     category_id?: string;
+    status?: WishlistItemStatus;
     priority?: number;
     links: Array<{
       url: string;
@@ -451,6 +453,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         title: payload.title,
         categoryId: payload.category_id || undefined,
         description: payload.description,
+        status: payload.status
+          ? (payload.status.toUpperCase() as import("@repo/common/graphql/types").ItemStatus)
+          : undefined,
         priority: payload.priority,
       });
 
