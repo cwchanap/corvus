@@ -1920,6 +1920,40 @@ describe("Query.checkDuplicateUrl", () => {
         expect(result.isDuplicate).toBe(false);
         expect(result.conflictingItem).toBeNull();
     });
+
+    it("lazy-loads links for conflicting items returned by duplicate checks", async () => {
+        mockWishlistService.checkDuplicateUrl.mockResolvedValueOnce({
+            isDuplicate: true,
+            conflictingItem: dbItem,
+        });
+        mockWishlistService.getItemLinks.mockResolvedValueOnce([dbLink]);
+
+        const ctx = createAuthenticatedContext();
+        const result = await invokeResolver(
+            "Query",
+            "checkDuplicateUrl",
+            { url: "https://example.com" },
+            ctx,
+        );
+        const links = await invokeResolver(
+            "WishlistItem",
+            "links",
+            {},
+            ctx,
+            result.conflictingItem,
+        );
+
+        expect(links).toEqual([
+            expect.objectContaining({
+                id: "link-1",
+                itemId: "item-1",
+            }),
+        ]);
+        expect(mockWishlistService.getItemLinks).toHaveBeenCalledWith(
+            "user-1",
+            "item-1",
+        );
+    });
 });
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,10 @@ import { For, Show, createEffect, createSignal } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
 import { Select } from "@repo/ui-components/select";
-import type { WishlistCategoryRecord } from "@repo/common/types/wishlist-record";
+import type {
+  WishlistCategoryRecord,
+  WishlistItemStatus,
+} from "@repo/common/types/wishlist-record";
 import { LinkManager } from "./LinkManager";
 import { useLinkManager, type LinkItem } from "./useLinkManager";
 import { useDuplicateUrlCheck } from "./useDuplicateUrlCheck";
@@ -11,6 +14,7 @@ export interface AddItemPayload {
   title: string;
   description?: string;
   category_id?: string;
+  status?: WishlistItemStatus;
   priority?: number;
   links: Array<{
     url: string;
@@ -32,6 +36,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
   const [title, setTitle] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [categoryId, setCategoryId] = createSignal<string | "">("");
+  const [status, setStatus] = createSignal<WishlistItemStatus>("want");
   const [priority, setPriority] = createSignal<string>("");
   const linkManager = useLinkManager();
   const duplicateUrlCheck = useDuplicateUrlCheck({
@@ -44,6 +49,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
     if (props.open) {
       setTitle("");
       setDescription("");
+      setStatus("want");
       setPriority("");
       duplicateUrlCheck.reset();
       linkManager.resetLinks([]);
@@ -67,6 +73,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
       title: title().trim(),
       description: description().trim() || undefined,
       category_id: categoryId() || undefined,
+      status: status(),
       priority:
         parsedPriority && parsedPriority >= 1 && parsedPriority <= 5
           ? parsedPriority
@@ -105,10 +112,14 @@ export function AddItemDialog(props: AddItemDialogProps) {
 
             <form onSubmit={handleSubmit} class="space-y-6">
               <div class="space-y-3">
-                <label class="block text-sm font-medium text-foreground">
+                <label
+                  for="add-item-title"
+                  class="block text-sm font-medium text-foreground"
+                >
                   Title
                 </label>
                 <Input
+                  id="add-item-title"
                   value={title()}
                   onInput={(e) => setTitle(e.currentTarget.value)}
                   placeholder="Item title"
@@ -118,10 +129,14 @@ export function AddItemDialog(props: AddItemDialogProps) {
               </div>
 
               <div class="space-y-3">
-                <label class="block text-sm font-medium text-foreground">
+                <label
+                  for="add-item-description"
+                  class="block text-sm font-medium text-foreground"
+                >
                   Description (optional)
                 </label>
                 <textarea
+                  id="add-item-description"
                   class="w-full min-h-24 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                   value={description()}
                   onInput={(e) => setDescription(e.currentTarget.value)}
@@ -131,10 +146,14 @@ export function AddItemDialog(props: AddItemDialogProps) {
 
               <Show when={props.categories?.length > 0}>
                 <div class="space-y-3">
-                  <label class="block text-sm font-medium text-foreground">
+                  <label
+                    for="add-item-category"
+                    class="block text-sm font-medium text-foreground"
+                  >
                     Category
                   </label>
                   <Select
+                    id="add-item-category"
                     value={categoryId()}
                     onChange={(e) => setCategoryId(e.currentTarget.value)}
                     class="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 bg-background text-foreground"
@@ -146,12 +165,37 @@ export function AddItemDialog(props: AddItemDialogProps) {
                 </div>
               </Show>
 
+              <div class="space-y-3">
+                <label
+                  for="add-item-status"
+                  class="block text-sm font-medium text-foreground"
+                >
+                  Status
+                </label>
+                <Select
+                  id="add-item-status"
+                  value={status()}
+                  onChange={(e) =>
+                    setStatus(e.currentTarget.value as WishlistItemStatus)
+                  }
+                  class="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 bg-background text-foreground"
+                >
+                  <option value="want">Want</option>
+                  <option value="purchased">Purchased</option>
+                  <option value="archived">Archived</option>
+                </Select>
+              </div>
+
               {/* Priority */}
               <div class="space-y-3">
-                <label class="block text-sm font-medium text-foreground">
+                <label
+                  for="add-item-priority"
+                  class="block text-sm font-medium text-foreground"
+                >
                   Priority (optional)
                 </label>
                 <Select
+                  id="add-item-priority"
                   value={priority()}
                   onChange={(e) => setPriority(e.currentTarget.value)}
                   class="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 bg-background text-foreground"
