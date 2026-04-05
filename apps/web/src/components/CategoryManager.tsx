@@ -166,6 +166,7 @@ export function CategoryManager(props: CategoryManagerProps) {
                   <div class="flex items-center justify-between p-3 border border-border rounded-lg bg-card hover:bg-accent transition-colors">
                     <div class="flex items-center gap-3">
                       <div
+                        data-testid="category-color"
                         class="w-4 h-4 rounded-full border border-border"
                         style={{
                           "background-color": category.color || "#6366f1",
