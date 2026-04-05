@@ -32,6 +32,7 @@ export const config = [
     },
   },
   {
+    files: ["**/*.{ts,tsx}"],
     rules: {
       "@typescript-eslint/no-unused-vars": [
         "warn",

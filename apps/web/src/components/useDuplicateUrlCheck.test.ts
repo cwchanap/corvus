@@ -1,4 +1,4 @@
-import { createRoot, createSignal } from "solid-js";
+import { createRoot, createSignal, untrack } from "solid-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LinkItem } from "./useLinkManager";
 import { useDuplicateUrlCheck } from "./useDuplicateUrlCheck";
@@ -318,6 +318,92 @@ describe("useDuplicateUrlCheck", () => {
         });
 
         handleUrlChange(0, "https://unique.example/item");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()).toEqual({
+            0: null,
+            1: "Existing duplicate",
+        });
+
+        dispose();
+    });
+
+    it("maps visible link indices back to backing links when deleted rows exist", () => {
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "https://deleted.example/item",
+                description: "",
+                isPrimary: false,
+                isDeleted: true,
+                isNew: false,
+            },
+            {
+                url: "https://visible.example/first",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+            {
+                url: "https://visible.example/second",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+        ]);
+
+        let handleUrlChange!: (index: number, url: string) => void;
+        let duplicateWarnings!: () => Record<number, string | null>;
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+            mockUseCheckDuplicateUrl.mockImplementation(
+                (urlAccessor: () => string) => ({
+                    get data() {
+                        if (
+                            urlAccessor() ===
+                            "https://duplicate.example/updated"
+                        ) {
+                            return {
+                                isDuplicate: true,
+                                conflictingItem: {
+                                    id: "item-1",
+                                    title: "Existing duplicate",
+                                    categoryId: "cat-1",
+                                },
+                            };
+                        }
+                        return undefined;
+                    },
+                }),
+            );
+
+            const hook = useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+            });
+
+            handleUrlChange = hook.handleUrlChange;
+            duplicateWarnings = hook.duplicateWarnings;
+        });
+
+        handleUrlChange(1, "https://duplicate.example/updated");
+        const updatedLinks = untrack(links);
+
+        expect(updatedLinks[1]?.url).toBe("https://visible.example/first");
+        expect(updatedLinks[2]?.url).toBe("https://duplicate.example/updated");
+
         vi.advanceTimersByTime(400);
 
         expect(duplicateWarnings()).toEqual({

@@ -15,6 +15,10 @@ import type {
     WishlistItemLink,
 } from "./types";
 
+type WishlistItemWithLinksState = WishlistItem & {
+    __linksLoaded?: boolean;
+};
+
 export function mapUser(dbUser: DBPublicUser): User {
     return {
         id: dbUser.id,
@@ -37,7 +41,7 @@ export function mapCategory(dbCategory: DBCategory): WishlistCategory {
 }
 
 export function mapItem(dbItem: DBItem, links?: DBLink[]): WishlistItem {
-    return {
+    const item: WishlistItemWithLinksState = {
         id: dbItem.id,
         title: dbItem.title,
         description: dbItem.description,
@@ -52,6 +56,13 @@ export function mapItem(dbItem: DBItem, links?: DBLink[]): WishlistItem {
         userId: dbItem.user_id,
         links: links ? links.map(mapLink) : [],
     };
+
+    Object.defineProperty(item, "__linksLoaded", {
+        value: links !== undefined,
+        enumerable: false,
+    });
+
+    return item;
 }
 
 export function mapLink(dbLink: DBLink): WishlistItemLink {

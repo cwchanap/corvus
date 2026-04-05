@@ -59,6 +59,24 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
         options.links().filter((link) => !link.isDeleted),
     );
 
+    const resolveBackingIndex = (visibleIndex: number, links: LinkItem[]) => {
+        let currentVisibleIndex = 0;
+
+        for (const [backingIndex, link] of links.entries()) {
+            if (link.isDeleted) {
+                continue;
+            }
+
+            if (currentVisibleIndex === visibleIndex) {
+                return backingIndex;
+            }
+
+            currentVisibleIndex += 1;
+        }
+
+        return null;
+    };
+
     const hasOtherVisibleLinkWithUrl = (
         links: LinkItem[],
         url: string,
@@ -95,18 +113,31 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
     };
 
     const handleUrlChange = (index: number, url: string) => {
-        const previousUrl = normalizeUrl(options.links()[index]?.url ?? "");
+        const currentLinks = options.links();
+        const backingIndex = resolveBackingIndex(index, currentLinks);
+
+        if (backingIndex === null) {
+            return;
+        }
+
+        const previousUrl = normalizeUrl(currentLinks[backingIndex]?.url ?? "");
         const normalizedUrl = normalizeUrl(url);
-        options.updateLink(index, "url", url);
+        options.updateLink(backingIndex, "url", url);
 
         if (previousUrl && previousUrl !== normalizedUrl) {
             setWarningsByUrl((previous) => {
                 const nextLinks = options
                     .links()
                     .map((link, linkIndex) =>
-                        linkIndex === index ? { ...link, url } : link,
+                        linkIndex === backingIndex ? { ...link, url } : link,
                     );
-                if (hasOtherVisibleLinkWithUrl(nextLinks, previousUrl, index)) {
+                if (
+                    hasOtherVisibleLinkWithUrl(
+                        nextLinks,
+                        previousUrl,
+                        backingIndex,
+                    )
+                ) {
                     return previous;
                 }
                 const next = { ...previous };
@@ -115,21 +146,21 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
             });
         }
 
-        clearDebounceTimer(index);
-        removeQueuedCheck(index);
-        clearActiveCheck(index);
+        clearDebounceTimer(backingIndex);
+        removeQueuedCheck(backingIndex);
+        clearActiveCheck(backingIndex);
 
         if (normalizedUrl.length < 8 || !isValidUrl(normalizedUrl)) {
             return;
         }
 
         debounceTimers.set(
-            index,
+            backingIndex,
             setTimeout(() => {
-                debounceTimers.delete(index);
+                debounceTimers.delete(backingIndex);
                 setQueuedChecks((previous) => [
-                    ...previous.filter((check) => check.index !== index),
-                    { url: normalizedUrl, index },
+                    ...previous.filter((check) => check.index !== backingIndex),
+                    { url: normalizedUrl, index: backingIndex },
                 ]);
             }, 400),
         );
