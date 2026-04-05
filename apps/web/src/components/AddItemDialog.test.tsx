@@ -274,8 +274,13 @@ describe("AddItemDialog", () => {
     ) as HTMLInputElement;
     fireEvent.input(titleInput, { target: { value: "Some title" } });
 
-    // Close and reopen
+    // Close and wait for dialog to unmount before reopening
     setOpen(false);
+    await waitFor(() => {
+      expect(
+        screen.queryByPlaceholderText("Item title"),
+      ).not.toBeInTheDocument();
+    });
     setOpen(true);
 
     await waitFor(() => {
