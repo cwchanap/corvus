@@ -191,7 +191,18 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
 
         if (!data && !error) return;
 
-        if (data) {
+        if (error) {
+            console.error("[useDuplicateUrlCheck] duplicate check failed", {
+                url: check.url,
+                error,
+            });
+            // Clear any stale warning for this URL so the UI is not misleading
+            setWarningsByUrl((previous) => {
+                const next = { ...previous };
+                delete next[check.url];
+                return next;
+            });
+        } else if (data) {
             setWarningsByUrl((previous) => ({
                 ...previous,
                 [check.url]:
