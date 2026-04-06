@@ -128,18 +128,29 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
-            const result = await wishlistService.checkDuplicateUrl(
-                context.user.id,
-                args.url,
-                args.excludeItemId ?? undefined,
-            );
+            try {
+                const result = await wishlistService.checkDuplicateUrl(
+                    context.user.id,
+                    args.url,
+                    args.excludeItemId ?? undefined,
+                );
 
-            return {
-                isDuplicate: result.isDuplicate,
-                conflictingItem: result.conflictingItem
-                    ? mapItem(result.conflictingItem)
-                    : null,
-            };
+                return {
+                    isDuplicate: result.isDuplicate,
+                    conflictingItem: result.conflictingItem
+                        ? mapItem(result.conflictingItem)
+                        : null,
+                };
+            } catch (error) {
+                console.error("[resolver] checkDuplicateUrl failed", {
+                    userId: context.user.id,
+                    url: args.url,
+                    error,
+                });
+                throw new GraphQLError("Failed to check for duplicate URL", {
+                    extensions: { code: "INTERNAL_SERVER_ERROR" },
+                });
+            }
         },
         recentItems: async (_parent, args, context) => {
             if (!context.user) {
@@ -149,12 +160,22 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
-            const items = await wishlistService.getRecentItems(
-                context.user.id,
-                args.limit ?? 5,
-            );
-
-            return items.map((item) => mapItem(item, item.links));
+            try {
+                const items = await wishlistService.getRecentItems(
+                    context.user.id,
+                    args.limit ?? 5,
+                );
+                return items.map((item) => mapItem(item, item.links));
+            } catch (error) {
+                console.error("[resolver] recentItems failed", {
+                    userId: context.user.id,
+                    limit: args.limit,
+                    error,
+                });
+                throw new GraphQLError("Failed to fetch recent items", {
+                    extensions: { code: "INTERNAL_SERVER_ERROR" },
+                });
+            }
         },
     },
     Mutation: {
@@ -293,6 +314,15 @@ export const resolvers: Resolvers = {
 
             const wishlistService = new WishlistService(context.db);
 
+            if (
+                args.input.priority != null &&
+                (args.input.priority < 1 || args.input.priority > 5)
+            ) {
+                throw new GraphQLError("Priority must be between 1 and 5", {
+                    extensions: { code: "BAD_USER_INPUT" },
+                });
+            }
+
             const itemData = {
                 user_id: context.user.id,
                 category_id: args.input.categoryId,
@@ -344,6 +374,16 @@ export const resolvers: Resolvers = {
             }
 
             const wishlistService = new WishlistService(context.db);
+
+            if (
+                args.input.priority != null &&
+                (args.input.priority < 1 || args.input.priority > 5)
+            ) {
+                throw new GraphQLError("Priority must be between 1 and 5", {
+                    extensions: { code: "BAD_USER_INPUT" },
+                });
+            }
+
             const item = await wishlistService.updateItem(
                 args.id,
                 context.user.id,
