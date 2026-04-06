@@ -69,8 +69,72 @@ describe("debounce", () => {
 });
 
 describe("formatRelativeTime", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date("2024-06-01T12:00:00Z"));
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
     it("returns 'just now' for invalid timestamps", () => {
         expect(formatRelativeTime("not-a-date")).toBe("just now");
+    });
+
+    it("returns 'just now' for timestamps within the last 60 seconds", () => {
+        const ts = new Date("2024-06-01T11:59:30Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("just now");
+    });
+
+    it("returns '1 minute ago' for exactly 1 minute", () => {
+        const ts = new Date("2024-06-01T11:59:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("1 minute ago");
+    });
+
+    it("returns 'N minutes ago' for multiple minutes", () => {
+        const ts = new Date("2024-06-01T11:45:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("15 minutes ago");
+    });
+
+    it("returns '1 hour ago' for exactly 1 hour", () => {
+        const ts = new Date("2024-06-01T11:00:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("1 hour ago");
+    });
+
+    it("returns 'N hours ago' for multiple hours", () => {
+        const ts = new Date("2024-06-01T06:00:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("6 hours ago");
+    });
+
+    it("returns 'yesterday' for timestamps 1 day ago", () => {
+        const ts = new Date("2024-05-31T12:00:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("yesterday");
+    });
+
+    it("returns 'N days ago' for multiple days", () => {
+        const ts = new Date("2024-05-22T12:00:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("10 days ago");
+    });
+
+    it("returns '1 month ago' for ~30 days", () => {
+        const ts = new Date("2024-05-01T12:00:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("1 month ago");
+    });
+
+    it("returns 'N months ago' for multiple months", () => {
+        const ts = new Date("2024-03-01T12:00:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("3 months ago");
+    });
+
+    it("returns '1 year ago' for ~365 days", () => {
+        const ts = new Date("2023-06-01T12:00:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("1 year ago");
+    });
+
+    it("returns 'N years ago' for multiple years", () => {
+        const ts = new Date("2022-01-01T12:00:00Z").toISOString();
+        expect(formatRelativeTime(ts)).toBe("2 years ago");
     });
 });
 
