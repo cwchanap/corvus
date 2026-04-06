@@ -17,8 +17,23 @@ function queryD1(sql: string, remote = false): LinkRow[] {
         encoding: "utf-8",
         cwd: import.meta.dirname + "/..",
     });
-    const parsed = JSON.parse(output);
-    return parsed?.[0]?.results ?? [];
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(output);
+    } catch {
+        throw new Error(
+            `[queryD1] Failed to parse wrangler output as JSON.\nRaw output:\n${output}`,
+        );
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error(
+            `[queryD1] Unexpected wrangler output shape (expected non-empty array).\nRaw output:\n${output}`,
+        );
+    }
+
+    return (parsed[0] as { results?: LinkRow[] })?.results ?? [];
 }
 
 function escapeSqlValue(value: string): string {
@@ -34,7 +49,6 @@ function executeD1(sql: string, remote = false): void {
         "--command",
         sql,
     ];
-    console.log("Executing D1 update...");
     execFileSync("wrangler", args, {
         encoding: "utf-8",
         cwd: import.meta.dirname + "/..",
@@ -68,14 +82,33 @@ function main() {
         return;
     }
 
+    let successCount = 0;
+    const failures: string[] = [];
+
     for (const { id, normalized_url } of updates) {
-        executeD1(
-            `UPDATE wishlist_item_links SET normalized_url = '${escapeSqlValue(normalized_url)}' WHERE id = '${escapeSqlValue(id)}'`,
-            remote,
-        );
+        try {
+            executeD1(
+                `UPDATE wishlist_item_links SET normalized_url = '${escapeSqlValue(normalized_url)}' WHERE id = '${escapeSqlValue(id)}'`,
+                remote,
+            );
+            successCount++;
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(
+                `[backfill] Failed to update row id=${id}: ${message}`,
+            );
+            failures.push(id);
+        }
     }
 
-    console.log(`Updated ${updates.length} rows.`);
+    console.log(`Updated ${successCount} rows successfully.`);
+
+    if (failures.length > 0) {
+        console.error(
+            `Failed to update ${failures.length} rows: ${failures.join(", ")}`,
+        );
+        process.exit(1);
+    }
 }
 
 main();
