@@ -407,4 +407,85 @@ describe("AddItemDialog", () => {
       );
     });
   });
+
+  it("submits a valid in-range priority in the payload", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(() => (
+      <AddItemDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        categories={categories}
+      />
+    ));
+
+    fireEvent.input(screen.getByPlaceholderText("Item title"), {
+      target: { value: "Desk Lamp" },
+    });
+    fireEvent.change(screen.getByLabelText(/priority/i), {
+      target: { value: "3" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add Item" }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: 3 }),
+      );
+    });
+  });
+
+  it("sends undefined for priority when the value is out of range", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(() => (
+      <AddItemDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        categories={categories}
+      />
+    ));
+
+    fireEvent.input(screen.getByPlaceholderText("Item title"), {
+      target: { value: "Desk Lamp" },
+    });
+    fireEvent.change(screen.getByLabelText(/priority/i), {
+      target: { value: "99" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add Item" }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: undefined }),
+      );
+    });
+  });
+
+  it("sends undefined for priority when the value is non-numeric", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(() => (
+      <AddItemDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        categories={categories}
+      />
+    ));
+
+    fireEvent.input(screen.getByPlaceholderText("Item title"), {
+      target: { value: "Desk Lamp" },
+    });
+    fireEvent.change(screen.getByLabelText(/priority/i), {
+      target: { value: "abc" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add Item" }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: undefined }),
+      );
+    });
+  });
 });
