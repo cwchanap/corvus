@@ -1,4 +1,4 @@
-import { render, screen } from "@solidjs/testing-library";
+import { fireEvent, render, screen } from "@solidjs/testing-library";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { GraphQLWishlistItem } from "@repo/common/graphql/types";
 import type {
@@ -65,7 +65,11 @@ describe("RecentItemsWidget", () => {
   beforeEach(() => {
     mockUseRecentItems.mockReset();
     mockAdaptItem.mockReset();
-    mockUseRecentItems.mockReturnValue({ data: [recentItem] });
+    mockUseRecentItems.mockReturnValue({
+      data: [recentItem],
+      isLoading: false,
+      error: null,
+    });
     mockAdaptItem.mockReturnValue(adaptedItem);
   });
 
@@ -76,5 +80,112 @@ describe("RecentItemsWidget", () => {
 
     expect(screen.getByText("Recently Added")).toBeInTheDocument();
     expect(mockAdaptItem).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders nothing when query returns empty data", () => {
+    mockUseRecentItems.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
+    const { container } = render(() => (
+      <RecentItemsWidget categories={categories} onViewItem={vi.fn()} />
+    ));
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("renders nothing when query returns undefined data and no error", () => {
+    mockUseRecentItems.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+    });
+    const { container } = render(() => (
+      <RecentItemsWidget categories={categories} onViewItem={vi.fn()} />
+    ));
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("shows loading skeletons while fetching", () => {
+    mockUseRecentItems.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
+    render(() => (
+      <RecentItemsWidget categories={categories} onViewItem={vi.fn()} />
+    ));
+    expect(screen.getByText("Recently Added")).toBeInTheDocument();
+    const skeletons = document.querySelectorAll(".animate-pulse");
+    expect(skeletons.length).toBe(3);
+  });
+
+  it("shows error message when query fails", () => {
+    mockUseRecentItems.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("Network failure"),
+    });
+    render(() => (
+      <RecentItemsWidget categories={categories} onViewItem={vi.fn()} />
+    ));
+    expect(
+      screen.getByText("Could not load recent items."),
+    ).toBeInTheDocument();
+  });
+
+  it("calls onViewItem with the item when a row is clicked", async () => {
+    mockUseRecentItems.mockReturnValue({
+      data: [recentItem],
+      isLoading: false,
+      error: null,
+    });
+    mockAdaptItem.mockReturnValue(adaptedItem);
+
+    const onViewItem = vi.fn();
+    render(() => (
+      <RecentItemsWidget categories={categories} onViewItem={onViewItem} />
+    ));
+
+    fireEvent.click(screen.getByText("Laptop"));
+    expect(onViewItem).toHaveBeenCalledWith(adaptedItem);
+  });
+
+  it("shows the category name when categoryId matches", () => {
+    mockUseRecentItems.mockReturnValue({
+      data: [recentItem],
+      isLoading: false,
+      error: null,
+    });
+    mockAdaptItem.mockReturnValue(adaptedItem);
+
+    render(() => (
+      <RecentItemsWidget categories={categories} onViewItem={vi.fn()} />
+    ));
+
+    expect(screen.getByText("Electronics")).toBeInTheDocument();
+  });
+
+  it("shows 'Uncategorized' when categoryId does not match any category", () => {
+    const itemWithUnknownCategory = {
+      ...recentItem,
+      categoryId: "unknown-cat",
+    };
+    const adaptedWithUnknownCategory = {
+      ...adaptedItem,
+      category_id: "unknown-cat",
+    };
+    mockUseRecentItems.mockReturnValue({
+      data: [itemWithUnknownCategory],
+      isLoading: false,
+      error: null,
+    });
+    mockAdaptItem.mockReturnValue(adaptedWithUnknownCategory);
+
+    render(() => (
+      <RecentItemsWidget categories={categories} onViewItem={vi.fn()} />
+    ));
+
+    expect(screen.getByText("Uncategorized")).toBeInTheDocument();
   });
 });
