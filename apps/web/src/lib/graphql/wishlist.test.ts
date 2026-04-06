@@ -185,7 +185,7 @@ describe("checkDuplicateUrl", () => {
         });
     });
 
-    it("normalizes duplicate-check urls before sending the request", async () => {
+    it("passes the url through as-is (normalization is done by the caller)", async () => {
         mockedRequest.mockResolvedValueOnce({
             checkDuplicateUrl: {
                 isDuplicate: false,
@@ -193,10 +193,7 @@ describe("checkDuplicateUrl", () => {
             },
         });
 
-        await checkDuplicateUrl(
-            "  HTTPS://Example.com:443/path/?b=2&a=1  ",
-            "item-1",
-        );
+        await checkDuplicateUrl("https://example.com/path?a=1&b=2", "item-1");
 
         expect(mockedRequest).toHaveBeenCalledWith(CHECK_DUPLICATE_URL_QUERY, {
             url: "https://example.com/path?a=1&b=2",
