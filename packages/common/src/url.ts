@@ -48,10 +48,19 @@ export function normalizeHttpUrl(urlString: string): string {
             parsed.username || parsed.password
                 ? `${parsed.username}${parsed.password ? `:${parsed.password}` : ""}@`
                 : "";
-        const pathname = parsed.pathname === "/" ? "" : parsed.pathname;
+        // Only strip the trailing slash when nothing follows it (no search, no hash),
+        // so root-level URLs with query params keep their path separator.
+        const pathname =
+            parsed.pathname === "/" && !parsed.search && !parsed.hash
+                ? ""
+                : parsed.pathname;
 
         return `${parsed.protocol}//${auth}${parsed.host}${pathname}${parsed.search}${parsed.hash}`;
-    } catch {
+    } catch (err) {
+        console.error("[normalizeHttpUrl] failed to parse URL", {
+            url: trimmed,
+            error: err,
+        });
         return trimmed;
     }
 }
