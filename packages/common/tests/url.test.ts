@@ -35,4 +35,19 @@ describe("normalizeHttpUrl", () => {
         );
         expect(normalizeHttpUrl("  not a url  ")).toBe("not a url");
     });
+
+    it("preserves the path separator before query params on root URLs", () => {
+        expect(normalizeHttpUrl("https://example.com/?foo=bar")).toBe(
+            "https://example.com/?foo=bar",
+        );
+        expect(normalizeHttpUrl("https://example.com?foo=bar")).toBe(
+            "https://example.com/?foo=bar",
+        );
+    });
+
+    it("preserves the path separator before hash on root URLs", () => {
+        expect(normalizeHttpUrl("https://example.com/#section")).toBe(
+            "https://example.com/#section",
+        );
+    });
 });
