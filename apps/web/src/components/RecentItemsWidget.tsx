@@ -35,7 +35,11 @@ export function RecentItemsWidget(props: RecentItemsWidgetProps) {
   };
 
   return (
-    <Show when={recentItems().length > 0}>
+    <Show
+      when={
+        recentQuery.isLoading || recentQuery.error || recentItems().length > 0
+      }
+    >
       <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm mb-6">
         <CardHeader class="pb-3">
           <CardTitle class="text-base text-card-foreground">
@@ -43,32 +47,46 @@ export function RecentItemsWidget(props: RecentItemsWidgetProps) {
           </CardTitle>
         </CardHeader>
         <CardContent class="px-6 pb-4">
-          <div class="space-y-2">
-            <For each={recentItems()}>
-              {(item) => (
-                <button
-                  type="button"
-                  onClick={() => props.onViewItem(item)}
-                  class="w-full text-left flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors duration-150 group"
-                >
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                      {item.title}
-                    </p>
-                    <p class="text-xs text-muted-foreground truncate">
-                      {getCategoryName(item.category_id)}
-                    </p>
-                  </div>
-                  <span
-                    class="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0"
-                    title={new Date(item.created_at).toLocaleString()}
+          <Show when={recentQuery.isLoading}>
+            <div class="space-y-2">
+              <For each={[1, 2, 3]}>
+                {() => <div class="h-10 rounded-lg bg-muted animate-pulse" />}
+              </For>
+            </div>
+          </Show>
+          <Show when={recentQuery.error && !recentQuery.isLoading}>
+            <p class="text-sm text-muted-foreground">
+              Could not load recent items.
+            </p>
+          </Show>
+          <Show when={!recentQuery.isLoading && !recentQuery.error}>
+            <div class="space-y-2">
+              <For each={recentItems()}>
+                {(item) => (
+                  <button
+                    type="button"
+                    onClick={() => props.onViewItem(item)}
+                    class="w-full text-left flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors duration-150 group"
                   >
-                    {formatRelativeTime(item.created_at)}
-                  </span>
-                </button>
-              )}
-            </For>
-          </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                        {item.title}
+                      </p>
+                      <p class="text-xs text-muted-foreground truncate">
+                        {getCategoryName(item.category_id)}
+                      </p>
+                    </div>
+                    <span
+                      class="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0"
+                      title={new Date(item.created_at).toLocaleString()}
+                    >
+                      {formatRelativeTime(item.created_at)}
+                    </span>
+                  </button>
+                )}
+              </For>
+            </div>
+          </Show>
         </CardContent>
       </Card>
     </Show>
