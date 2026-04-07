@@ -1436,6 +1436,42 @@ describe("WishlistService", () => {
             expect(getMock).toHaveBeenCalledTimes(1);
         });
 
+        it("checkDuplicateUrl scopes the lookup to the requesting user", async () => {
+            const getMock = vi.fn().mockResolvedValue(undefined);
+            const whereMock = vi.fn(() => ({ get: getMock }));
+            const innerJoinMock = vi.fn(() => ({ where: whereMock }));
+            const fromMock = vi.fn(() => ({ innerJoin: innerJoinMock }));
+            const selectMock = vi.fn(() => ({ from: fromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await service.checkDuplicateUrl(
+                "user-uuid-42",
+                "https://example.com/item",
+            );
+
+            // The where condition must be called with a condition that references the user ID
+            expect(whereMock).toHaveBeenCalledTimes(1);
+            // Drizzle SQL objects contain circular references, so use a safe stringify.
+            const whereArg = whereMock.mock.calls[0]?.[0];
+            const seen = new WeakSet();
+            const conditionStr = JSON.stringify(
+                whereArg,
+                (_key, value: unknown) => {
+                    if (typeof value === "object" && value !== null) {
+                        if (seen.has(value as object)) return "[Circular]";
+                        seen.add(value as object);
+                    }
+                    return value;
+                },
+            );
+            // Drizzle serializes the user ID value into the SQL condition object
+            expect(conditionStr).toContain("user-uuid-42");
+        });
+
         it("updateItemLink returns null when link not found", async () => {
             const getMock = vi.fn().mockResolvedValue(undefined);
             const returningMock = vi.fn(() => ({ get: getMock }));
@@ -2268,6 +2304,44 @@ describe("WishlistService", () => {
             await service.getRecentItems("user-1", 100);
 
             expect(itemsLimitMock).toHaveBeenCalledWith(50);
+        });
+
+        it("excludes archived items from the query condition", async () => {
+            const itemsAllMock = vi.fn().mockResolvedValue([]);
+            const itemsLimitMock = vi.fn(() => ({ all: itemsAllMock }));
+            const itemsOrderByMock = vi.fn(() => ({ limit: itemsLimitMock }));
+            const itemsWhereMock = vi.fn(() => ({
+                orderBy: itemsOrderByMock,
+            }));
+            const itemsFromMock = vi.fn(() => ({ where: itemsWhereMock }));
+
+            const selectMock = vi.fn(() => ({ from: itemsFromMock })) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            await service.getRecentItems("user-1", 5);
+
+            // where() must be called — both user_id equality and archived exclusion require it
+            expect(itemsWhereMock).toHaveBeenCalledTimes(1);
+
+            // Drizzle SQL objects contain circular references, so use a safe stringify.
+            // The "archived" string literal must appear somewhere in the serialized condition.
+            const whereArg = itemsWhereMock.mock.calls[0]?.[0];
+            const seen = new WeakSet();
+            const conditionStr = JSON.stringify(
+                whereArg,
+                (_key, value: unknown) => {
+                    if (typeof value === "object" && value !== null) {
+                        if (seen.has(value as object)) return "[Circular]";
+                        seen.add(value as object);
+                    }
+                    return value;
+                },
+            );
+            expect(conditionStr).toContain("archived");
         });
     });
 
