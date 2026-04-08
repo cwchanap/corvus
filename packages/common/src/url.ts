@@ -56,11 +56,7 @@ export function normalizeHttpUrl(urlString: string): string {
                 : parsed.pathname;
 
         return `${parsed.protocol}//${auth}${parsed.host}${pathname}${parsed.search}${parsed.hash}`;
-    } catch (err) {
-        console.error("[normalizeHttpUrl] failed to parse URL", {
-            url: trimmed,
-            error: err,
-        });
+    } catch {
         return trimmed;
     }
 }
