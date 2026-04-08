@@ -328,7 +328,7 @@ describe("useDuplicateUrlCheck", () => {
         dispose();
     });
 
-    it("maps visible link indices back to backing links when deleted rows exist", () => {
+    it("uses backing index directly when deleted rows exist", () => {
         const [links, setLinks] = createSignal<LinkItem[]>([
             {
                 url: "https://deleted.example/item",
@@ -398,7 +398,8 @@ describe("useDuplicateUrlCheck", () => {
             duplicateWarnings = hook.duplicateWarnings;
         });
 
-        handleUrlChange(1, "https://duplicate.example/updated");
+        // LinkManager passes the backing index (originalIndex = 2 for the second visible link)
+        handleUrlChange(2, "https://duplicate.example/updated");
         const updatedLinks = untrack(links);
 
         expect(updatedLinks[1]?.url).toBe("https://visible.example/first");
