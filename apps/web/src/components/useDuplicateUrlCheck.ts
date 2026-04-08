@@ -59,24 +59,6 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
         options.links().filter((link) => !link.isDeleted),
     );
 
-    const resolveBackingIndex = (visibleIndex: number, links: LinkItem[]) => {
-        let currentVisibleIndex = 0;
-
-        for (const [backingIndex, link] of links.entries()) {
-            if (link.isDeleted) {
-                continue;
-            }
-
-            if (currentVisibleIndex === visibleIndex) {
-                return backingIndex;
-            }
-
-            currentVisibleIndex += 1;
-        }
-
-        return null;
-    };
-
     const hasOtherVisibleLinkWithUrl = (
         links: LinkItem[],
         url: string,
@@ -112,11 +94,10 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
         setWarningsByUrl({});
     };
 
-    const handleUrlChange = (index: number, url: string) => {
+    const handleUrlChange = (backingIndex: number, url: string) => {
         const currentLinks = options.links();
-        const backingIndex = resolveBackingIndex(index, currentLinks);
 
-        if (backingIndex === null) {
+        if (backingIndex < 0 || backingIndex >= currentLinks.length) {
             return;
         }
 
