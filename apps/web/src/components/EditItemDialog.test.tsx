@@ -7,6 +7,13 @@ import type {
   WishlistItemRecord,
 } from "@repo/common/types/wishlist-record";
 
+const mockUseDuplicateUrlCheck = vi.fn();
+
+vi.mock("./useDuplicateUrlCheck", () => ({
+  useDuplicateUrlCheck: (...args: unknown[]) =>
+    mockUseDuplicateUrlCheck(...args),
+}));
+
 const mockCategories: WishlistCategoryRecord[] = [
   {
     id: "cat-1",
@@ -53,6 +60,12 @@ describe("EditItemDialog", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseDuplicateUrlCheck.mockReturnValue({
+      handleUrlChange: vi.fn(),
+      duplicateWarnings: () => ({}),
+      reset: vi.fn(),
+      cleanup: vi.fn(),
+    });
   });
 
   it("renders nothing when open is false", () => {

@@ -416,7 +416,7 @@ describe("AddItemDialog", () => {
         open={true}
         onOpenChange={vi.fn()}
         onSubmit={onSubmit}
-        categories={categories}
+        categories={mockCategories}
       />
     ));
 
@@ -443,7 +443,7 @@ describe("AddItemDialog", () => {
         open={true}
         onOpenChange={vi.fn()}
         onSubmit={onSubmit}
-        categories={categories}
+        categories={mockCategories}
       />
     ));
 
@@ -470,7 +470,7 @@ describe("AddItemDialog", () => {
         open={true}
         onOpenChange={vi.fn()}
         onSubmit={onSubmit}
-        categories={categories}
+        categories={mockCategories}
       />
     ));
 
