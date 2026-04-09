@@ -862,6 +862,7 @@ describe("WishlistService", () => {
             expect(orderByMock).toHaveBeenCalledWith(
                 expect.anything(),
                 asc(wishlistItems.priority),
+                asc(wishlistItems.created_at),
             );
         });
 
@@ -2416,6 +2417,7 @@ describe("WishlistService", () => {
             expect(orderByMock).toHaveBeenCalledWith(
                 expect.anything(),
                 desc(wishlistItems.priority),
+                asc(wishlistItems.created_at),
             );
         });
 

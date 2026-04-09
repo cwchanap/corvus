@@ -90,10 +90,6 @@ export function EditItemDialog(props: EditItemDialogProps) {
 
     if (!props.item) return;
 
-    const activeLinks = linkManager
-      .links()
-      .filter((link: LinkItem) => !link.isDeleted);
-
     const parsedPriority = priority() ? parseInt(priority(), 10) : undefined;
 
     props.onSubmit({
@@ -106,7 +102,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
         parsedPriority && parsedPriority >= 1 && parsedPriority <= 5
           ? parsedPriority
           : undefined,
-      links: activeLinks.map((link: LinkItem) => ({
+      links: linkManager.links().map((link: LinkItem) => ({
         id: link.id,
         url: link.url.trim(),
         description: link.description?.trim() || undefined,
