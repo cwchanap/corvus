@@ -7,7 +7,7 @@
     "copy-assets": "rm -rf dist/client && mkdir -p dist/client && cp -r ../web/.output/public/. dist/client/",
     "build:api": "vite build",
     "preview": "$npm_execpath run build && vite preview",
-    "deploy": "bun db:backfill-normalized-urls:remote && wrangler deploy",
+    "deploy": "wrangler d1 migrations apply corvus --remote && bun db:backfill-normalized-urls:remote && wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "db:gen": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply corvus --local && bun db:backfill-normalized-urls",
