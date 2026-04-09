@@ -234,11 +234,13 @@ export class WishlistService {
 
         if (sortBy === "PRIORITY") {
             // PRIORITY: nulls last, ascending (1 = highest priority)
+            // Use created_at as a stable tiebreaker for deterministic pagination
             orderedQuery = query.orderBy(
                 sql`${wishlistItems.priority} IS NULL`,
                 isDescending
                     ? desc(wishlistItems.priority)
                     : asc(wishlistItems.priority),
+                asc(wishlistItems.created_at),
             );
         } else {
             // Map sort keys to database columns
