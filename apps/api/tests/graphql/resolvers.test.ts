@@ -1921,6 +1921,43 @@ describe("Query.checkDuplicateUrl", () => {
         expect(result.conflictingItem).toBeNull();
     });
 
+    it("throws INTERNAL_SERVER_ERROR and logs redacted URL when service fails", async () => {
+        const consoleErrorSpy = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => {});
+        mockWishlistService.checkDuplicateUrl.mockRejectedValueOnce(
+            new Error("DB down"),
+        );
+
+        const ctx = createAuthenticatedContext();
+        await expect(
+            invokeResolver(
+                "Query",
+                "checkDuplicateUrl",
+                {
+                    url: "https://example.com/item?token=secret123",
+                    excludeItemId: undefined,
+                },
+                ctx,
+            ),
+        ).rejects.toThrow("Failed to check for duplicate URL");
+
+        // Verify the URL was redacted — origin + pathname only, no query params
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            "[resolver] checkDuplicateUrl failed",
+            expect.objectContaining({
+                urlOrigin: "https://example.com/item",
+            }),
+        );
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.not.objectContaining({
+                url: expect.anything(),
+            }),
+        );
+        consoleErrorSpy.mockRestore();
+    });
+
     it("lazy-loads links for conflicting items returned by duplicate checks", async () => {
         mockWishlistService.checkDuplicateUrl.mockResolvedValueOnce({
             isDuplicate: true,
