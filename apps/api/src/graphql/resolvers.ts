@@ -12,6 +12,19 @@ type WishlistItemWithLinksState = GraphQLWishlistItem & {
 };
 
 /**
+ * Redacts a URL for safe logging by keeping only the origin and pathname.
+ * Strips query parameters and fragments which may contain sensitive tokens.
+ */
+function redactUrl(url: string): string {
+    try {
+        const parsed = new URL(url);
+        return parsed.origin + parsed.pathname;
+    } catch {
+        return "[invalid-url]";
+    }
+}
+
+/**
  * GraphQL resolvers
  * Maps GraphQL operations to service layer methods
  */
@@ -144,7 +157,7 @@ export const resolvers: Resolvers = {
             } catch (error) {
                 console.error("[resolver] checkDuplicateUrl failed", {
                     userId: context.user.id,
-                    url: args.url,
+                    urlOrigin: redactUrl(args.url),
                     error,
                 });
                 throw new GraphQLError("Failed to check for duplicate URL", {
