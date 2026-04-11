@@ -82,6 +82,20 @@ describe("formatRelativeTime", () => {
         expect(formatRelativeTime("not-a-date")).toBe("just now");
     });
 
+    it("handles SQLite CURRENT_TIMESTAMP format (space-separated, UTC)", () => {
+        // SQLite CURRENT_TIMESTAMP produces "YYYY-MM-DD HH:MM:SS" in UTC.
+        // With fake system time at 2024-06-01T12:00:00Z, 30 seconds ago
+        // in SQLite format should still resolve correctly.
+        const ts = "2024-06-01 11:59:30";
+        expect(formatRelativeTime(ts)).toBe("just now");
+    });
+
+    it("treats SQLite timestamps as UTC, not local time", () => {
+        // 1 hour ago in SQLite format — must be parsed as UTC
+        const ts = "2024-06-01 11:00:00";
+        expect(formatRelativeTime(ts)).toBe("1 hour ago");
+    });
+
     it("returns 'just now' for timestamps within the last 60 seconds", () => {
         const ts = new Date("2024-06-01T11:59:30Z").toISOString();
         expect(formatRelativeTime(ts)).toBe("just now");
