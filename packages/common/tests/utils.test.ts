@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { formatDate, debounce, sleep } from "../src/utils";
-import { formatRelativeTime } from "../src/utils/format-relative-time";
+import {
+    formatRelativeTime,
+    parseDateAsUTC,
+    normalizeToUTCDateString,
+} from "../src/utils/format-relative-time";
 
 describe("formatDate", () => {
     it("formats a date in long US format", () => {
@@ -65,6 +69,43 @@ describe("debounce", () => {
         expect(fn).toHaveBeenCalledTimes(2);
         expect(fn).toHaveBeenNthCalledWith(1, "first");
         expect(fn).toHaveBeenNthCalledWith(2, "second");
+    });
+});
+
+describe("normalizeToUTCDateString", () => {
+    it("converts SQLite CURRENT_TIMESTAMP format to ISO 8601 with Z suffix", () => {
+        expect(normalizeToUTCDateString("2024-06-01 11:59:30")).toBe(
+            "2024-06-01T11:59:30Z",
+        );
+    });
+
+    it("leaves already-normalized ISO strings unchanged", () => {
+        expect(normalizeToUTCDateString("2024-06-01T11:59:30Z")).toBe(
+            "2024-06-01T11:59:30Z",
+        );
+    });
+
+    it("leaves ISO strings with timezone offset unchanged", () => {
+        expect(normalizeToUTCDateString("2024-06-01T11:59:30+05:00")).toBe(
+            "2024-06-01T11:59:30+05:00",
+        );
+    });
+});
+
+describe("parseDateAsUTC", () => {
+    it("parses SQLite CURRENT_TIMESTAMP as UTC", () => {
+        const date = parseDateAsUTC("2024-06-01 11:59:30");
+        expect(date.toISOString()).toBe("2024-06-01T11:59:30.000Z");
+    });
+
+    it("parses standard ISO strings correctly", () => {
+        const date = parseDateAsUTC("2024-06-01T11:59:30Z");
+        expect(date.toISOString()).toBe("2024-06-01T11:59:30.000Z");
+    });
+
+    it("returns Invalid Date for garbage input", () => {
+        const date = parseDateAsUTC("not-a-date");
+        expect(Number.isNaN(date.getTime())).toBe(true);
     });
 });
 

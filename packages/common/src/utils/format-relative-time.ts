@@ -1,4 +1,25 @@
 /**
+ * Normalizes a date string to explicit ISO 8601 with UTC timezone.
+ *
+ * SQLite CURRENT_TIMESTAMP produces "YYYY-MM-DD HH:MM:SS" (UTC) without
+ * a timezone indicator. Without normalization, browsers parse this as
+ * local time, producing shifted values for non-UTC users.
+ */
+export function normalizeToUTCDateString(dateString: string): string {
+    return dateString.includes(" ")
+        ? dateString.replace(" ", "T") + "Z"
+        : dateString;
+}
+
+/**
+ * Parses a date string (ISO 8601 or SQLite CURRENT_TIMESTAMP) as UTC
+ * and returns a Date object.
+ */
+export function parseDateAsUTC(dateString: string): Date {
+    return new Date(normalizeToUTCDateString(dateString));
+}
+
+/**
  * Formats an ISO date string as a relative human-readable time
  * e.g. "just now", "3 minutes ago", "2 days ago"
  *
@@ -7,12 +28,7 @@
  */
 export function formatRelativeTime(isoString: string): string {
     const now = Date.now();
-    // SQLite CURRENT_TIMESTAMP produces "YYYY-MM-DD HH:MM:SS" (UTC).
-    // Convert to explicit ISO 8601 so JS parses it as UTC rather than local.
-    const normalized = isoString.includes(" ")
-        ? isoString.replace(" ", "T") + "Z"
-        : isoString;
-    const then = new Date(normalized).getTime();
+    const then = parseDateAsUTC(isoString).getTime();
     if (!Number.isFinite(then)) return "just now";
     const diffMs = now - then;
     if (diffMs < 0) return "just now";

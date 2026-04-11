@@ -20,6 +20,8 @@ vi.mock("../lib/graphql/adapters", () => ({
 
 vi.mock("@repo/common/utils/format-relative-time", () => ({
   formatRelativeTime: () => "just now",
+  parseDateAsUTC: (s: string) =>
+    new Date(s.includes(" ") ? s.replace(" ", "T") + "Z" : s),
 }));
 
 describe("RecentItemsWidget", () => {
@@ -187,5 +189,30 @@ describe("RecentItemsWidget", () => {
     ));
 
     expect(screen.getByText("Uncategorized")).toBeInTheDocument();
+  });
+
+  it("renders tooltip with UTC-parsed timestamp for SQLite format dates", () => {
+    const sqliteTimestamp = "2024-01-01 00:00:00";
+    const adaptedWithSqliteTs = {
+      ...adaptedItem,
+      created_at: sqliteTimestamp,
+    };
+    mockUseRecentItems.mockReturnValue({
+      data: [recentItem],
+      isLoading: false,
+      error: null,
+    });
+    mockAdaptItem.mockReturnValue(adaptedWithSqliteTs);
+
+    render(() => (
+      <RecentItemsWidget categories={categories} onViewItem={vi.fn()} />
+    ));
+
+    const timeElement = screen.getByText("just now");
+    // The tooltip should use parseDateAsUTC which converts SQLite format
+    // "2024-01-01 00:00:00" → "2024-01-01T00:00:00Z" before calling toLocaleString().
+    // Verify the title is a non-empty locale string (not the raw SQLite format).
+    expect(timeElement.title).toBeTruthy();
+    expect(timeElement.title).not.toBe(sqliteTimestamp);
   });
 });
