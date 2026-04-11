@@ -182,7 +182,6 @@ export function AddItemDialog(props: AddItemDialogProps) {
                 >
                   <option value="want">Want</option>
                   <option value="purchased">Purchased</option>
-                  <option value="archived">Archived</option>
                 </Select>
               </div>
 
