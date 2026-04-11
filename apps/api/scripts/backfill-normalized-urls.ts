@@ -85,19 +85,44 @@ function main() {
     let successCount = 0;
     const failures: string[] = [];
 
-    for (const { id, normalized_url } of updates) {
+    // Batch updates into chunks to avoid O(N) process launches.
+    const BATCH_SIZE = 100;
+
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+        const batch = updates.slice(i, i + BATCH_SIZE);
+        const statements = batch.map(
+            ({ id, normalized_url }) =>
+                `UPDATE wishlist_item_links SET normalized_url = '${escapeSqlValue(normalized_url)}' WHERE id = '${escapeSqlValue(id)}';`,
+        );
+        const sql = `BEGIN TRANSACTION;\n${statements.join("\n")}\nCOMMIT;`;
+
         try {
-            executeD1(
-                `UPDATE wishlist_item_links SET normalized_url = '${escapeSqlValue(normalized_url)}' WHERE id = '${escapeSqlValue(id)}'`,
-                remote,
-            );
-            successCount++;
+            executeD1(sql, remote);
+            successCount += batch.length;
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             console.error(
-                `[backfill] Failed to update row id=${id}: ${message}`,
+                `[backfill] Failed to update batch starting at index ${i}: ${message}`,
             );
-            failures.push(id);
+            // Fall back to per-row updates for this batch to identify failures
+            for (const { id, normalized_url } of batch) {
+                try {
+                    executeD1(
+                        `UPDATE wishlist_item_links SET normalized_url = '${escapeSqlValue(normalized_url)}' WHERE id = '${escapeSqlValue(id)}'`,
+                        remote,
+                    );
+                    successCount++;
+                } catch (rowErr) {
+                    const rowMsg =
+                        rowErr instanceof Error
+                            ? rowErr.message
+                            : String(rowErr);
+                    console.error(
+                        `[backfill] Failed to update row id=${id}: ${rowMsg}`,
+                    );
+                    failures.push(id);
+                }
+            }
         }
     }
 

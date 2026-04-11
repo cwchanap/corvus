@@ -1,10 +1,18 @@
 /**
  * Formats an ISO date string as a relative human-readable time
  * e.g. "just now", "3 minutes ago", "2 days ago"
+ *
+ * Accepts both ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`) and SQLite
+ * `CURRENT_TIMESTAMP` (`YYYY-MM-DD HH:MM:SS`) which is UTC.
  */
 export function formatRelativeTime(isoString: string): string {
     const now = Date.now();
-    const then = new Date(isoString).getTime();
+    // SQLite CURRENT_TIMESTAMP produces "YYYY-MM-DD HH:MM:SS" (UTC).
+    // Convert to explicit ISO 8601 so JS parses it as UTC rather than local.
+    const normalized = isoString.includes(" ")
+        ? isoString.replace(" ", "T") + "Z"
+        : isoString;
+    const then = new Date(normalized).getTime();
     if (!Number.isFinite(then)) return "just now";
     const diffMs = now - then;
     if (diffMs < 0) return "just now";

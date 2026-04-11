@@ -221,6 +221,20 @@ describe("AddItemDialog", () => {
     });
   });
 
+  it("does not render archived as a status option", () => {
+    render(() => (
+      <AddItemDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        onSubmit={mockOnSubmit}
+        categories={mockCategories}
+      />
+    ));
+
+    // Archived should not appear in the add-item flow to avoid stranding items
+    expect(screen.queryByText("Archived")).not.toBeInTheDocument();
+  });
+
   it("does not submit when title is empty or whitespace", async () => {
     render(() => (
       <AddItemDialog
