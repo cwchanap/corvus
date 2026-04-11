@@ -1,6 +1,7 @@
 import { Index, Show } from "solid-js";
 import { Button } from "@repo/ui-components/button";
 import { Input } from "@repo/ui-components/input";
+import type { GraphQLDuplicateUrlItem } from "@repo/common/graphql/types";
 
 export interface LinkItem {
   id?: string;
@@ -28,8 +29,10 @@ interface LinkManagerProps {
   onRemoveAllLinks: () => void;
   emptyMessage?: string;
   emptySubMessage?: string;
-  /** Map of visible link index → duplicate warning (conflicting item title) or null */
-  duplicateWarnings?: Record<number, string | null>;
+  /** Map of visible link index → duplicate warning (conflicting item) or null */
+  duplicateWarnings?: Record<number, GraphQLDuplicateUrlItem | null>;
+  /** Dismiss the duplicate warning for a visible link index */
+  onDismissWarning?: (index: number) => void;
 }
 
 export function LinkManager(props: LinkManagerProps) {
@@ -111,11 +114,21 @@ export function LinkManager(props: LinkManagerProps) {
                   required
                 />
                 <Show when={props.duplicateWarnings?.[index]}>
-                  {(title) => (
-                    <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                      This URL is already saved under &ldquo;{title()}&rdquo;.
-                      You may still save it as a duplicate.
-                    </p>
+                  {(item) => (
+                    <div class="flex items-start gap-2 mt-1">
+                      <p class="text-xs text-amber-600 dark:text-amber-400 flex-1">
+                        This URL is already saved under &ldquo;{item().title}
+                        &rdquo;. You may still save it as a duplicate.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => props.onDismissWarning?.(index)}
+                        class="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 text-xs leading-none shrink-0 mt-0.5"
+                        aria-label="Dismiss duplicate warning"
+                      >
+                        ×
+                      </button>
+                    </div>
                   )}
                 </Show>
 

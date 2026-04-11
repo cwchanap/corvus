@@ -5,6 +5,7 @@ import {
     onCleanup,
     type Accessor,
 } from "solid-js";
+import type { GraphQLDuplicateUrlItem } from "@repo/common/graphql/types";
 import { useCheckDuplicateUrl } from "../lib/graphql/hooks/use-wishlist";
 import { isValidUrl, normalizeHttpUrl } from "../lib/url";
 import type { LinkItem } from "./useLinkManager";
@@ -35,7 +36,7 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
         [],
     );
     const [warningsByUrl, setWarningsByUrl] = createSignal<
-        Record<string, string | null>
+        Record<string, GraphQLDuplicateUrlItem | null>
     >({});
 
     const debounceTimers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -188,7 +189,7 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
                 ...previous,
                 [check.url]:
                     data.isDuplicate && data.conflictingItem
-                        ? data.conflictingItem.title
+                        ? data.conflictingItem
                         : null,
             }));
         }
@@ -196,9 +197,11 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
         setActiveCheck(null);
     });
 
-    const duplicateWarnings = createMemo<Record<number, string | null>>(() => {
+    const duplicateWarnings = createMemo<
+        Record<number, GraphQLDuplicateUrlItem | null>
+    >(() => {
         const warningsByCurrentUrl = warningsByUrl();
-        const warnings: Record<number, string | null> = {};
+        const warnings: Record<number, GraphQLDuplicateUrlItem | null> = {};
 
         visibleLinks().forEach((link, index) => {
             warnings[index] =
@@ -208,11 +211,23 @@ export function useDuplicateUrlCheck(options: UseDuplicateUrlCheckOptions) {
         return warnings;
     });
 
+    const dismissWarning = (visibleIndex: number) => {
+        const link = visibleLinks()[visibleIndex];
+        if (!link) return;
+        const url = normalizeUrl(link.url);
+        setWarningsByUrl((previous) => {
+            const next = { ...previous };
+            delete next[url];
+            return next;
+        });
+    };
+
     onCleanup(cleanup);
 
     return {
         handleUrlChange,
         duplicateWarnings,
+        dismissWarning,
         reset,
         cleanup,
     };

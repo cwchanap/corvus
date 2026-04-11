@@ -39,6 +39,7 @@ describe("AddItemDialog", () => {
     mockUseDuplicateUrlCheck.mockReturnValue({
       handleUrlChange: vi.fn(),
       duplicateWarnings: () => ({}),
+      dismissWarning: vi.fn(),
       reset: vi.fn(),
       cleanup: vi.fn(),
     });

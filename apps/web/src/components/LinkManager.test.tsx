@@ -326,7 +326,9 @@ describe("LinkManager", () => {
           onUpdateLink={() => {}}
           onRemoveLink={() => {}}
           onRemoveAllLinks={() => {}}
-          duplicateWarnings={{ 0: "Other Item" }}
+          duplicateWarnings={{
+            0: { id: "item-1", title: "Other Item", categoryId: "cat-1" },
+          }}
         />
       ));
 
@@ -363,7 +365,9 @@ describe("LinkManager", () => {
           onUpdateLink={() => {}}
           onRemoveLink={() => {}}
           onRemoveAllLinks={() => {}}
-          duplicateWarnings={{ 0: "Duplicate Item" }}
+          duplicateWarnings={{
+            0: { id: "item-2", title: "Duplicate Item", categoryId: "cat-1" },
+          }}
         />
       ));
 
@@ -430,6 +434,63 @@ describe("LinkManager", () => {
       expect(
         screen.queryByText(/This URL is already saved under/, { exact: false }),
       ).not.toBeInTheDocument();
+    });
+
+    it("renders dismiss button when duplicate warning is shown", () => {
+      const links = [
+        {
+          url: "https://example.com/product",
+          description: "",
+          isPrimary: true,
+          isDeleted: false,
+        },
+      ];
+
+      render(() => (
+        <LinkManager
+          links={links}
+          onAddLink={() => {}}
+          onUpdateLink={() => {}}
+          onRemoveLink={() => {}}
+          onRemoveAllLinks={() => {}}
+          duplicateWarnings={{
+            0: { id: "item-1", title: "Other Item", categoryId: "cat-1" },
+          }}
+        />
+      ));
+
+      expect(
+        screen.getByLabelText("Dismiss duplicate warning"),
+      ).toBeInTheDocument();
+    });
+
+    it("calls onDismissWarning when dismiss button is clicked", () => {
+      const mockOnDismissWarning = vi.fn();
+      const links = [
+        {
+          url: "https://example.com/product",
+          description: "",
+          isPrimary: true,
+          isDeleted: false,
+        },
+      ];
+
+      render(() => (
+        <LinkManager
+          links={links}
+          onAddLink={() => {}}
+          onUpdateLink={() => {}}
+          onRemoveLink={() => {}}
+          onRemoveAllLinks={() => {}}
+          onDismissWarning={mockOnDismissWarning}
+          duplicateWarnings={{
+            0: { id: "item-1", title: "Other Item", categoryId: "cat-1" },
+          }}
+        />
+      ));
+
+      fireEvent.click(screen.getByLabelText("Dismiss duplicate warning"));
+      expect(mockOnDismissWarning).toHaveBeenCalledWith(0);
     });
   });
 });

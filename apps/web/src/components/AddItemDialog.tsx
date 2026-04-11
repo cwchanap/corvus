@@ -221,6 +221,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
                 }}
                 onRemoveLink={linkManager.removeLink}
                 onRemoveAllLinks={linkManager.removeAllLinks}
+                onDismissWarning={duplicateUrlCheck.dismissWarning}
                 emptyMessage="No links added yet"
                 emptySubMessage="You can add links now or later after creating the item"
                 duplicateWarnings={duplicateUrlCheck.duplicateWarnings()}

@@ -1,5 +1,6 @@
 import { createRoot, createSignal, untrack } from "solid-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { GraphQLDuplicateUrlItem } from "@repo/common/graphql/types";
 import type { LinkItem } from "./useLinkManager";
 import { useDuplicateUrlCheck } from "./useDuplicateUrlCheck";
 
@@ -86,7 +87,10 @@ describe("useDuplicateUrlCheck", () => {
 
         const queriedUrls: string[] = [];
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let dispose!: () => void;
 
         createRoot((rootDispose) => {
@@ -141,7 +145,11 @@ describe("useDuplicateUrlCheck", () => {
 
         expect(queriedUrls).toContain("https://duplicate.example/item?a=1&b=2");
         expect(duplicateWarnings()).toEqual({
-            0: "Existing duplicate",
+            0: {
+                id: "item-1",
+                title: "Existing duplicate",
+                categoryId: "cat-1",
+            },
         });
 
         dispose();
@@ -164,7 +172,10 @@ describe("useDuplicateUrlCheck", () => {
         ]);
 
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let dispose!: () => void;
 
         createRoot((rootDispose) => {
@@ -230,15 +241,15 @@ describe("useDuplicateUrlCheck", () => {
         vi.advanceTimersByTime(200);
 
         expect(duplicateWarnings()).toEqual({
-            0: "First duplicate",
+            0: { id: "item-1", title: "First duplicate", categoryId: "cat-1" },
             1: null,
         });
 
         vi.advanceTimersByTime(200);
 
         expect(duplicateWarnings()).toEqual({
-            0: "First duplicate",
-            1: "Second duplicate",
+            0: { id: "item-1", title: "First duplicate", categoryId: "cat-1" },
+            1: { id: "item-2", title: "Second duplicate", categoryId: "cat-2" },
         });
 
         dispose();
@@ -261,7 +272,10 @@ describe("useDuplicateUrlCheck", () => {
         ]);
 
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let dispose!: () => void;
 
         createRoot((rootDispose) => {
@@ -313,8 +327,16 @@ describe("useDuplicateUrlCheck", () => {
         vi.advanceTimersByTime(400);
 
         expect(duplicateWarnings()).toEqual({
-            0: "Existing duplicate",
-            1: "Existing duplicate",
+            0: {
+                id: "item-1",
+                title: "Existing duplicate",
+                categoryId: "cat-1",
+            },
+            1: {
+                id: "item-1",
+                title: "Existing duplicate",
+                categoryId: "cat-1",
+            },
         });
 
         handleUrlChange(0, "https://unique.example/item");
@@ -322,7 +344,11 @@ describe("useDuplicateUrlCheck", () => {
 
         expect(duplicateWarnings()).toEqual({
             0: null,
-            1: "Existing duplicate",
+            1: {
+                id: "item-1",
+                title: "Existing duplicate",
+                categoryId: "cat-1",
+            },
         });
 
         dispose();
@@ -352,7 +378,10 @@ describe("useDuplicateUrlCheck", () => {
         ]);
 
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let dispose!: () => void;
 
         createRoot((rootDispose) => {
@@ -409,7 +438,11 @@ describe("useDuplicateUrlCheck", () => {
 
         expect(duplicateWarnings()).toEqual({
             0: null,
-            1: "Existing duplicate",
+            1: {
+                id: "item-1",
+                title: "Existing duplicate",
+                categoryId: "cat-1",
+            },
         });
 
         dispose();
@@ -426,7 +459,10 @@ describe("useDuplicateUrlCheck", () => {
         ]);
 
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let reset!: () => void;
         let dispose!: () => void;
 
@@ -482,7 +518,10 @@ describe("useDuplicateUrlCheck", () => {
         ]);
 
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let dispose!: () => void;
 
         createRoot((rootDispose) => {
@@ -534,7 +573,10 @@ describe("useDuplicateUrlCheck", () => {
         ]);
 
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let dispose!: () => void;
 
         createRoot((rootDispose) => {
@@ -588,7 +630,10 @@ describe("useDuplicateUrlCheck", () => {
         ]);
 
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let dispose!: () => void;
 
         createRoot((rootDispose) => {
@@ -694,7 +739,10 @@ describe("useDuplicateUrlCheck", () => {
         ]);
 
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let dispose!: () => void;
 
         createRoot((rootDispose) => {
@@ -761,7 +809,10 @@ describe("useDuplicateUrlCheck", () => {
         ]);
 
         let handleUrlChange!: (index: number, url: string) => void;
-        let duplicateWarnings!: () => Record<number, string | null>;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
         let dispose!: () => void;
 
         createRoot((rootDispose) => {
@@ -811,8 +862,16 @@ describe("useDuplicateUrlCheck", () => {
         vi.advanceTimersByTime(400);
 
         expect(duplicateWarnings()).toEqual({
-            0: "Existing duplicate",
-            1: "Existing duplicate",
+            0: {
+                id: "item-1",
+                title: "Existing duplicate",
+                categoryId: "cat-1",
+            },
+            1: {
+                id: "item-1",
+                title: "Existing duplicate",
+                categoryId: "cat-1",
+            },
         });
 
         handleUrlChange(0, "https://unique.example/item");
@@ -820,7 +879,90 @@ describe("useDuplicateUrlCheck", () => {
 
         expect(duplicateWarnings()).toEqual({
             0: null,
-            1: "Existing duplicate",
+            1: {
+                id: "item-1",
+                title: "Existing duplicate",
+                categoryId: "cat-1",
+            },
+        });
+
+        dispose();
+    });
+
+    it("dismissWarning clears the warning for a visible link", () => {
+        const [links, setLinks] = createSignal<LinkItem[]>([
+            {
+                url: "",
+                description: "",
+                isPrimary: false,
+                isNew: true,
+            },
+        ]);
+
+        let handleUrlChange!: (index: number, url: string) => void;
+        let duplicateWarnings!: () => Record<
+            number,
+            GraphQLDuplicateUrlItem | null
+        >;
+        let dismissWarning!: (index: number) => void;
+        let dispose!: () => void;
+
+        createRoot((rootDispose) => {
+            dispose = rootDispose;
+            mockUseCheckDuplicateUrl.mockImplementation(
+                (urlAccessor: () => string) => ({
+                    get data() {
+                        if (
+                            urlAccessor() === "https://duplicate.example/item"
+                        ) {
+                            return {
+                                isDuplicate: true,
+                                conflictingItem: {
+                                    id: "item-1",
+                                    title: "Existing duplicate",
+                                    categoryId: "cat-1",
+                                },
+                            };
+                        }
+                        return undefined;
+                    },
+                }),
+            );
+
+            const hook = useDuplicateUrlCheck({
+                links,
+                updateLink: (index, field, value) => {
+                    setLinks((previous) =>
+                        previous.map((link, itemIndex) =>
+                            itemIndex === index
+                                ? ({
+                                      ...link,
+                                      [field]: value,
+                                  } as LinkItem)
+                                : link,
+                        ),
+                    );
+                },
+            });
+
+            handleUrlChange = hook.handleUrlChange;
+            duplicateWarnings = hook.duplicateWarnings;
+            dismissWarning = hook.dismissWarning;
+        });
+
+        handleUrlChange(0, "https://duplicate.example/item");
+        vi.advanceTimersByTime(400);
+
+        expect(duplicateWarnings()[0]).toEqual({
+            id: "item-1",
+            title: "Existing duplicate",
+            categoryId: "cat-1",
+        });
+
+        dismissWarning(0);
+
+        expect(duplicateWarnings()).toEqual({
+            0: null,
         });
 
         dispose();
