@@ -11,7 +11,10 @@ import type {
 } from "@repo/common/types/wishlist-record";
 import { useRecentItems } from "../lib/graphql/hooks/use-wishlist";
 import { adaptItem } from "../lib/graphql/adapters";
-import { formatRelativeTime } from "@repo/common/utils/format-relative-time";
+import {
+  formatRelativeTime,
+  parseDateAsUTC,
+} from "@repo/common/utils/format-relative-time";
 
 interface RecentItemsWidgetProps {
   categories: WishlistCategoryRecord[];
@@ -78,7 +81,7 @@ export function RecentItemsWidget(props: RecentItemsWidgetProps) {
                     </div>
                     <span
                       class="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0"
-                      title={new Date(item.created_at).toLocaleString()}
+                      title={parseDateAsUTC(item.created_at).toLocaleString()}
                     >
                       {formatRelativeTime(item.created_at)}
                     </span>
