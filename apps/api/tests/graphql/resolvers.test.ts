@@ -1958,6 +1958,31 @@ describe("Query.checkDuplicateUrl", () => {
         consoleErrorSpy.mockRestore();
     });
 
+    it("logs [invalid-url] when the URL cannot be parsed during error redaction", async () => {
+        const consoleErrorSpy = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => {});
+        mockWishlistService.checkDuplicateUrl.mockRejectedValueOnce(
+            new Error("DB down"),
+        );
+
+        const ctx = createAuthenticatedContext();
+        await expect(
+            invokeResolver(
+                "Query",
+                "checkDuplicateUrl",
+                { url: "not-a-valid-url" },
+                ctx,
+            ),
+        ).rejects.toThrow("Failed to check for duplicate URL");
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            "[resolver] checkDuplicateUrl failed",
+            expect.objectContaining({ urlOrigin: "[invalid-url]" }),
+        );
+        consoleErrorSpy.mockRestore();
+    });
+
     it("lazy-loads links for conflicting items returned by duplicate checks", async () => {
         mockWishlistService.checkDuplicateUrl.mockResolvedValueOnce({
             isDuplicate: true,
@@ -2041,6 +2066,18 @@ describe("Query.recentItems", () => {
             "user-1",
             5,
         );
+    });
+
+    it("throws INTERNAL_SERVER_ERROR when service throws", async () => {
+        mockWishlistService.getRecentItems.mockRejectedValueOnce(
+            new Error("DB timeout"),
+        );
+        const ctx = createAuthenticatedContext();
+        await expect(
+            invokeResolver("Query", "recentItems", { limit: 5 }, ctx),
+        ).rejects.toMatchObject({
+            extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
     });
 });
 
@@ -2265,5 +2302,64 @@ describe("Mutation.updateItem additional input fields", () => {
             "user-1",
             expect.objectContaining({ status: "archived" }),
         );
+    });
+
+    it("throws BAD_USER_INPUT when priority is below 1 (0)", async () => {
+        const ctx = createAuthenticatedContext();
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateItem",
+                { id: "item-1", input: { priority: 0 } },
+                ctx,
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "BAD_USER_INPUT" } });
+        expect(mockWishlistService.updateItem).not.toHaveBeenCalled();
+    });
+
+    it("throws BAD_USER_INPUT when priority is above 5 (6)", async () => {
+        const ctx = createAuthenticatedContext();
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "updateItem",
+                { id: "item-1", input: { priority: 6 } },
+                ctx,
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "BAD_USER_INPUT" } });
+        expect(mockWishlistService.updateItem).not.toHaveBeenCalled();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Mutation.createItem priority validation
+// ---------------------------------------------------------------------------
+describe("Mutation.createItem priority validation", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("throws BAD_USER_INPUT when priority is below 1 (0)", async () => {
+        const ctx = createAuthenticatedContext();
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "createItem",
+                { input: { title: "My Item", priority: 0 } },
+                ctx,
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "BAD_USER_INPUT" } });
+        expect(mockWishlistService.createItem).not.toHaveBeenCalled();
+    });
+
+    it("throws BAD_USER_INPUT when priority is above 5 (6)", async () => {
+        const ctx = createAuthenticatedContext();
+        await expect(
+            invokeResolver(
+                "Mutation",
+                "createItem",
+                { input: { title: "My Item", priority: 6 } },
+                ctx,
+            ),
+        ).rejects.toMatchObject({ extensions: { code: "BAD_USER_INPUT" } });
+        expect(mockWishlistService.createItem).not.toHaveBeenCalled();
     });
 });
