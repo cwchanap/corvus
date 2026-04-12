@@ -2286,6 +2286,82 @@ describe("WishlistService", () => {
             expect(selectMock).toHaveBeenCalledTimes(1);
         });
 
+        it("returns items with empty links array when no links exist for those items", async () => {
+            const items: WishlistItem[] = [
+                {
+                    id: "item-1",
+                    user_id: "user-1",
+                    category_id: null,
+                    title: "Item With No Links",
+                    description: null,
+                    favicon: null,
+                    status: "want" as const,
+                    priority: null,
+                    created_at: "2024-01-05T00:00:00.000Z",
+                    updated_at: "2024-01-05T00:00:00.000Z",
+                },
+                {
+                    id: "item-2",
+                    user_id: "user-1",
+                    category_id: null,
+                    title: "Another Item Without Links",
+                    description: null,
+                    favicon: null,
+                    status: "want" as const,
+                    priority: null,
+                    created_at: "2024-01-04T00:00:00.000Z",
+                    updated_at: "2024-01-04T00:00:00.000Z",
+                },
+            ];
+
+            // Links query returns only a link for item-1, not item-2
+            const links: WishlistItemLink[] = [
+                {
+                    id: "link-1",
+                    item_id: "item-1",
+                    url: "https://example.com",
+                    normalized_url: "https://example.com",
+                    description: null,
+                    is_primary: true,
+                    created_at: "2024-01-05T00:00:00.000Z",
+                    updated_at: "2024-01-05T00:00:00.000Z",
+                },
+            ];
+
+            const itemsAllMock = vi.fn().mockResolvedValue(items);
+            const itemsLimitMock = vi.fn(() => ({ all: itemsAllMock }));
+            const itemsOrderByMock = vi.fn(() => ({ limit: itemsLimitMock }));
+            const itemsWhereMock = vi.fn(() => ({
+                orderBy: itemsOrderByMock,
+            }));
+            const itemsFromMock = vi.fn(() => ({ where: itemsWhereMock }));
+
+            const linksAllMock = vi.fn().mockResolvedValue(links);
+            const linksOrderByMock = vi.fn(() => ({ all: linksAllMock }));
+            const linksWhereMock = vi.fn(() => ({ orderBy: linksOrderByMock }));
+            const linksFromMock = vi.fn(() => ({ where: linksWhereMock }));
+
+            let selectCallCount = 0;
+            const selectMock = vi.fn(() => {
+                selectCallCount++;
+                if (selectCallCount === 1) return { from: itemsFromMock };
+                return { from: linksFromMock };
+            }) as Mock;
+
+            const fakeDb: Partial<DB> = {
+                select: selectMock,
+            };
+
+            const service = new WishlistService(fakeDb as DB);
+            const result = await service.getRecentItems("user-1", 5);
+
+            expect(result).toHaveLength(2);
+            // item-1 has a link
+            expect(result[0]).toEqual({ ...items[0], links: [links[0]] });
+            // item-2 has no links – the ?? [] fallback should return an empty array
+            expect(result[1]).toEqual({ ...items[1], links: [] });
+        });
+
         it("clamps limit to MAX_RECENT_ITEMS (50)", async () => {
             const itemsAllMock = vi.fn().mockResolvedValue([]);
             const itemsLimitMock = vi.fn(() => ({ all: itemsAllMock }));
