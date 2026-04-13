@@ -2286,7 +2286,7 @@ describe("WishlistService", () => {
             expect(selectMock).toHaveBeenCalledTimes(1);
         });
 
-        it("returns items with empty links array when no links exist for those items", async () => {
+        it("returns links: [] for items with no associated links while preserving links for items that have them", async () => {
             const items: WishlistItem[] = [
                 {
                     id: "item-1",
