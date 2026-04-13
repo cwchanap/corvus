@@ -1925,62 +1925,68 @@ describe("Query.checkDuplicateUrl", () => {
         const consoleErrorSpy = vi
             .spyOn(console, "error")
             .mockImplementation(() => {});
-        mockWishlistService.checkDuplicateUrl.mockRejectedValueOnce(
-            new Error("DB down"),
-        );
+        try {
+            mockWishlistService.checkDuplicateUrl.mockRejectedValueOnce(
+                new Error("DB down"),
+            );
 
-        const ctx = createAuthenticatedContext();
-        await expect(
-            invokeResolver(
-                "Query",
-                "checkDuplicateUrl",
-                {
-                    url: "https://example.com/item?token=secret123",
-                    excludeItemId: undefined,
-                },
-                ctx,
-            ),
-        ).rejects.toThrow("Failed to check for duplicate URL");
+            const ctx = createAuthenticatedContext();
+            await expect(
+                invokeResolver(
+                    "Query",
+                    "checkDuplicateUrl",
+                    {
+                        url: "https://example.com/item?token=secret123",
+                        excludeItemId: undefined,
+                    },
+                    ctx,
+                ),
+            ).rejects.toThrow("Failed to check for duplicate URL");
 
-        // Verify the URL was redacted — origin + pathname only, no query params
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-            "[resolver] checkDuplicateUrl failed",
-            expect.objectContaining({
-                urlOrigin: "https://example.com/item",
-            }),
-        );
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.not.objectContaining({
-                url: expect.anything(),
-            }),
-        );
-        consoleErrorSpy.mockRestore();
+            // Verify the URL was redacted — origin + pathname only, no query params
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                "[resolver] checkDuplicateUrl failed",
+                expect.objectContaining({
+                    urlOrigin: "https://example.com/item",
+                }),
+            );
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.not.objectContaining({
+                    url: expect.anything(),
+                }),
+            );
+        } finally {
+            consoleErrorSpy.mockRestore();
+        }
     });
 
     it("logs [invalid-url] when the URL cannot be parsed during error redaction", async () => {
         const consoleErrorSpy = vi
             .spyOn(console, "error")
             .mockImplementation(() => {});
-        mockWishlistService.checkDuplicateUrl.mockRejectedValueOnce(
-            new Error("DB down"),
-        );
+        try {
+            mockWishlistService.checkDuplicateUrl.mockRejectedValueOnce(
+                new Error("DB down"),
+            );
 
-        const ctx = createAuthenticatedContext();
-        await expect(
-            invokeResolver(
-                "Query",
-                "checkDuplicateUrl",
-                { url: "not-a-valid-url" },
-                ctx,
-            ),
-        ).rejects.toThrow("Failed to check for duplicate URL");
+            const ctx = createAuthenticatedContext();
+            await expect(
+                invokeResolver(
+                    "Query",
+                    "checkDuplicateUrl",
+                    { url: "not-a-valid-url" },
+                    ctx,
+                ),
+            ).rejects.toThrow("Failed to check for duplicate URL");
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-            "[resolver] checkDuplicateUrl failed",
-            expect.objectContaining({ urlOrigin: "[invalid-url]" }),
-        );
-        consoleErrorSpy.mockRestore();
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                "[resolver] checkDuplicateUrl failed",
+                expect.objectContaining({ urlOrigin: "[invalid-url]" }),
+            );
+        } finally {
+            consoleErrorSpy.mockRestore();
+        }
     });
 
     it("lazy-loads links for conflicting items returned by duplicate checks", async () => {
