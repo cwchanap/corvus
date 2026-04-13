@@ -85,6 +85,16 @@ describe("scripts/backfill-normalized-urls", () => {
         expect(consoleLogSpy).toHaveBeenCalledWith(
             expect.stringContaining("Nothing to update"),
         );
+
+        // Verify execFileSync is invoked with a sane cwd (guards against
+        // import.meta.dirname resolving to an unexpected/undefined value)
+        const options = execFileSyncMock.mock.calls[0]?.[2] as {
+            cwd?: string;
+            encoding?: string;
+        };
+        expect(typeof options.cwd).toBe("string");
+        expect(options.cwd).not.toContain("undefined");
+        expect(options.cwd!.length).toBeGreaterThan(0);
     });
 
     // -------------------------------------------------------------------------
