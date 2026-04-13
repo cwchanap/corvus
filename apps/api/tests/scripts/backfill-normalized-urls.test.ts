@@ -25,8 +25,12 @@ describe("scripts/backfill-normalized-urls", () => {
     let exitSpy: ReturnType<typeof vi.spyOn>;
     let consoleLogSpy: ReturnType<typeof vi.spyOn>;
     let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+    let originalArgv: string[];
 
     beforeEach(async () => {
+        // Snapshot argv so afterEach can do a full restore, not just a splice
+        originalArgv = [...process.argv];
+
         // Reset module registry so each test re-executes main() fresh
         vi.resetModules();
 
@@ -63,9 +67,8 @@ describe("scripts/backfill-normalized-urls", () => {
         exitSpy.mockRestore();
         consoleLogSpy.mockRestore();
         consoleErrorSpy.mockRestore();
-        // Remove any --remote flag that tests may have pushed
-        const remoteIdx = process.argv.indexOf("--remote");
-        if (remoteIdx !== -1) process.argv.splice(remoteIdx, 1);
+        // Fully restore argv to the snapshot taken in beforeEach
+        process.argv.splice(0, process.argv.length, ...originalArgv);
     });
 
     // -------------------------------------------------------------------------
