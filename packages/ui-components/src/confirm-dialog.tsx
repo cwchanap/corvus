@@ -28,6 +28,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Backdrop */}
         <div
+          data-testid="confirm-dialog-backdrop"
           class="fixed inset-0 bg-black/50 backdrop-blur-sm"
           onClick={handleCancel}
         />
