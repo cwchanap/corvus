@@ -484,4 +484,9 @@ describe("getRecentItems", () => {
         const result = await getRecentItems(10);
         expect(result).toEqual([]);
     });
+
+    it("propagates errors from graphqlRequest", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Network error"));
+        await expect(getRecentItems()).rejects.toThrow("Network error");
+    });
 });

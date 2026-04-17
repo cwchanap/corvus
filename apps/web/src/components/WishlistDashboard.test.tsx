@@ -842,10 +842,9 @@ describe("WishlistDashboard", () => {
       });
 
       // Click the semi-transparent backdrop (bg-black/50 div)
-      const backdrop = document.querySelector(
-        ".fixed.inset-0.bg-black\\/50",
-      ) as Element;
-      fireEvent.click(backdrop);
+      const backdrop = document.querySelector(".fixed.inset-0.bg-black\\/50");
+      expect(backdrop).toBeInTheDocument();
+      fireEvent.click(backdrop!);
 
       await waitFor(() => {
         expect(
@@ -875,37 +874,9 @@ describe("WishlistDashboard", () => {
   });
 
   describe("Bulk Operations – Select All / Deselect All", () => {
-    const items = [
-      {
-        ...{
-          id: "item-1",
-          title: "Laptop",
-          description: "Gaming laptop",
-          status: "want" as const,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          user_id: "user-uuid-1",
-          category_id: "cat-1",
-          links: [],
-        },
-        id: "item-1",
-        title: "Laptop",
-      },
-      {
-        ...{
-          id: "item-2",
-          title: "Mouse",
-          description: "",
-          status: "want" as const,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          user_id: "user-uuid-1",
-          category_id: "cat-1",
-          links: [],
-        },
-        id: "item-2",
-        title: "Mouse",
-      },
+    const items: WishlistItemRecord[] = [
+      { ...mockItem, id: "item-1", title: "Laptop" },
+      { ...mockItem, id: "item-2", title: "Mouse", description: "" },
     ];
 
     const renderWithItems = () => {
