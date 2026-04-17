@@ -4,6 +4,7 @@ import {
     getCategories,
     getItem,
     checkDuplicateUrl,
+    getRecentItems,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -23,6 +24,7 @@ import {
     CATEGORIES_QUERY,
     ITEM_QUERY,
     CHECK_DUPLICATE_URL_QUERY,
+    RECENT_ITEMS_QUERY,
     CREATE_CATEGORY_MUTATION,
     UPDATE_CATEGORY_MUTATION,
     DELETE_CATEGORY_MUTATION,
@@ -451,5 +453,35 @@ describe("batchMoveItems", () => {
         expect(mockedRequest).toHaveBeenCalledWith(BATCH_MOVE_ITEMS_MUTATION, {
             input: { itemIds: ["item-1"], categoryId: null },
         });
+    });
+});
+
+describe("getRecentItems", () => {
+    it("returns array of recent wishlist items", async () => {
+        const mockItems = [mockItem];
+        mockedRequest.mockResolvedValueOnce({ recentItems: mockItems });
+
+        const result = await getRecentItems();
+
+        expect(result).toEqual(mockItems);
+        expect(mockedRequest).toHaveBeenCalledWith(RECENT_ITEMS_QUERY, {
+            limit: undefined,
+        });
+    });
+
+    it("passes limit parameter when provided", async () => {
+        mockedRequest.mockResolvedValueOnce({ recentItems: [] });
+
+        await getRecentItems(5);
+
+        expect(mockedRequest).toHaveBeenCalledWith(RECENT_ITEMS_QUERY, {
+            limit: 5,
+        });
+    });
+
+    it("returns empty array when no recent items", async () => {
+        mockedRequest.mockResolvedValueOnce({ recentItems: [] });
+        const result = await getRecentItems(10);
+        expect(result).toEqual([]);
     });
 });

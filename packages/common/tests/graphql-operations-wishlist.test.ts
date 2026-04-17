@@ -3,6 +3,8 @@ import {
     getWishlist,
     getCategories,
     getItem,
+    checkDuplicateUrl,
+    getRecentItems,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -18,6 +20,8 @@ import {
     WISHLIST_QUERY,
     CATEGORIES_QUERY,
     ITEM_QUERY,
+    CHECK_DUPLICATE_URL_QUERY,
+    RECENT_ITEMS_QUERY,
     CREATE_CATEGORY_MUTATION,
     UPDATE_CATEGORY_MUTATION,
     DELETE_CATEGORY_MUTATION,
@@ -816,5 +820,125 @@ describe("batchMoveItems", () => {
         await expect(
             batchMoveItems({ itemIds: ["item-1"], categoryId: "cat-1" }),
         ).rejects.toThrow("Unauthorized");
+    });
+});
+
+describe("checkDuplicateUrl", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("returns duplicate check result when url is a duplicate", async () => {
+        const mockResult = {
+            isDuplicate: true,
+            conflictingItem: { id: "item-1", title: "Existing Item" },
+        };
+        mockedRequest.mockResolvedValueOnce({ checkDuplicateUrl: mockResult });
+
+        const result = await checkDuplicateUrl("https://example.com");
+
+        expect(result).toEqual(mockResult);
+        expect(mockedRequest).toHaveBeenCalledWith(
+            CHECK_DUPLICATE_URL_QUERY,
+            { url: "https://example.com", excludeItemId: undefined },
+            undefined,
+        );
+    });
+
+    it("returns non-duplicate result", async () => {
+        const mockResult = { isDuplicate: false, conflictingItem: null };
+        mockedRequest.mockResolvedValueOnce({ checkDuplicateUrl: mockResult });
+
+        const result = await checkDuplicateUrl("https://new-url.com");
+
+        expect(result.isDuplicate).toBe(false);
+        expect(result.conflictingItem).toBeNull();
+    });
+
+    it("passes excludeItemId when provided", async () => {
+        mockedRequest.mockResolvedValueOnce({
+            checkDuplicateUrl: { isDuplicate: false, conflictingItem: null },
+        });
+
+        await checkDuplicateUrl("https://example.com", "item-99");
+
+        expect(mockedRequest).toHaveBeenCalledWith(
+            CHECK_DUPLICATE_URL_QUERY,
+            { url: "https://example.com", excludeItemId: "item-99" },
+            undefined,
+        );
+    });
+
+    it("passes options to graphqlRequest", async () => {
+        mockedRequest.mockResolvedValueOnce({
+            checkDuplicateUrl: { isDuplicate: false, conflictingItem: null },
+        });
+        const options = { endpoint: "https://api.example.com/graphql" };
+
+        await checkDuplicateUrl("https://example.com", undefined, options);
+
+        expect(mockedRequest).toHaveBeenCalledWith(
+            CHECK_DUPLICATE_URL_QUERY,
+            expect.anything(),
+            options,
+        );
+    });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Not found"));
+        await expect(checkDuplicateUrl("https://example.com")).rejects.toThrow(
+            "Not found",
+        );
+    });
+});
+
+describe("getRecentItems", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("returns recent items array", async () => {
+        mockedRequest.mockResolvedValueOnce({ recentItems: [mockItem] });
+
+        const result = await getRecentItems();
+
+        expect(result).toEqual([mockItem]);
+        expect(mockedRequest).toHaveBeenCalledWith(
+            RECENT_ITEMS_QUERY,
+            { limit: undefined },
+            undefined,
+        );
+    });
+
+    it("passes limit parameter when provided", async () => {
+        mockedRequest.mockResolvedValueOnce({ recentItems: [] });
+
+        await getRecentItems(5);
+
+        expect(mockedRequest).toHaveBeenCalledWith(
+            RECENT_ITEMS_QUERY,
+            { limit: 5 },
+            undefined,
+        );
+    });
+
+    it("passes options to graphqlRequest", async () => {
+        mockedRequest.mockResolvedValueOnce({ recentItems: [] });
+        const options = { endpoint: "https://api.example.com/graphql" };
+
+        await getRecentItems(3, options);
+
+        expect(mockedRequest).toHaveBeenCalledWith(
+            RECENT_ITEMS_QUERY,
+            { limit: 3 },
+            options,
+        );
+    });
+
+    it("returns empty array when no recent items", async () => {
+        mockedRequest.mockResolvedValueOnce({ recentItems: [] });
+        const result = await getRecentItems();
+        expect(result).toEqual([]);
+    });
+
+    it("propagates errors", async () => {
+        mockedRequest.mockRejectedValueOnce(new Error("Unauthorized"));
+        await expect(getRecentItems()).rejects.toThrow("Unauthorized");
     });
 });

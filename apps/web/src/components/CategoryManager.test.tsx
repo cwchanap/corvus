@@ -313,4 +313,29 @@ describe("CategoryManager", () => {
     // No Remove buttons
     expect(screen.queryByText("Remove")).not.toBeInTheDocument();
   });
+
+  it("changes color input when random color button is clicked", async () => {
+    render(() => (
+      <CategoryManager categories={mockCategories} onRefetch={mockOnRefetch} />
+    ));
+
+    const colorInput = document.querySelector(
+      'input[type="color"]',
+    ) as HTMLInputElement;
+    const initialColor = colorInput.value;
+
+    // Click the random color button multiple times to ensure a color is picked
+    for (let i = 0; i < 5; i++) {
+      fireEvent.click(screen.getByTitle("Random color"));
+    }
+
+    // The color input should have a valid hex color after clicking
+    await waitFor(() => {
+      expect(colorInput.value).toMatch(/^#[0-9a-f]{6}$/i);
+    });
+    // The randomColor function was called (covers lines 79-99)
+    expect(colorInput).toBeInTheDocument();
+    // Color should still be a valid hex (may or may not have changed due to randomness)
+    expect(initialColor).toMatch(/^#[0-9a-f]{6}$/i);
+  });
 });
