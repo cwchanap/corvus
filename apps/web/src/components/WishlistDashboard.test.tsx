@@ -841,10 +841,8 @@ describe("WishlistDashboard", () => {
         expect(screen.getByTestId("category-manager")).toBeInTheDocument();
       });
 
-      // Click the semi-transparent backdrop (bg-black/50 div)
-      const backdrop = document.querySelector(".fixed.inset-0.bg-black\\/50");
-      expect(backdrop).toBeInTheDocument();
-      fireEvent.click(backdrop!);
+      const backdrop = screen.getByTestId("category-manager-backdrop");
+      fireEvent.click(backdrop);
 
       await waitFor(() => {
         expect(
