@@ -255,19 +255,27 @@ describe("Profile route", () => {
       expect(memberSinceSection?.textContent).toContain("—");
     });
 
-    it("returns dash when String(value) throws (Symbol input hits catch block)", () => {
+    it("returns dash when value conversion throws (covers catch block)", () => {
+      const throwing = {
+        [Symbol.toPrimitive]() {
+          throw new Error("boom");
+        },
+        toString() {
+          throw new Error("boom");
+        },
+      };
       mockedUseAuth.mockReturnValue({
         isLoading: () => false,
         isAuthenticated: () => true,
         user: () => ({
           ...mockUser,
-          createdAt: Symbol("test") as unknown as string,
+          createdAt: throwing as unknown as string,
           updatedAt: mockUser.updatedAt,
         }),
       });
 
       render(() => <Profile />);
-      // Symbol → String(Symbol) throws TypeError → catch returns "—"
+      // new Date(throwing) calls Symbol.toPrimitive which throws → catch returns "—"
       const memberSinceSection = screen
         .getByText("Member Since")
         .closest(".grid");
