@@ -234,4 +234,44 @@ describe("Profile route", () => {
       expect(screen.queryAllByText("—").length).toBe(0);
     });
   });
+
+  describe("formatDate unknown value types", () => {
+    it("formats an arbitrary object via String() conversion (shows dash for invalid date)", () => {
+      mockedUseAuth.mockReturnValue({
+        isLoading: () => false,
+        isAuthenticated: () => true,
+        user: () => ({
+          ...mockUser,
+          createdAt: {} as unknown as string,
+          updatedAt: mockUser.updatedAt,
+        }),
+      });
+
+      render(() => <Profile />);
+      // {} → new Date("[object Object]") → invalid date → "—"
+      const memberSinceSection = screen
+        .getByText("Member Since")
+        .closest(".grid");
+      expect(memberSinceSection?.textContent).toContain("—");
+    });
+
+    it("returns dash when String(value) throws (Symbol input hits catch block)", () => {
+      mockedUseAuth.mockReturnValue({
+        isLoading: () => false,
+        isAuthenticated: () => true,
+        user: () => ({
+          ...mockUser,
+          createdAt: Symbol("test") as unknown as string,
+          updatedAt: mockUser.updatedAt,
+        }),
+      });
+
+      render(() => <Profile />);
+      // Symbol → String(Symbol) throws TypeError → catch returns "—"
+      const memberSinceSection = screen
+        .getByText("Member Since")
+        .closest(".grid");
+      expect(memberSinceSection?.textContent).toContain("—");
+    });
+  });
 });

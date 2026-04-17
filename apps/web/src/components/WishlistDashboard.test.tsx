@@ -830,6 +830,140 @@ describe("WishlistDashboard", () => {
     });
   });
 
+  describe("Category Manager Modal", () => {
+    it("closes category manager when backdrop overlay is clicked", async () => {
+      mockWishlistQuery.data = createMockWishlistData();
+      render(() => <WishlistDashboard user={mockUser} />);
+
+      // Open the category manager
+      fireEvent.click(screen.getByTitle("Manage Categories"));
+      await waitFor(() => {
+        expect(screen.getByTestId("category-manager")).toBeInTheDocument();
+      });
+
+      // Click the semi-transparent backdrop (bg-black/50 div)
+      const backdrop = document.querySelector(
+        ".fixed.inset-0.bg-black\\/50",
+      ) as Element;
+      fireEvent.click(backdrop);
+
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId("category-manager"),
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it("closes category manager when the manager calls onClose", async () => {
+      mockWishlistQuery.data = createMockWishlistData();
+      render(() => <WishlistDashboard user={mockUser} />);
+
+      fireEvent.click(screen.getByTitle("Manage Categories"));
+      await waitFor(() => {
+        expect(screen.getByTestId("category-manager")).toBeInTheDocument();
+      });
+
+      // The mocked CategoryManager renders a "Close" button that calls onClose
+      fireEvent.click(screen.getByText("Close"));
+
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId("category-manager"),
+        ).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("Bulk Operations – Select All / Deselect All", () => {
+    const items = [
+      {
+        ...{
+          id: "item-1",
+          title: "Laptop",
+          description: "Gaming laptop",
+          status: "want" as const,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_id: "user-uuid-1",
+          category_id: "cat-1",
+          links: [],
+        },
+        id: "item-1",
+        title: "Laptop",
+      },
+      {
+        ...{
+          id: "item-2",
+          title: "Mouse",
+          description: "",
+          status: "want" as const,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_id: "user-uuid-1",
+          category_id: "cat-1",
+          links: [],
+        },
+        id: "item-2",
+        title: "Mouse",
+      },
+    ];
+
+    const renderWithItems = () => {
+      mockWishlistQuery.data = createMockWishlistData({
+        items,
+        pagination: { total_items: items.length, total_pages: 1 },
+      });
+      render(() => <WishlistDashboard user={mockUser} />);
+    };
+
+    it("calls selectAll when Select All button is clicked in BulkActionBar", async () => {
+      renderWithItems();
+
+      // Enter selection mode
+      fireEvent.click(screen.getByText("Select"));
+
+      // Select one item so the BulkActionBar appears
+      const checkbox = screen.getByLabelText("Select Laptop");
+      fireEvent.click(checkbox);
+
+      await waitFor(() => {
+        expect(screen.getByText("item selected")).toBeInTheDocument();
+      });
+
+      // Click Select All
+      const selectAllBtn = screen.getByText(/Select All/);
+      fireEvent.click(selectAllBtn);
+
+      // After selecting all, button should show "Deselect All"
+      await waitFor(() => {
+        expect(screen.getByText("Deselect All")).toBeInTheDocument();
+      });
+    });
+
+    it("calls clearSelection when Deselect All is clicked", async () => {
+      renderWithItems();
+
+      fireEvent.click(screen.getByText("Select"));
+
+      // Select all checkboxes manually
+      for (const item of items) {
+        fireEvent.click(screen.getByLabelText(`Select ${item.title}`));
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText("Deselect All")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Deselect All"));
+
+      // After deselecting all, the BulkActionBar's selected count goes to 0
+      // and the bar hides (selectedCount > 0 is the Show condition)
+      await waitFor(() => {
+        expect(screen.queryByText("Delete Selected")).not.toBeInTheDocument();
+      });
+    });
+  });
+
   describe("Edge Cases", () => {
     it("should handle user with long name", () => {
       const longNameUser = {
