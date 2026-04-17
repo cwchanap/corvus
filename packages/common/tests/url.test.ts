@@ -50,4 +50,27 @@ describe("normalizeHttpUrl", () => {
             "https://example.com/#section",
         );
     });
+
+    it("normalizes double trailing slash to origin only", () => {
+        expect(normalizeHttpUrl("https://example.com//")).toBe(
+            "https://example.com",
+        );
+    });
+
+    it("preserves username and password credentials in URLs", () => {
+        expect(normalizeHttpUrl("https://user:pass@example.com/item")).toBe(
+            "https://user:pass@example.com/item",
+        );
+    });
+
+    it("preserves username-only credential in URLs", () => {
+        expect(normalizeHttpUrl("https://user@example.com/item")).toBe(
+            "https://user@example.com/item",
+        );
+    });
+
+    it("returns empty string for empty input", () => {
+        expect(normalizeHttpUrl("")).toBe("");
+        expect(normalizeHttpUrl("   ")).toBe("");
+    });
 });
