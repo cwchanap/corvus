@@ -884,6 +884,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
       <Show when={categoryManagerOpen()}>
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
+            data-testid="category-manager-backdrop"
             class="fixed inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setCategoryManagerOpen(false)}
           />
