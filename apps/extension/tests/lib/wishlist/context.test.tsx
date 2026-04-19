@@ -171,12 +171,10 @@ describe("WishlistDataProvider", () => {
 
   it("updates categoryId when setCategoryId is called", () => {
     let setCategoryIdFn: ((id: string | null) => void) | null = null;
-    let categoryId: string | null = null;
 
     function Consumer() {
       const ctx = useWishlistData();
       setCategoryIdFn = ctx.setCategoryId;
-      categoryId = ctx.categoryId();
       return <span data-testid="cat">{ctx.categoryId() ?? "null"}</span>;
     }
 
