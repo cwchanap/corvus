@@ -22,7 +22,7 @@ export default defineConfig({
         },
     },
     resolve: {
-        conditions: ["module", "browser", "development|production"],
+        conditions: ["module", "browser", "development"],
         extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"],
     },
 });
