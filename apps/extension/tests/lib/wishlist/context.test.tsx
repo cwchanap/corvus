@@ -247,8 +247,10 @@ describe("useWishlistData", () => {
       return <div />;
     }
 
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => {
       render(() => <ConsumerWithoutProvider />);
     }).toThrow("useWishlistData must be used within a WishlistDataProvider");
+    spy.mockRestore();
   });
 });
