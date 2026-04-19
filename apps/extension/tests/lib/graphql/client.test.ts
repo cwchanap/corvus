@@ -98,7 +98,7 @@ describe("graphqlRequest (extension client wrapper)", () => {
     );
   });
 
-  it("uses localhost endpoint by default", async () => {
+  it("uses a /graphql endpoint by default", async () => {
     mockedBaseRequest.mockResolvedValueOnce({});
 
     await graphqlRequest("query { me { id } }");
@@ -107,7 +107,7 @@ describe("graphqlRequest (extension client wrapper)", () => {
       expect.any(String),
       undefined,
       expect.objectContaining({
-        endpoint: expect.stringContaining("localhost"),
+        endpoint: expect.stringContaining("/graphql"),
       }),
     );
   });

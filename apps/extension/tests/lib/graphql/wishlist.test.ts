@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   getWishlist,
   getCategories,
@@ -80,7 +80,6 @@ const mockPagination = {
   hasPreviousPage: false,
 };
 
-beforeEach(() => vi.clearAllMocks());
 
 describe("getWishlist", () => {
   it("returns wishlist data without arguments", async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { getCurrentUser, register, login, logout } from "../../../src/lib/graphql/auth";
 import * as extClient from "../../../src/lib/graphql/client";
 import {
@@ -23,8 +23,6 @@ const mockUser = {
 };
 
 describe("getCurrentUser", () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it("returns user when authenticated", async () => {
     mockedRequest.mockResolvedValueOnce({ me: mockUser });
 
@@ -50,8 +48,6 @@ describe("getCurrentUser", () => {
 });
 
 describe("register", () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it("returns auth payload on successful registration", async () => {
     const mockPayload = { success: true, user: mockUser, error: null };
     mockedRequest.mockResolvedValueOnce({ register: mockPayload });
@@ -95,8 +91,6 @@ describe("register", () => {
 });
 
 describe("login", () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it("returns auth payload on successful login", async () => {
     const mockPayload = { success: true, user: mockUser, error: null };
     mockedRequest.mockResolvedValueOnce({ login: mockPayload });
@@ -135,8 +129,6 @@ describe("login", () => {
 });
 
 describe("logout", () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it("returns true on successful logout", async () => {
     mockedRequest.mockResolvedValueOnce({ logout: true });
 

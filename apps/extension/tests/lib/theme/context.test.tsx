@@ -195,9 +195,11 @@ describe("useTheme", () => {
       return <div />;
     }
 
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => {
       render(() => <ConsumerWithoutProvider />);
     }).toThrow("useTheme must be used within a ThemeProvider");
+    spy.mockRestore();
   });
 });
 
@@ -281,6 +283,30 @@ describe("ThemeProvider – system theme change listener", () => {
       "change",
       expect.any(Function),
     );
+  });
+
+  it("removes the change event listener on cleanup", () => {
+    const mockAddEventListener = vi.fn();
+    const mockRemoveEventListener = vi.fn();
+
+    mockMatchMedia.mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: mockAddEventListener,
+      removeEventListener: mockRemoveEventListener,
+      dispatchEvent: vi.fn(),
+    }));
+
+    const { unmount } = render(() => (
+      <ThemeProvider>
+        <Consumer />
+      </ThemeProvider>
+    ));
+
+    const handler = mockAddEventListener.mock.calls[0]?.[1];
+    unmount();
+
+    expect(mockRemoveEventListener).toHaveBeenCalledWith("change", handler);
   });
 
   it("sets system theme to dark when matchMedia matches dark", () => {
