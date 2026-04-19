@@ -4,6 +4,7 @@ import {
   createSignal,
   createEffect,
   onMount,
+  onCleanup,
   JSX,
 } from "solid-js";
 import { applyThemeVariables } from "./init-styles";
@@ -78,10 +79,9 @@ export function ThemeProvider(props: ThemeProviderProps) {
     };
 
     mediaQuery.addEventListener("change", handleChange);
-
-    return () => {
+    onCleanup(() => {
       mediaQuery.removeEventListener("change", handleChange);
-    };
+    });
   });
 
   const contextValue: ThemeContextValue = {
