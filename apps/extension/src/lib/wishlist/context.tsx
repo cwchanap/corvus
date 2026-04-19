@@ -1,11 +1,10 @@
 import {
   type JSX,
+  batch,
   createContext,
-  createEffect,
   createMemo,
   createResource,
   createSignal,
-  on,
   useContext,
   type Resource,
   type ResourceActions,
@@ -33,7 +32,15 @@ const WishlistDataContext = createContext<WishlistDataContextValue>();
 export function WishlistDataProvider(props: { children: JSX.Element }) {
   const PAGE_SIZE = 5;
   const [page, setPage] = createSignal(1);
-  const [categoryId, setCategoryId] = createSignal<string | null>(null);
+  const [categoryId, setCategoryIdSignal] = createSignal<string | null>(null);
+
+  const setCategoryId = (nextId: string | null) => {
+    if (categoryId() === nextId) return;
+    batch(() => {
+      setCategoryIdSignal(nextId);
+      setPage(1);
+    });
+  };
 
   const [data, { refetch, mutate }] = createResource(
     () => ({ page: page(), categoryId: categoryId() }),
@@ -56,16 +63,6 @@ export function WishlistDataProvider(props: { children: JSX.Element }) {
 
       return result;
     },
-  );
-
-  // Reset to page 1 when category filter changes, without tracking the page
-  // signal (using on() to avoid page() becoming a dependency of this effect).
-  createEffect(
-    on(categoryId, () => {
-      if (page() !== 1) {
-        setPage(1);
-      }
-    }),
   );
 
   const valueAccessor = createMemo(() => {
