@@ -5,6 +5,7 @@ import {
   createMemo,
   createResource,
   createSignal,
+  on,
   useContext,
   type Resource,
   type ResourceActions,
@@ -57,12 +58,15 @@ export function WishlistDataProvider(props: { children: JSX.Element }) {
     },
   );
 
-  createEffect(() => {
-    categoryId();
-    if (page() !== 1) {
-      setPage(1);
-    }
-  });
+  // Reset to page 1 when category filter changes, without tracking the page
+  // signal (using on() to avoid page() becoming a dependency of this effect).
+  createEffect(
+    on(categoryId, () => {
+      if (page() !== 1) {
+        setPage(1);
+      }
+    }),
+  );
 
   const valueAccessor = createMemo(() => {
     const state = data.state;
