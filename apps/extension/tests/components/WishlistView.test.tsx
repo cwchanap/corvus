@@ -131,7 +131,10 @@ beforeEach(() => {
   vi.spyOn(window, "alert").mockImplementation(() => {});
 });
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("WishlistView", () => {
   it("renders 'My Wishlist' heading", () => {

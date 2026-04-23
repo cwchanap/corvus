@@ -112,7 +112,7 @@ describe("ItemDetailsModal", () => {
         onOpenLink={vi.fn()}
       />
     ));
-    expect(screen.queryByText("NOTES")).toBeNull();
+    expect(screen.queryByText("Notes")).toBeNull();
   });
 
   it("shows link description as button text", () => {
@@ -182,8 +182,8 @@ describe("ItemDetailsModal", () => {
         onOpenLink={vi.fn()}
       />
     ));
-    const backdrop = document.querySelector(".fixed.inset-0.z-50");
-    fireEvent.click(backdrop!);
+    const backdrop = screen.getByTestId("modal-backdrop");
+    fireEvent.click(backdrop);
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -197,8 +197,8 @@ describe("ItemDetailsModal", () => {
         onOpenLink={vi.fn()}
       />
     ));
-    const innerCard = document.querySelector(".w-full.max-w-md");
-    fireEvent.click(innerCard!);
+    const innerCard = screen.getByTestId("modal-content");
+    fireEvent.click(innerCard);
     expect(onClose).not.toHaveBeenCalled();
   });
 
