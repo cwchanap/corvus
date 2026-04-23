@@ -19,10 +19,12 @@ export function ItemDetailsModal(props: ItemDetailsModalProps) {
   return (
     <Show when={props.item}>
       <div
+        data-testid="modal-backdrop"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
         onClick={() => props.onClose()}
       >
         <div
+          data-testid="modal-content"
           class="w-full max-w-md"
           onClick={(event) => event.stopPropagation()}
         >
