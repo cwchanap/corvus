@@ -1018,6 +1018,7 @@ describe("WishlistDashboard", () => {
     };
 
     beforeEach(() => {
+      mockEditPayload.links = [];
       mockWishlistQuery.data = createMockWishlistData({
         items: [item],
         pagination: { total_items: 1, total_pages: 1 },
@@ -1065,29 +1066,9 @@ describe("WishlistDashboard", () => {
     });
 
     it("handles edit submit with isNew link", async () => {
-      const editPayloadWithNewLink = {
-        ...mockEditPayload,
-        links: [
-          { url: "https://new-link.com", description: "New", isNew: true },
-        ],
-      };
-
-      const EditItemDialogWithNewLink = vi.fn(
-        (props: { open: boolean; onSubmit: (payload: unknown) => void }) => (
-          <Show when={props.open}>
-            <div data-testid="edit-item-dialog-new-link">
-              <button
-                type="button"
-                onClick={() => props.onSubmit(editPayloadWithNewLink)}
-              >
-                Submit with new link
-              </button>
-            </div>
-          </Show>
-        ),
-      );
-
-      // Re-use the existing mock and test via the existing flow
+      mockEditPayload.links = [
+        { url: "https://new-link.com", description: "New", isNew: true },
+      ];
       mockUpdateItem.mutateAsync.mockResolvedValue({ id: "item-1" });
       mockAddItemLink.mutateAsync.mockResolvedValue({ id: "link-new" });
 
@@ -1096,10 +1077,19 @@ describe("WishlistDashboard", () => {
       await waitFor(() =>
         expect(screen.getByTestId("edit-item-dialog")).toBeInTheDocument(),
       );
-      // The standard mock doesn't test new links; this confirms the mutation was ready
-      expect(mockUpdateItem.mutateAsync).not.toHaveBeenCalled();
 
-      EditItemDialogWithNewLink.mockClear();
+      fireEvent.click(screen.getByText("Submit mock edit item"));
+
+      await waitFor(() => {
+        expect(mockAddItemLink.mutateAsync).toHaveBeenCalledWith({
+          itemId: "item-1",
+          input: {
+            url: "https://new-link.com",
+            description: "New",
+            isPrimary: false,
+          },
+        });
+      });
     });
 
     it("closes view dialog when edit is opened for the same item", async () => {
