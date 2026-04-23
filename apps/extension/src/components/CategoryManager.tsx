@@ -155,7 +155,7 @@ export function CategoryManager(props: CategoryManagerProps) {
                               {category.name}
                             </span>
                             <Badge variant="secondary" class="text-xs">
-                              {itemCount} items
+                              {itemCount} {itemCount === 1 ? "item" : "items"}
                             </Badge>
                           </div>
                           <Button
