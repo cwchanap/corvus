@@ -69,12 +69,27 @@ const mockAddItemPayload = {
   priority: 2,
   links: [],
 };
-const mockEditPayload = {
+const mockEditPayload: {
+  id: string;
+  title: string;
+  description: string;
+  category_id: string;
+  status: "want";
+  priority: number;
+  links: Array<{
+    id?: string;
+    url: string;
+    description?: string;
+    isPrimary?: boolean;
+    isNew?: boolean;
+    isDeleted?: boolean;
+  }>;
+} = {
   id: "item-1",
   title: "Updated Laptop",
   description: "Updated desc",
   category_id: "cat-1",
-  status: "want" as const,
+  status: "want",
   priority: 1,
   links: [],
 };
