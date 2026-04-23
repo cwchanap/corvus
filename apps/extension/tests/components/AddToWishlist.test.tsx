@@ -16,7 +16,7 @@ const mockPageInfo = {
 };
 
 vi.mock("../../src/utils/page-info", () => ({
-  getCurrentPageInfo: vi.fn().mockResolvedValue(mockPageInfo),
+  getCurrentPageInfo: vi.fn(),
 }));
 
 const mockRefetch = vi.fn();
@@ -87,8 +87,6 @@ let mockValue = () => mockWishlistData as GraphQLWishlistPayload | undefined;
 let mockStateValue = () => "ready" as string;
 let mockErrorValue = () => undefined as unknown;
 
-vi.mock("../../src/utils/page-info");
-
 vi.mock("../../src/lib/wishlist/context", () => ({
   useWishlistData: () => ({
     value: () => mockValue(),
@@ -121,7 +119,10 @@ beforeEach(async () => {
   vi.mocked(getCurrentPageInfo).mockResolvedValue(mockPageInfo);
 });
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("AddToWishlist", () => {
   it("renders 'Add to Wishlist' heading", async () => {
@@ -302,27 +303,22 @@ describe("AddToWishlist", () => {
     });
   });
 
-  it("shows alert when creating item without category", async () => {
+  it("disables Create Item button when no categories exist", async () => {
     mockValue = () => ({
       ...mockWishlistData,
       categories: [],
+      items: [],
+      pagination: { ...mockWishlistData.pagination, totalItems: 0 },
     });
     render(() => <AddToWishlist />);
 
     await waitFor(() => screen.getByText("Awesome Product"));
 
-    // Open modal via "Create one" button when no items found
-    const createOneBtn = screen.queryByRole("button", { name: "Create one" });
-    if (createOneBtn) {
-      fireEvent.click(createOneBtn);
-      await waitFor(() => screen.getByText("Create New Item"));
-      fireEvent.click(screen.getByRole("button", { name: "Create Item" }));
-      await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
-          "Please choose a category before creating an item.",
-        );
-      });
-    }
+    fireEvent.click(screen.getByRole("button", { name: "Create one" }));
+    await waitFor(() => screen.getByText("Create New Item"));
+
+    expect(screen.getByRole("button", { name: "Create Item" })).toBeDisabled();
+    expect(mockCreateItem).not.toHaveBeenCalled();
   });
 
   it("shows alert on createItem failure", async () => {

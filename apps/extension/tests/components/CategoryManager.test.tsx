@@ -130,7 +130,10 @@ beforeEach(() => {
   vi.spyOn(window, "alert").mockImplementation(() => {});
 });
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("CategoryManager", () => {
   it("renders Manage Categories heading", () => {
@@ -166,7 +169,7 @@ describe("CategoryManager", () => {
     render(() => <CategoryManager />);
     // Electronics has 2 items, Books has 1 item
     expect(screen.getByText("2 items")).toBeInTheDocument();
-    expect(screen.getByText("1 items")).toBeInTheDocument();
+    expect(screen.getByText("1 item")).toBeInTheDocument();
   });
 
   it("shows loading state when data is not available", () => {
