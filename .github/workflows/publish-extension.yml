@@ -1,0 +1,58 @@
+name: Publish Extension
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/extension/**"
+      - "packages/common/**"
+      - "packages/ui-components/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: Build & Release Extension
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build extension zip
+        run: cd apps/extension && npm run zip
+        env:
+          NODE_ENV: production
+          VITE_API_BASE: https://corvus.cwchanap.dev
+          VITE_WEB_BASE: https://corvus.cwchanap.dev
+
+      - name: Get version from manifest
+        id: version
+        run: |
+          VERSION=$(jq -r '.version' apps/extension/.output/chrome-mv3/manifest.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: extension-v${{ steps.version.outputs.version }}-${{ github.run_number }}
+          name: Extension v${{ steps.version.outputs.version }} (#${{ github.run_number }})
+          body: |
+            Built from commit ${{ github.sha }}
+
+            **Install:** Download the zip below, extract it, then go to `chrome://extensions` → enable Developer mode → "Load unpacked" → select the extracted folder.
+          files: apps/extension/.output/extension-*.zip
