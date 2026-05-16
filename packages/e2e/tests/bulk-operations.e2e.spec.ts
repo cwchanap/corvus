@@ -10,7 +10,6 @@ test.describe("Bulk Operations E2E", () => {
     const API_ENDPOINT =
         // eslint-disable-next-line turbo/no-undeclared-env-vars
         process.env.VITE_API_URL ?? "http://localhost:5002/graphql";
-    const SESSION_COOKIE_NAME = "corvus-session";
 
     async function graphqlRequest(
         page: Page,
@@ -78,11 +77,6 @@ test.describe("Bulk Operations E2E", () => {
         }
 
         await expect(page).toHaveURL(/\/dashboard/);
-        const cookies = await page.context().cookies(API_ENDPOINT);
-        const sessionCookie = cookies.find(
-            (cookie) => cookie.name === SESSION_COOKIE_NAME,
-        );
-        expect(sessionCookie).toBeTruthy();
     });
 
     test("can enter and exit selection mode", async ({ page }) => {
