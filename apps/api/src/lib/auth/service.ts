@@ -1,22 +1,10 @@
-import {
-    isAuthApiError,
-    isAuthSessionMissingError,
-} from "@supabase/supabase-js";
-import type {
-    AuthError,
-    SupabaseClient,
-    User as SupabaseUser,
-} from "@supabase/supabase-js";
 import type { PublicUser } from "../db/types";
-import type { DB } from "../db";
-import { createDefaultCategories } from "../db/migrations";
+import type { AuthStore, GoogleIdentity } from "./store";
 
 type AuthServiceErrorCode =
-    | "ALREADY_EXISTS"
-    | "RATE_LIMITED"
-    | "TRANSIENT"
-    | "UNCONFIRMED_ACCOUNT"
-    | "REGISTRATION_SETUP_FAILED"
+    | "MISSING_ENV"
+    | "TOKEN_EXCHANGE_FAILED"
+    | "INVALID_ID_TOKEN"
     | "UNKNOWN";
 
 export class AuthServiceError extends Error {
@@ -37,271 +25,278 @@ export class AuthServiceError extends Error {
     }
 }
 
-export class SupabaseAuthService {
-    constructor(
-        private supabase: SupabaseClient,
-        private db: DB,
-    ) {}
+export interface GoogleAuthEnv {
+    GOOGLE_CLIENT_ID?: string;
+    GOOGLE_CLIENT_SECRET?: string;
+    GOOGLE_REDIRECT_URI?: string;
+    [key: string]: unknown;
+}
 
-    async register(
-        email: string,
-        password: string,
-        name: string,
-    ): Promise<PublicUser> {
-        const { data, error } = await this.supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { name } },
+export interface AuthSessionResult {
+    user: PublicUser;
+    sessionId: string;
+    expiresAt: Date;
+}
+
+interface GoogleAuthServiceOptions {
+    fetchImpl?: typeof fetch;
+    now?: () => Date;
+    verifyIdToken?: (
+        idToken: string,
+        clientId: string,
+    ) => Promise<GoogleIdentity>;
+    sessionTtlMs?: number;
+}
+
+const GOOGLE_AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
+const DEFAULT_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+export class GoogleAuthService {
+    private readonly fetchImpl: typeof fetch;
+    private readonly now: () => Date;
+    private readonly verifyIdToken: (
+        idToken: string,
+        clientId: string,
+    ) => Promise<GoogleIdentity>;
+    private readonly sessionTtlMs: number;
+
+    constructor(
+        private readonly store: AuthStore,
+        private readonly env: GoogleAuthEnv,
+        options: GoogleAuthServiceOptions = {},
+    ) {
+        this.fetchImpl = options.fetchImpl ?? fetch;
+        this.now = options.now ?? (() => new Date());
+        this.verifyIdToken = options.verifyIdToken ?? verifyGoogleIdToken;
+        this.sessionTtlMs = options.sessionTtlMs ?? DEFAULT_SESSION_TTL_MS;
+    }
+
+    getAuthorizationUrl(state: string): string {
+        const url = new URL(GOOGLE_AUTHORIZATION_URL);
+        url.searchParams.set(
+            "client_id",
+            this.getRequiredEnv("GOOGLE_CLIENT_ID"),
+        );
+        url.searchParams.set(
+            "redirect_uri",
+            this.getRequiredEnv("GOOGLE_REDIRECT_URI"),
+        );
+        url.searchParams.set("response_type", "code");
+        url.searchParams.set("scope", "openid email profile");
+        url.searchParams.set("state", state);
+        return url.toString();
+    }
+
+    async handleCallback(code: string): Promise<AuthSessionResult> {
+        const clientId = this.getRequiredEnv("GOOGLE_CLIENT_ID");
+        const body = new URLSearchParams({
+            code,
+            client_id: clientId,
+            client_secret: this.getRequiredEnv("GOOGLE_CLIENT_SECRET"),
+            redirect_uri: this.getRequiredEnv("GOOGLE_REDIRECT_URI"),
+            grant_type: "authorization_code",
         });
 
-        if (error) {
-            if (error.message.toLowerCase().includes("already registered")) {
-                throw new AuthServiceError("User already exists", {
-                    code: "ALREADY_EXISTS",
-                    status: 409,
-                });
-            }
-            throw new AuthServiceError(
-                `Registration failed: ${error.message}`,
-                {
-                    code: "UNKNOWN",
-                    status:
-                        typeof error.status === "number"
-                            ? error.status
-                            : undefined,
-                },
-            );
-        }
+        const response = await this.fetchImpl(GOOGLE_TOKEN_URL, {
+            method: "POST",
+            headers: {
+                "content-type": "application/x-www-form-urlencoded",
+            },
+            body: body.toString(),
+        });
 
-        // When email confirmation is enabled, signUp returns null user for existing emails
-        // (Supabase obfuscates to prevent email enumeration). Detect via empty identities.
-        if (!data.user) {
-            throw new AuthServiceError(
-                "Registration failed: check your email to confirm",
-                {
-                    code: "UNCONFIRMED_ACCOUNT",
-                    status: 400,
-                },
-            );
-        }
-
-        if (data.user.identities?.length === 0) {
-            throw new AuthServiceError("User already exists", {
-                code: "ALREADY_EXISTS",
-                status: 409,
+        if (!response.ok) {
+            throw new AuthServiceError("Google token exchange failed", {
+                code: "TOKEN_EXCHANGE_FAILED",
+                status: response.status,
             });
         }
 
-        if (!data.session) {
+        const tokenResponse = (await response.json()) as {
+            id_token?: unknown;
+        };
+
+        if (typeof tokenResponse.id_token !== "string") {
             throw new AuthServiceError(
-                "Please check your email to confirm your account before logging in.",
+                "Google token response missing ID token",
                 {
-                    code: "UNCONFIRMED_ACCOUNT",
-                    status: 400,
+                    code: "INVALID_ID_TOKEN",
                 },
             );
         }
 
-        try {
-            await createDefaultCategories(this.db, data.user.id);
-        } catch (dbError) {
-            // CRITICAL: User created in Supabase but D1 setup failed.
-            // The user exists in Supabase Auth but has no application data.
-            // Recovery: createDefaultCategories is idempotent — logging in will
-            // re-run the bootstrap and heal the account automatically.
-            console.error(
-                "Failed to create default categories for new user. Supabase user ID:",
-                data.user.id,
-                dbError,
-            );
+        const identity = await this.verifyIdToken(
+            tokenResponse.id_token,
+            clientId,
+        );
+        const user = await this.store.upsertGoogleUser(identity);
+        const expiresAt = new Date(this.now().getTime() + this.sessionTtlMs);
+        const sessionId = await this.store.createSession(user.id, expiresAt);
 
-            try {
-                await this.clearServerSession();
-            } catch (sessionError) {
-                console.error(
-                    "Failed to clear session after registration bootstrap failed. Supabase user ID:",
-                    data.user.id,
-                    sessionError,
-                );
-                throw new AuthServiceError(
-                    "Account created but setup failed, and we could not clear the new session automatically. Please clear your cookies before trying again.",
-                    {
-                        code: "REGISTRATION_SETUP_FAILED",
-                    },
-                );
-            }
-
-            throw new AuthServiceError(
-                "Account created but setup failed. Please try logging in to complete your account setup.",
-                {
-                    code: "REGISTRATION_SETUP_FAILED",
-                },
-            );
-        }
-
-        return toPublicUser(data.user);
+        return { user, sessionId, expiresAt };
     }
 
-    async login(email: string, password: string): Promise<PublicUser | null> {
-        const { data, error } = await this.supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) {
-            const message = error.message.toLowerCase();
-            if (
-                message.includes("invalid login credentials") ||
-                message.includes("invalid email or password")
-            ) {
-                return null;
-            }
-
-            throw createLoginError(error);
-        }
-
-        if (!data.user) {
+    async getUser(sessionId: string | null): Promise<PublicUser | null> {
+        if (!sessionId) {
             return null;
         }
 
-        // Idempotent bootstrap: heals accounts where registration succeeded in
-        // Supabase but D1 setup failed. Non-fatal: login already succeeded.
-        try {
-            await createDefaultCategories(this.db, data.user.id);
-        } catch (dbError) {
-            console.error(
-                "Failed to bootstrap default categories on login. User ID:",
-                data.user.id,
-                dbError,
-            );
-        }
-
-        return toPublicUser(data.user);
+        return this.store.getUserBySessionId(sessionId, this.now());
     }
 
-    async logout(): Promise<void> {
-        const { error } = await this.supabase.auth.signOut({
-            scope: "local",
-        });
-        if (error && !isRecoverableSessionCleanupError(error)) {
-            throw new AuthServiceError(`Logout failed: ${error.message}`, {
-                code: "UNKNOWN",
-                status:
-                    typeof error.status === "number" ? error.status : undefined,
+    async logout(sessionId: string | null): Promise<void> {
+        if (!sessionId) {
+            return;
+        }
+
+        await this.store.deleteSession(sessionId);
+    }
+
+    private getRequiredEnv(key: keyof GoogleAuthEnv): string {
+        const value = this.env[key];
+        if (typeof value !== "string" || value.trim().length === 0) {
+            throw new AuthServiceError(`Missing required auth env ${key}`, {
+                code: "MISSING_ENV",
             });
         }
-    }
 
-    async getUser(): Promise<PublicUser | null> {
-        const {
-            data: { user },
-            error,
-        } = await this.supabase.auth.getUser();
-
-        if (error) {
-            // AuthSessionMissingError means no session cookie — user is simply not logged in.
-            if (isAuthSessionMissingError(error)) {
-                return null;
-            }
-
-            if (isRecoverableInvalidSessionError(error)) {
-                try {
-                    await this.clearServerSession();
-                } catch (clearError) {
-                    console.error(
-                        "Failed to clear invalid session during getUser recovery:",
-                        clearError,
-                    );
-                }
-                return null;
-            }
-
-            // Any other error is a real infrastructure or configuration problem.
-            throw new Error(`Failed to validate session: ${error.message}`);
-        }
-
-        return user ? toPublicUser(user) : null;
-    }
-
-    private async clearServerSession(): Promise<void> {
-        const { error } = await this.supabase.auth.signOut({ scope: "local" });
-        if (error && !isRecoverableSessionCleanupError(error)) {
-            throw new Error(
-                `Failed to clear invalid session: ${error.message}`,
-            );
-        }
+        return value;
     }
 }
 
-function toPublicUser(user: SupabaseUser): PublicUser {
-    const metadataName = user.user_metadata?.name;
+export async function verifyGoogleIdToken(
+    idToken: string,
+    clientId: string,
+): Promise<GoogleIdentity> {
+    const parts = idToken.split(".");
+    if (parts.length !== 3) {
+        throw invalidToken("ID token must have three parts");
+    }
+
+    const header = parseJwtPart(parts[0]) as {
+        alg?: unknown;
+        kid?: unknown;
+    };
+    const claims = parseJwtPart(parts[1]) as {
+        iss?: unknown;
+        aud?: unknown;
+        exp?: unknown;
+        sub?: unknown;
+        email?: unknown;
+        email_verified?: unknown;
+        name?: unknown;
+        picture?: unknown;
+    };
+
+    if (header.alg !== "RS256" || typeof header.kid !== "string") {
+        throw invalidToken("ID token header is not a Google RS256 key");
+    }
+
+    const jwksResponse = await fetch(GOOGLE_JWKS_URL);
+    if (!jwksResponse.ok) {
+        throw invalidToken("Unable to fetch Google signing keys");
+    }
+
+    const jwks = (await jwksResponse.json()) as {
+        keys?: JsonWebKey[];
+    };
+    const key = jwks.keys?.find((candidate) => candidate.kid === header.kid);
+    if (!key) {
+        throw invalidToken("No matching Google signing key found");
+    }
+
+    const cryptoKey = await crypto.subtle.importKey(
+        "jwk",
+        key,
+        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+        false,
+        ["verify"],
+    );
+    const verified = await crypto.subtle.verify(
+        "RSASSA-PKCS1-v1_5",
+        cryptoKey,
+        base64UrlToBytes(parts[2]),
+        new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
+    );
+
+    if (!verified) {
+        throw invalidToken("Invalid Google ID token signature");
+    }
+
+    validateClaims(claims, clientId);
 
     return {
-        id: user.id,
-        email: user.email ?? "",
-        name: typeof metadataName === "string" ? metadataName : "",
-        created_at: user.created_at,
-        updated_at: user.updated_at ?? user.created_at,
+        sub: claims.sub as string,
+        email: claims.email as string,
+        name:
+            typeof claims.name === "string" && claims.name.trim().length > 0
+                ? claims.name
+                : (claims.email as string),
+        picture: typeof claims.picture === "string" ? claims.picture : null,
     };
 }
 
-function createLoginError(error: AuthError): AuthServiceError {
-    const status = typeof error.status === "number" ? error.status : undefined;
-    const message = error.message.toLowerCase();
-
+function validateClaims(
+    claims: {
+        iss?: unknown;
+        aud?: unknown;
+        exp?: unknown;
+        sub?: unknown;
+        email?: unknown;
+        email_verified?: unknown;
+    },
+    clientId: string,
+) {
     if (
-        status === 429 ||
-        message.includes("too many requests") ||
-        message.includes("rate limit")
+        claims.iss !== "https://accounts.google.com" &&
+        claims.iss !== "accounts.google.com"
     ) {
-        return new AuthServiceError(`Login failed: ${error.message}`, {
-            code: "RATE_LIMITED",
-            status: status ?? 429,
-        });
+        throw invalidToken("Invalid Google ID token issuer");
     }
-
+    if (claims.aud !== clientId) {
+        throw invalidToken("Invalid Google ID token audience");
+    }
     if (
-        error.name === "AuthRetryableFetchError" ||
-        (typeof status === "number" && status >= 500) ||
-        message.includes("network request failed") ||
-        message.includes("temporarily unavailable")
+        typeof claims.exp !== "number" ||
+        claims.exp <= Math.floor(Date.now() / 1000)
     ) {
-        return new AuthServiceError(`Login failed: ${error.message}`, {
-            code: "TRANSIENT",
-            status,
-        });
+        throw invalidToken("Google ID token is expired");
     }
-
-    if (
-        message.includes("email not confirmed") ||
-        message.includes("email not verified") ||
-        message.includes("confirm your email")
-    ) {
-        return new AuthServiceError(`Login failed: ${error.message}`, {
-            code: "UNCONFIRMED_ACCOUNT",
-            status: status ?? 400,
-        });
+    if (typeof claims.sub !== "string" || claims.sub.length === 0) {
+        throw invalidToken("Google ID token missing subject");
     }
-
-    return new AuthServiceError(`Login failed: ${error.message}`, {
-        code: "UNKNOWN",
-        status,
-    });
+    if (typeof claims.email !== "string" || claims.email.length === 0) {
+        throw invalidToken("Google ID token missing email");
+    }
+    if (claims.email_verified === false) {
+        throw invalidToken("Google ID token email is not verified");
+    }
 }
 
-function isRecoverableInvalidSessionError(error: AuthError): boolean {
-    return (
-        isAuthApiError(error) && (error.status === 401 || error.status === 403)
-    );
+function parseJwtPart(part: string): unknown {
+    try {
+        return JSON.parse(new TextDecoder().decode(base64UrlToBytes(part)));
+    } catch {
+        throw invalidToken("Unable to parse Google ID token");
+    }
 }
 
-function isRecoverableSessionCleanupError(error: AuthError): boolean {
-    const status = typeof error.status === "number" ? error.status : undefined;
-
-    return (
-        isAuthSessionMissingError(error) ||
-        status === 401 ||
-        status === 403 ||
-        status === 404
+function base64UrlToBytes(value: string): Uint8Array {
+    const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+        normalized.length + ((4 - (normalized.length % 4)) % 4),
+        "=",
     );
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+
+function invalidToken(message: string): AuthServiceError {
+    return new AuthServiceError(message, { code: "INVALID_ID_TOKEN" });
 }
