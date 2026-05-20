@@ -1,15 +1,49 @@
 import type { D1Database, Fetcher } from "@cloudflare/workers-types";
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { cors } from "hono/cors";
 import { createGraphQLHandler } from "./graphql/handler";
+import { createDatabase } from "./lib/db";
+import { getD1 } from "./lib/cloudflare";
+import { GoogleAuthService } from "./lib/auth/service";
+import { createD1AuthStore } from "./lib/auth/store";
+import {
+  OAUTH_STATE_COOKIE_NAME,
+  SESSION_COOKIE_NAME,
+  buildExpiredCookie,
+  buildSetCookie,
+  readCookie,
+} from "./lib/auth/cookies";
 
 type AppBindings = {
   DB: D1Database;
   ASSETS: Fetcher;
   DEV?: string;
+  INSECURE_COOKIES?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  GOOGLE_REDIRECT_URI?: string;
+  TEST_AUTH_ENABLED?: string;
 };
 
 const app = new Hono<{ Bindings: AppBindings }>();
+
+const OAUTH_STATE_MAX_AGE_SECONDS = 10 * 60;
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+
+function createAuthService(c: Context<{ Bindings: AppBindings }>) {
+  const db = createDatabase(getD1(c));
+  const store = createD1AuthStore(db);
+  return new GoogleAuthService(store, c.env);
+}
+
+function cookieRequestOptions(c: Context<{ Bindings: AppBindings }>) {
+  return {
+    requestUrl: c.req.url,
+    origin: c.req.header("origin"),
+    env: c.env,
+  };
+}
 
 // Enable CORS for all routes
 app.use(
@@ -42,6 +76,110 @@ app.use(
     maxAge: 86400, // 24 hours
   }),
 );
+
+app.get("/auth/google/start", (c) => {
+  const state = crypto.randomUUID();
+  const authService = createAuthService(c);
+  c.header(
+    "Set-Cookie",
+    buildSetCookie({
+      name: OAUTH_STATE_COOKIE_NAME,
+      value: state,
+      maxAge: OAUTH_STATE_MAX_AGE_SECONDS,
+      ...cookieRequestOptions(c),
+    }),
+    { append: true },
+  );
+
+  return c.redirect(authService.getAuthorizationUrl(state));
+});
+
+app.get("/auth/google/callback", async (c) => {
+  const code = c.req.query("code");
+  const returnedState = c.req.query("state");
+  const expectedState = readCookie(
+    c.req.header("cookie"),
+    OAUTH_STATE_COOKIE_NAME,
+  );
+
+  if (
+    !code ||
+    !returnedState ||
+    !expectedState ||
+    returnedState !== expectedState
+  ) {
+    return c.text("Invalid OAuth state", 400);
+  }
+
+  const authService = createAuthService(c);
+  const result = await authService.handleCallback(code);
+  c.header(
+    "Set-Cookie",
+    buildSetCookie({
+      name: SESSION_COOKIE_NAME,
+      value: result.sessionId,
+      maxAge: SESSION_MAX_AGE_SECONDS,
+      expires: result.expiresAt,
+      ...cookieRequestOptions(c),
+    }),
+    { append: true },
+  );
+  c.header(
+    "Set-Cookie",
+    buildExpiredCookie({
+      name: OAUTH_STATE_COOKIE_NAME,
+      ...cookieRequestOptions(c),
+    }),
+    { append: true },
+  );
+
+  return c.redirect("/dashboard");
+});
+
+app.post("/__test__/auth/session", async (c) => {
+  if (c.env.TEST_AUTH_ENABLED !== "1") {
+    return c.text("Not found", 404);
+  }
+
+  const body = (await c.req.json().catch(() => ({}))) as {
+    email?: unknown;
+    name?: unknown;
+    sub?: unknown;
+  };
+  const db = createDatabase(getD1(c));
+  const store = createD1AuthStore(db);
+  const user = await store.upsertGoogleUser({
+    sub:
+      typeof body.sub === "string" && body.sub.length > 0
+        ? body.sub
+        : "test-google-sub",
+    email:
+      typeof body.email === "string" && body.email.length > 0
+        ? body.email
+        : "test@example.com",
+    name:
+      typeof body.name === "string" && body.name.length > 0
+        ? body.name
+        : "Test User",
+    picture: null,
+  });
+  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
+  const sessionId = await store.createSession(user.id, expiresAt);
+
+  c.header(
+    "Set-Cookie",
+    buildSetCookie({
+      name: SESSION_COOKIE_NAME,
+      value: sessionId,
+      maxAge: SESSION_MAX_AGE_SECONDS,
+      expires: expiresAt,
+      ...cookieRequestOptions(c),
+    }),
+    { append: true },
+  );
+
+  return c.json({ user });
+});
 
 // GraphQL endpoint - API is now GraphQL-only
 app.all("/graphql", createGraphQLHandler());
