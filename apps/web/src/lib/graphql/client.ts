@@ -9,7 +9,6 @@ import {
 } from "@repo/common/graphql/client";
 
 const GRAPHQL_ENDPOINT =
-    // eslint-disable-next-line turbo/no-undeclared-env-vars
     (import.meta.env.VITE_API_URL as string | undefined) ||
     "http://localhost:5002/graphql";
 

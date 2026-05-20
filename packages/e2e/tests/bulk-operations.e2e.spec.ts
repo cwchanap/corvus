@@ -1,16 +1,10 @@
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
+import { API_ENDPOINT, signInWithTestSession } from "./helpers/auth";
 
 // E2E tests for bulk operations: batch delete and batch move
-// Uses baseURL from playwright.config.ts (http://localhost:5000)
+// Uses baseURL from playwright.config.ts.
 
 test.describe("Bulk Operations E2E", () => {
-    const EMAIL = "bulktest.20250808.001@example.com";
-    const PASSWORD = "Password123!";
-    const NAME = "Bulk Test User";
-    const API_ENDPOINT =
-        // eslint-disable-next-line turbo/no-undeclared-env-vars
-        process.env.VITE_API_URL ?? "http://localhost:5002/graphql";
-
     async function graphqlRequest(
         page: Page,
         query: string,
@@ -46,37 +40,11 @@ test.describe("Bulk Operations E2E", () => {
     }
 
     test.beforeEach(async ({ page }) => {
-        // Login or register before each test
-        await page.goto("/login");
-        await page.getByLabel("Email Address").fill(EMAIL);
-        await page.getByLabel("Password").fill(PASSWORD);
-
-        const toDashboard = page
-            .waitForURL("**/dashboard", { timeout: 5000 })
-            .then(() => true)
-            .catch(() => false);
-
-        await page.getByRole("button", { name: "Sign In" }).click();
-
-        const success = await toDashboard;
-        if (!success) {
-            const hasError = await page
-                .getByText("Invalid email or password")
-                .isVisible();
-            if (hasError) {
-                await page.goto("/register");
-                await page.getByLabel("Full Name").fill(NAME);
-                await page.getByLabel("Email Address").fill(EMAIL);
-                await page.getByLabel("Password").fill(PASSWORD);
-
-                await page
-                    .getByRole("button", { name: "Create Account" })
-                    .click();
-                await page.waitForURL("**/dashboard", { timeout: 10000 });
-            }
-        }
-
-        await expect(page).toHaveURL(/\/dashboard/);
+        await signInWithTestSession(page, {
+            email: "bulktest.20250808.001@example.com",
+            name: "Bulk Test User",
+            sub: "playwright-bulk-e2e",
+        });
     });
 
     test("can enter and exit selection mode", async ({ page }) => {
