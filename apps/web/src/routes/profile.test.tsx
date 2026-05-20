@@ -81,11 +81,9 @@ describe("Profile route", () => {
       expect(signInLink.closest("a")).toHaveAttribute("href", "/login");
     });
 
-    it("shows Create Account link", () => {
+    it("does not show a Create Account link", () => {
       render(() => <Profile />);
-      const createLink = screen.getByText("Create Account");
-      expect(createLink).toBeInTheDocument();
-      expect(createLink.closest("a")).toHaveAttribute("href", "/register");
+      expect(screen.queryByText("Create Account")).not.toBeInTheDocument();
     });
 
     it("does not show user details when unauthenticated", () => {
