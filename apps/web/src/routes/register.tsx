@@ -1,24 +1,13 @@
+import { onMount } from "solid-js";
 import { Title } from "@solidjs/meta";
-import { RegisterForm } from "../components/auth/RegisterForm";
-import { ThemeProvider } from "../lib/theme/context";
+import { useNavigate } from "@solidjs/router";
 
 export default function Register() {
-  return (
-    <ThemeProvider>
-      <Title>Create Account - Corvus</Title>
-      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 py-8 px-4 sm:px-6 lg:px-8">
-        <div class="w-full max-w-sm">
-          <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Corvus
-            </h1>
-            <p class="text-muted-foreground text-sm mt-2">
-              Your personal wishlist companion
-            </p>
-          </div>
-          <RegisterForm />
-        </div>
-      </div>
-    </ThemeProvider>
-  );
+  const navigate = useNavigate();
+
+  onMount(() => {
+    navigate("/login", { replace: true });
+  });
+
+  return <Title>Sign In - Corvus</Title>;
 }
