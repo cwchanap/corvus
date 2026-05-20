@@ -1,36 +1,25 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@solidjs/testing-library";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render } from "@solidjs/testing-library";
 import Register from "./register";
+
+const mockNavigate = vi.fn();
+
+vi.mock("@solidjs/router", () => ({
+  useNavigate: () => mockNavigate,
+}));
 
 vi.mock("@solidjs/meta", () => ({
   Title: () => null,
 }));
 
-vi.mock("../lib/theme/context", () => ({
-  ThemeProvider: (props: { children: unknown }) => (
-    <>{props.children as never}</>
-  ),
-}));
-
-vi.mock("../components/auth/RegisterForm", () => ({
-  RegisterForm: () => <div data-testid="register-form">RegisterForm</div>,
-}));
-
 describe("Register route", () => {
-  it("renders the RegisterForm component", () => {
-    render(() => <Register />);
-    expect(screen.getByTestId("register-form")).toBeInTheDocument();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("renders Corvus brand name", () => {
+  it("redirects to login without rendering a signup form", () => {
     render(() => <Register />);
-    expect(screen.getByText("Corvus")).toBeInTheDocument();
-  });
 
-  it("renders the tagline", () => {
-    render(() => <Register />);
-    expect(
-      screen.getByText("Your personal wishlist companion"),
-    ).toBeInTheDocument();
+    expect(mockNavigate).toHaveBeenCalledWith("/login", { replace: true });
   });
 });

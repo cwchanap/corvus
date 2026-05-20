@@ -59,14 +59,6 @@ export default function Profile() {
                       Sign In
                     </Button>
                   </A>
-                  <A href="/register">
-                    <Button
-                      variant="outline"
-                      class="border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/50 px-6 py-2 rounded-xl font-medium transition-all duration-200"
-                    >
-                      Create Account
-                    </Button>
-                  </A>
                 </div>
               </CardContent>
             </Card>

@@ -4,33 +4,42 @@
  */
 
 import {
-  graphqlRequest as baseGraphqlRequest,
-  type GraphQLClientOptions,
+    graphqlRequest as baseGraphqlRequest,
+    type GraphQLClientOptions,
 } from "@repo/common/graphql/client";
 
 const GRAPHQL_ENDPOINT =
-  // eslint-disable-next-line turbo/no-undeclared-env-vars
-  (import.meta.env.VITE_API_URL as string | undefined) ||
-  "http://localhost:5002/graphql";
+    // eslint-disable-next-line turbo/no-undeclared-env-vars
+    (import.meta.env.VITE_API_URL as string | undefined) ||
+    "http://localhost:5002/graphql";
+
+export function getGoogleAuthStartUrl(): string {
+    const fallbackOrigin =
+        typeof window === "undefined"
+            ? "http://localhost:5000"
+            : window.location.origin;
+    const apiUrl = new URL(GRAPHQL_ENDPOINT, fallbackOrigin);
+    return `${apiUrl.origin}/auth/google/start`;
+}
 
 /**
  * Pre-configured GraphQL request function for the web app
  * Automatically uses the correct endpoint and includes credentials
  */
 export async function graphqlRequest<T>(
-  query: string,
-  variables?: Record<string, unknown>,
-  options?: Partial<GraphQLClientOptions>,
+    query: string,
+    variables?: Record<string, unknown>,
+    options?: Partial<GraphQLClientOptions>,
 ): Promise<T> {
-  return baseGraphqlRequest<T>(query, variables, {
-    endpoint: GRAPHQL_ENDPOINT,
-    credentials: "include",
-    ...options,
-  });
+    return baseGraphqlRequest<T>(query, variables, {
+        endpoint: GRAPHQL_ENDPOINT,
+        credentials: "include",
+        ...options,
+    });
 }
 
 // Re-export types
 export type {
-  GraphQLClientOptions,
-  GraphQLResponse,
+    GraphQLClientOptions,
+    GraphQLResponse,
 } from "@repo/common/graphql/client";
