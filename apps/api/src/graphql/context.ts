@@ -1,33 +1,32 @@
 import type { Context } from "hono";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DB } from "../lib/db";
 import type { PublicUser } from "../lib/db/types";
 import { createDatabase } from "../lib/db";
-import { createSupabaseServerClient } from "../lib/auth/supabase-client";
-import { SupabaseAuthService } from "../lib/auth/service";
+import { GoogleAuthService } from "../lib/auth/service";
+import { createD1AuthStore } from "../lib/auth/store";
+import { SESSION_COOKIE_NAME, readCookie } from "../lib/auth/cookies";
 import { getD1 } from "../lib/cloudflare";
 
 export interface GraphQLContext {
     db: DB;
     user: PublicUser | null;
-    supabase: SupabaseClient;
+    authService: GoogleAuthService;
+    sessionId: string | null;
     request: Request;
     honoContext: Context;
 }
 
 /**
  * Create GraphQL context from Hono context.
- * Validates the Supabase session cookie and injects DB and user.
- * The Supabase client is created once per request and shared with resolvers
- * so that cookie state is accumulated on a single instance.
+ * Resolves the Corvus-owned session cookie and injects DB and user.
  */
 export async function createGraphQLContext(
     c: Context,
 ): Promise<GraphQLContext> {
     const db = createDatabase(getD1(c));
-    const supabase = createSupabaseServerClient(c);
-    const authService = new SupabaseAuthService(supabase, db);
-    const user = await authService.getUser().catch((err) => {
+    const authService = new GoogleAuthService(createD1AuthStore(db), c.env);
+    const sessionId = readCookie(c.req.header("cookie"), SESSION_COOKIE_NAME);
+    const user = await authService.getUser(sessionId).catch((err) => {
         console.error(
             "[createGraphQLContext] Failed to resolve user from session:",
             err,
@@ -38,7 +37,8 @@ export async function createGraphQLContext(
     return {
         db,
         user,
-        supabase,
+        authService,
+        sessionId,
         request: c.req.raw,
         honoContext: c,
     };

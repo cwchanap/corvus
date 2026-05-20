@@ -1,21 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GraphQLError } from "graphql";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { GraphQLContext } from "../../src/graphql/context";
 import { resolvers } from "../../src/graphql/resolvers";
 import type { DB } from "../../src/lib/db";
-import * as migrations from "../../src/lib/db/migrations";
-import {
-    AuthServiceError,
-    SupabaseAuthService,
-} from "../../src/lib/auth/service";
-
-vi.mock("../../src/lib/db/migrations", () => ({
-    createDefaultCategories: vi.fn().mockResolvedValue(undefined),
-}));
-
-const mockCreateDefaultCategories =
-    migrations.createDefaultCategories as ReturnType<typeof vi.fn>;
+import type { GoogleAuthService } from "../../src/lib/auth/service";
 
 // ---------------------------------------------------------------------------
 // WishlistService mock
@@ -67,25 +55,31 @@ const mockUser = {
 
 function createContext(
     authOverrides: Partial<{
-        signInWithPassword: ReturnType<typeof vi.fn>;
-        signUp: ReturnType<typeof vi.fn>;
-        signOut: ReturnType<typeof vi.fn>;
+        logout: ReturnType<typeof vi.fn>;
     }> = {},
     user: typeof mockUser | null = null,
 ): GraphQLContext {
+    const honoContext = {
+        req: {
+            url: "https://app.example.com/graphql",
+            header: vi.fn((name: string) =>
+                name === "origin" ? undefined : null,
+            ),
+        },
+        env: {},
+        header: vi.fn(),
+    } as unknown as GraphQLContext["honoContext"];
+
     return {
         db: {} as DB,
         user,
-        supabase: {
-            auth: {
-                signInWithPassword: vi.fn(),
-                signUp: vi.fn(),
-                signOut: vi.fn().mockResolvedValue({ error: null }),
-                ...authOverrides,
-            },
-        } as unknown as SupabaseClient,
+        authService: {
+            logout: vi.fn().mockResolvedValue(undefined),
+            ...authOverrides,
+        } as unknown as GoogleAuthService,
+        sessionId: "session-1",
         request: new Request("https://app.example.com/graphql"),
-        honoContext: {} as GraphQLContext["honoContext"],
+        honoContext,
     };
 }
 
@@ -119,34 +113,6 @@ function invokeResolver<
         context,
         {} as never,
     ) as Promise<TResult>;
-}
-
-async function invokeLogin(context: GraphQLContext) {
-    const loginResolver = resolvers.Mutation?.login;
-    if (!loginResolver) throw new Error("Login resolver is unavailable");
-    return loginResolver(
-        {},
-        { input: { email: "test@example.com", password: "password123" } },
-        context,
-        {} as never,
-    );
-}
-
-async function invokeRegister(context: GraphQLContext) {
-    const registerResolver = resolvers.Mutation?.register;
-    if (!registerResolver) throw new Error("Register resolver is unavailable");
-    return registerResolver(
-        {},
-        {
-            input: {
-                email: "test@example.com",
-                password: "password123",
-                name: "Test User",
-            },
-        },
-        context,
-        {} as never,
-    );
 }
 
 // ---------------------------------------------------------------------------
@@ -491,17 +457,24 @@ describe("Query.item", () => {
 // Mutation.logout
 // ---------------------------------------------------------------------------
 describe("Mutation.logout", () => {
-    it("returns true on successful logout", async () => {
-        const ctx = createAuthenticatedContext({
-            signOut: vi.fn().mockResolvedValue({ error: null }),
-        });
+    it("returns true, deletes the current session, and clears the session cookie", async () => {
+        const logout = vi.fn().mockResolvedValue(undefined);
+        const ctx = createAuthenticatedContext({ logout });
+
         const result = await invokeResolver("Mutation", "logout", {}, ctx);
+
         expect(result).toBe(true);
+        expect(logout).toHaveBeenCalledWith("session-1");
+        expect(ctx.honoContext.header).toHaveBeenCalledWith(
+            "Set-Cookie",
+            expect.stringContaining("corvus-session="),
+            { append: true },
+        );
     });
 
     it("throws INTERNAL_SERVER_ERROR when logout fails", async () => {
         const ctx = createAuthenticatedContext({
-            signOut: vi.fn().mockRejectedValue(new Error("Network error")),
+            logout: vi.fn().mockRejectedValue(new Error("Network error")),
         });
         await expect(
             invokeResolver("Mutation", "logout", {}, ctx),
@@ -511,272 +484,10 @@ describe("Mutation.logout", () => {
     });
 });
 
-// ---------------------------------------------------------------------------
-// Mutation.login
-// ---------------------------------------------------------------------------
-describe("login resolver", () => {
-    it("returns a rate-limited GraphQLError for rate-limited auth failures", async () => {
-        const context = createContext({
-            signInWithPassword: vi.fn().mockResolvedValue({
-                data: { user: null },
-                error: {
-                    __isAuthError: true,
-                    name: "AuthApiError",
-                    message: "Too many requests",
-                    status: 429,
-                },
-            }),
-        });
-
-        await expect(invokeLogin(context)).rejects.toBeInstanceOf(GraphQLError);
-
-        try {
-            await invokeLogin(context);
-        } catch (error) {
-            expect(error).toBeInstanceOf(GraphQLError);
-            expect(error).toMatchObject({
-                message: "Too many login attempts. Please wait and try again.",
-                extensions: {
-                    code: "RATE_LIMITED",
-                    status: 429,
-                },
-            });
-        }
-    });
-
-    it("returns a service-unavailable GraphQLError for transient auth failures", async () => {
-        const context = createContext({
-            signInWithPassword: vi.fn().mockResolvedValue({
-                data: { user: null },
-                error: {
-                    __isAuthError: true,
-                    name: "AuthRetryableFetchError",
-                    message: "Network request failed",
-                },
-            }),
-        });
-
-        await expect(invokeLogin(context)).rejects.toBeInstanceOf(GraphQLError);
-
-        try {
-            await invokeLogin(context);
-        } catch (error) {
-            expect(error).toBeInstanceOf(GraphQLError);
-            expect(error).toMatchObject({
-                message: "Login is temporarily unavailable. Please try again.",
-                extensions: {
-                    code: "SERVICE_UNAVAILABLE",
-                    status: 503,
-                },
-            });
-        }
-    });
-
-    it("returns a bad-user-input GraphQLError for unconfirmed accounts", async () => {
-        const context = createContext({
-            signInWithPassword: vi.fn().mockResolvedValue({
-                data: { user: null },
-                error: {
-                    __isAuthError: true,
-                    name: "AuthApiError",
-                    message: "Email not confirmed",
-                    status: 400,
-                },
-            }),
-        });
-
-        await expect(invokeLogin(context)).rejects.toBeInstanceOf(GraphQLError);
-
-        try {
-            await invokeLogin(context);
-        } catch (error) {
-            expect(error).toBeInstanceOf(GraphQLError);
-            expect(error).toMatchObject({
-                message: "Please confirm your email before logging in.",
-                extensions: {
-                    code: "BAD_USER_INPUT",
-                    status: 400,
-                },
-            });
-        }
-    });
-
-    it("returns invalid credentials payload when user is null with no error", async () => {
-        const context = createContext({
-            signInWithPassword: vi.fn().mockResolvedValue({
-                data: { user: null, session: null },
-                error: null,
-            }),
-        });
-
-        const result = await invokeLogin(context);
-        expect(result).toMatchObject({
-            success: false,
-            user: null,
-            error: "Invalid email or password",
-        });
-    });
-
-    it("returns success payload on valid credentials", async () => {
-        // SupabaseAuthService.login maps the supabase user directly via toPublicUser.
-        // createDefaultCategories errors are swallowed (non-fatal), so login succeeds
-        // even when db is an empty object.
-        const supabaseUser = {
-            id: "user-1",
-            email: "test@example.com",
-            user_metadata: { name: "Test User" },
-        };
-        const context = createContext({
-            signInWithPassword: vi.fn().mockResolvedValue({
-                data: { user: supabaseUser, session: { access_token: "tok" } },
-                error: null,
-            }),
-        });
-
-        const result = await invokeLogin(context);
-        expect(result).toMatchObject({
-            success: true,
-            user: expect.objectContaining({
-                id: "user-1",
-                email: "test@example.com",
-            }),
-            error: null,
-        });
-    });
-});
-
-// ---------------------------------------------------------------------------
-// Mutation.register
-// ---------------------------------------------------------------------------
-describe("register resolver", () => {
-    it("returns a handled error when signup requires email confirmation but no user is returned", async () => {
-        const context = createContext({
-            signUp: vi.fn().mockResolvedValue({
-                data: { user: null, session: null },
-                error: null,
-            }),
-        });
-
-        await expect(invokeRegister(context)).resolves.toEqual({
-            success: false,
-            user: null,
-            error: "Registration failed: check your email to confirm",
-        });
-    });
-
-    it("returns a handled error when the user already exists", async () => {
-        const context = createContext({
-            signUp: vi.fn().mockResolvedValue({
-                data: { user: null, session: null },
-                error: { message: "User already registered" },
-            }),
-        });
-
-        await expect(invokeRegister(context)).resolves.toEqual({
-            success: false,
-            user: null,
-            error: "User already exists",
-        });
-    });
-
-    it("returns a handled error when registration setup fails (REGISTRATION_SETUP_FAILED)", async () => {
-        // signUp succeeds with user + session, but createDefaultCategories fails,
-        // causing clearServerSession to be called → SupabaseAuthService.register throws
-        // REGISTRATION_SETUP_FAILED → toRegisterErrorPayload matches that code and returns the error payload
-        mockCreateDefaultCategories.mockRejectedValueOnce(
-            new Error("DB setup failed"),
-        );
-        const supabaseUser = {
-            id: "new-user-1",
-            email: "test@example.com",
-            user_metadata: { name: "Test User" },
-            identities: [{ id: "id-1" }],
-            created_at: "2024-01-01T00:00:00Z",
-            updated_at: "2024-01-01T00:00:00Z",
-        };
-        const context = createContext(
-            {
-                signUp: vi.fn().mockResolvedValue({
-                    data: {
-                        user: supabaseUser,
-                        session: { access_token: "tok" },
-                    },
-                    error: null,
-                }),
-                // signOut is used by clearServerSession; success → no re-throw
-                signOut: vi.fn().mockResolvedValue({ error: null }),
-            },
-            null,
-        );
-        // context.db is {} as DB, so db.insert is not a function → createDefaultCategories throws
-
-        const result = await invokeRegister(context);
-        expect(result).toMatchObject({
-            success: false,
-            user: null,
-        });
-        expect(typeof (result as { error: unknown }).error).toBe("string");
-    });
-
-    it("throws INTERNAL_SERVER_ERROR when AuthServiceError has an unrecognized code during register (covers toRegisterErrorPayload return null)", async () => {
-        // An auth error message that doesn't include "already registered" triggers
-        // the UNKNOWN code in SupabaseAuthService.register (line 64-73 of service.ts).
-        // toRegisterErrorPayload returns null for UNKNOWN → falls through to INTERNAL_SERVER_ERROR
-        // (covers lines 582-583 of resolvers.ts)
-        const context = createContext({
-            signUp: vi.fn().mockResolvedValue({
-                data: { user: null, session: null },
-                error: { message: "Some unexpected auth failure" },
-            }),
-        });
-
-        await expect(invokeRegister(context)).rejects.toMatchObject({
-            message: "Registration failed",
-            extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
-    });
-});
-
-// ---------------------------------------------------------------------------
-// login resolver – error fallthrough paths
-// ---------------------------------------------------------------------------
-describe("login resolver error fallthrough", () => {
-    it("throws INTERNAL_SERVER_ERROR when signInWithPassword rejects with a plain Error", async () => {
-        // signInWithPassword throws (not returns) an error → propagates as a
-        // non-AuthServiceError → toLoginGraphQLError returns null → falls through
-        // to the generic INTERNAL_SERVER_ERROR branch (covers lines 586-588)
-        const context = createContext({
-            signInWithPassword: vi
-                .fn()
-                .mockRejectedValue(new Error("Unexpected network failure")),
-        });
-
-        await expect(invokeLogin(context)).rejects.toMatchObject({
-            message: "Login failed",
-            extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
-    });
-
-    it("throws INTERNAL_SERVER_ERROR when AuthServiceError has UNKNOWN code", async () => {
-        // An unrecognised Supabase error maps to UNKNOWN in createLoginError.
-        // toLoginGraphQLError finds no matching branch and returns null (line 626),
-        // so the resolver falls through to the generic error (covers lines 626-627)
-        const context = createContext({
-            signInWithPassword: vi.fn().mockResolvedValue({
-                data: { user: null },
-                error: {
-                    __isAuthError: true,
-                    name: "AuthApiError",
-                    message: "Something unexpected happened",
-                    status: 400,
-                },
-            }),
-        });
-
-        await expect(invokeLogin(context)).rejects.toMatchObject({
-            message: "Login failed",
-            extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
+describe("password auth mutations", () => {
+    it("does not expose login or register mutations", () => {
+        expect(resolvers.Mutation).not.toHaveProperty("login");
+        expect(resolvers.Mutation).not.toHaveProperty("register");
     });
 });
 
@@ -1724,119 +1435,6 @@ describe("WishlistItem.links", () => {
                 gqlItem,
             ),
         ).rejects.toThrow("Database connection lost");
-    });
-});
-
-// ---------------------------------------------------------------------------
-// Additional register edge cases (covers remaining branches)
-// ---------------------------------------------------------------------------
-describe("register resolver – remaining edge cases", () => {
-    it("returns success payload on successful registration", async () => {
-        // Covers lines 126-130: the success return in the register resolver
-        const supabaseUser = {
-            id: "new-user-123",
-            email: "newuser@example.com",
-            user_metadata: { name: "New User" },
-            identities: [{ id: "id-1" }],
-            created_at: "2024-01-01T00:00:00Z",
-            updated_at: "2024-01-01T00:00:00Z",
-        };
-        const context = createContext(
-            {
-                signUp: vi.fn().mockResolvedValue({
-                    data: {
-                        user: supabaseUser,
-                        session: { access_token: "tok" },
-                    },
-                    error: null,
-                }),
-                signOut: vi.fn().mockResolvedValue({ error: null }),
-            },
-            null,
-        );
-
-        const result = await invokeRegister(context);
-
-        expect(result).toMatchObject({
-            success: true,
-            user: expect.objectContaining({
-                id: "new-user-123",
-                email: "newuser@example.com",
-            }),
-            error: null,
-        });
-    });
-
-    it("throws INTERNAL_SERVER_ERROR when signUp itself throws a plain Error (covers toRegisterErrorPayload guard line 560)", async () => {
-        // When supabase.auth.signUp() throws (rather than returning { error }),
-        // the plain Error propagates to the resolver's catch block.
-        // toRegisterErrorPayload(plainError) sees !(plainError instanceof AuthServiceError)
-        // → returns null → falls through to INTERNAL_SERVER_ERROR.
-        const context = createContext({
-            signUp: vi
-                .fn()
-                .mockRejectedValue(new Error("Network failure during signup")),
-        });
-
-        await expect(invokeRegister(context)).rejects.toMatchObject({
-            message: "Registration failed",
-            extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
-    });
-});
-
-// ---------------------------------------------------------------------------
-// toLoginGraphQLError – null-coalescing fallback branches (lines 596 and 620)
-// ---------------------------------------------------------------------------
-describe("login resolver – toLoginGraphQLError status fallback", () => {
-    it("falls back to status 429 when AuthServiceError.status is undefined for RATE_LIMITED (covers line 596)", async () => {
-        // Bypass the Supabase client path to inject an AuthServiceError whose
-        // .status is intentionally undefined, forcing the `?? 429` branch.
-        const spy = vi
-            .spyOn(SupabaseAuthService.prototype, "login")
-            .mockRejectedValueOnce(
-                new AuthServiceError("Login failed: rate limited", {
-                    code: "RATE_LIMITED",
-                    // status intentionally omitted → undefined
-                }),
-            );
-
-        const context = createContext();
-        try {
-            await invokeLogin(context);
-            throw new Error("Expected invokeLogin to throw");
-        } catch (error) {
-            expect(error).toBeInstanceOf(GraphQLError);
-            expect(error).toMatchObject({
-                extensions: { code: "RATE_LIMITED", status: 429 },
-            });
-        } finally {
-            spy.mockRestore();
-        }
-    });
-
-    it("falls back to status 400 when AuthServiceError.status is undefined for UNCONFIRMED_ACCOUNT (covers line 620)", async () => {
-        const spy = vi
-            .spyOn(SupabaseAuthService.prototype, "login")
-            .mockRejectedValueOnce(
-                new AuthServiceError("Login failed: email not confirmed", {
-                    code: "UNCONFIRMED_ACCOUNT",
-                    // status intentionally omitted → undefined
-                }),
-            );
-
-        const context = createContext();
-        try {
-            await invokeLogin(context);
-            throw new Error("Expected invokeLogin to throw");
-        } catch (error) {
-            expect(error).toBeInstanceOf(GraphQLError);
-            expect(error).toMatchObject({
-                extensions: { code: "BAD_USER_INPUT", status: 400 },
-            });
-        } finally {
-            spy.mockRestore();
-        }
     });
 });
 

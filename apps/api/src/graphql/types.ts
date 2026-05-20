@@ -34,14 +34,6 @@ export type Scalars = {
     Float: { input: number; output: number };
 };
 
-/** Authentication response payload */
-export type AuthPayload = {
-    __typename?: "AuthPayload";
-    error?: Maybe<Scalars["String"]["output"]>;
-    success: Scalars["Boolean"]["output"];
-    user?: Maybe<User>;
-};
-
 /** Input for batch delete operation */
 export type BatchDeleteInput = {
     itemIds: Array<Scalars["ID"]["input"]>;
@@ -128,12 +120,6 @@ export type ItemUpdateInput = {
     title?: InputMaybe<Scalars["String"]["input"]>;
 };
 
-/** Input for user login */
-export type LoginInput = {
-    email: Scalars["String"]["input"];
-    password: Scalars["String"]["input"];
-};
-
 export type Mutation = {
     __typename?: "Mutation";
     /** Add a link to a wishlist item */
@@ -162,12 +148,8 @@ export type Mutation = {
     deleteItem: Scalars["Boolean"]["output"];
     /** Delete an item link */
     deleteItemLink: Scalars["Boolean"]["output"];
-    /** Login with email and password */
-    login: AuthPayload;
     /** Logout the current user */
     logout: Scalars["Boolean"]["output"];
-    /** Register a new user */
-    register: AuthPayload;
     /** Set a link as the primary link for an item */
     setPrimaryLink: Scalars["Boolean"]["output"];
     /** Update a category */
@@ -209,14 +191,6 @@ export type MutationDeleteItemArgs = {
 
 export type MutationDeleteItemLinkArgs = {
     id: Scalars["ID"]["input"];
-};
-
-export type MutationLoginArgs = {
-    input: LoginInput;
-};
-
-export type MutationRegisterArgs = {
-    input: RegisterInput;
 };
 
 export type MutationSetPrimaryLinkArgs = {
@@ -288,13 +262,6 @@ export type QueryRecentItemsArgs = {
 export type QueryWishlistArgs = {
     filter?: InputMaybe<WishlistFilterInput>;
     pagination?: InputMaybe<PaginationInput>;
-};
-
-/** Input for user registration */
-export type RegisterInput = {
-    email: Scalars["String"]["input"];
-    name: Scalars["String"]["input"];
-    password: Scalars["String"]["input"];
 };
 
 /** Sort direction enum */
@@ -498,7 +465,6 @@ export type DirectiveResolverFn<
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
-    AuthPayload: ResolverTypeWrapper<AuthPayload>;
     BatchDeleteInput: BatchDeleteInput;
     BatchMoveInput: BatchMoveInput;
     BatchOperationResult: ResolverTypeWrapper<BatchOperationResult>;
@@ -513,12 +479,10 @@ export type ResolversTypes = ResolversObject<{
     ItemLinkUpdateInput: ItemLinkUpdateInput;
     ItemStatus: ItemStatus;
     ItemUpdateInput: ItemUpdateInput;
-    LoginInput: LoginInput;
     Mutation: ResolverTypeWrapper<{}>;
     PaginationInfo: ResolverTypeWrapper<PaginationInfo>;
     PaginationInput: PaginationInput;
     Query: ResolverTypeWrapper<{}>;
-    RegisterInput: RegisterInput;
     SortDirection: SortDirection;
     String: ResolverTypeWrapper<Scalars["String"]["output"]>;
     User: ResolverTypeWrapper<User>;
@@ -533,7 +497,6 @@ export type ResolversTypes = ResolversObject<{
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
-    AuthPayload: AuthPayload;
     BatchDeleteInput: BatchDeleteInput;
     BatchMoveInput: BatchMoveInput;
     BatchOperationResult: BatchOperationResult;
@@ -547,12 +510,10 @@ export type ResolversParentTypes = ResolversObject<{
     ItemLinkInput: ItemLinkInput;
     ItemLinkUpdateInput: ItemLinkUpdateInput;
     ItemUpdateInput: ItemUpdateInput;
-    LoginInput: LoginInput;
     Mutation: {};
     PaginationInfo: PaginationInfo;
     PaginationInput: PaginationInput;
     Query: {};
-    RegisterInput: RegisterInput;
     String: Scalars["String"]["output"];
     User: User;
     WishlistCategory: WishlistCategory;
@@ -560,17 +521,6 @@ export type ResolversParentTypes = ResolversObject<{
     WishlistItem: WishlistItem;
     WishlistItemLink: WishlistItemLink;
     WishlistPayload: WishlistPayload;
-}>;
-
-export type AuthPayloadResolvers<
-    ContextType = GraphQLContext,
-    ParentType extends
-        ResolversParentTypes["AuthPayload"] = ResolversParentTypes["AuthPayload"],
-> = ResolversObject<{
-    error?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-    success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
-    user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
-    __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type BatchOperationResultResolvers<
@@ -656,19 +606,7 @@ export type MutationResolvers<
         ContextType,
         RequireFields<MutationDeleteItemLinkArgs, "id">
     >;
-    login?: Resolver<
-        ResolversTypes["AuthPayload"],
-        ParentType,
-        ContextType,
-        RequireFields<MutationLoginArgs, "input">
-    >;
     logout?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
-    register?: Resolver<
-        ResolversTypes["AuthPayload"],
-        ParentType,
-        ContextType,
-        RequireFields<MutationRegisterArgs, "input">
-    >;
     setPrimaryLink?: Resolver<
         ResolversTypes["Boolean"],
         ParentType,
@@ -851,7 +789,6 @@ export type WishlistPayloadResolvers<
 }>;
 
 export type Resolvers<ContextType = GraphQLContext> = ResolversObject<{
-    AuthPayload?: AuthPayloadResolvers<ContextType>;
     BatchOperationResult?: BatchOperationResultResolvers<ContextType>;
     DuplicateUrlCheckResult?: DuplicateUrlCheckResultResolvers<ContextType>;
     Mutation?: MutationResolvers<ContextType>;
