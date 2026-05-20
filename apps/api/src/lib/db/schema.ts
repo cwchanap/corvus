@@ -7,6 +7,46 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
+export const users = sqliteTable(
+    "users",
+    {
+        id: text("id").primaryKey(),
+        google_sub: text("google_sub").notNull(),
+        email: text("email").notNull(),
+        name: text("name").notNull(),
+        avatar_url: text("avatar_url"),
+        created_at: text("created_at")
+            .notNull()
+            .default(sql`CURRENT_TIMESTAMP`),
+        updated_at: text("updated_at")
+            .notNull()
+            .default(sql`CURRENT_TIMESTAMP`),
+    },
+    (table) => ({
+        googleSubUnique: uniqueIndex("users_google_sub_unique").on(
+            table.google_sub,
+        ),
+    }),
+);
+
+export const sessions = sqliteTable(
+    "sessions",
+    {
+        id: text("id").primaryKey(),
+        user_id: text("user_id")
+            .notNull()
+            .references(() => users.id, { onDelete: "cascade" }),
+        expires_at: text("expires_at").notNull(),
+        created_at: text("created_at")
+            .notNull()
+            .default(sql`CURRENT_TIMESTAMP`),
+    },
+    (table) => ({
+        userIdIdx: index("sessions_user_id_idx").on(table.user_id),
+        expiresAtIdx: index("sessions_expires_at_idx").on(table.expires_at),
+    }),
+);
+
 export const wishlistCategories = sqliteTable(
     "wishlist_categories",
     {

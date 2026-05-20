@@ -1,0 +1,137 @@
+import { eq } from "drizzle-orm";
+import type { DB } from "../db";
+import type { PublicUser } from "../db/types";
+import { sessions, users } from "../db/schema";
+import { createDefaultCategories } from "../db/migrations";
+
+export interface GoogleIdentity {
+    sub: string;
+    email: string;
+    name: string;
+    picture?: string | null;
+}
+
+export interface AuthStore {
+    upsertGoogleUser(identity: GoogleIdentity): Promise<PublicUser>;
+    createSession(userId: string, expiresAt: Date): Promise<string>;
+    getUserBySessionId(
+        sessionId: string,
+        now?: Date,
+    ): Promise<PublicUser | null>;
+    deleteSession(sessionId: string): Promise<void>;
+}
+
+export function createD1AuthStore(db: DB): AuthStore {
+    return new D1AuthStore(db);
+}
+
+class D1AuthStore implements AuthStore {
+    constructor(private readonly db: DB) {}
+
+    async upsertGoogleUser(identity: GoogleIdentity): Promise<PublicUser> {
+        const existing = await this.db
+            .select()
+            .from(users)
+            .where(eq(users.google_sub, identity.sub))
+            .get();
+
+        const now = new Date().toISOString();
+
+        if (existing) {
+            await this.db
+                .update(users)
+                .set({
+                    email: identity.email,
+                    name: identity.name,
+                    avatar_url: identity.picture ?? null,
+                    updated_at: now,
+                })
+                .where(eq(users.id, existing.id))
+                .run();
+
+            return {
+                id: existing.id,
+                email: identity.email,
+                name: identity.name,
+                created_at: existing.created_at,
+                updated_at: now,
+            };
+        }
+
+        const user = {
+            id: crypto.randomUUID(),
+            google_sub: identity.sub,
+            email: identity.email,
+            name: identity.name,
+            avatar_url: identity.picture ?? null,
+            created_at: now,
+            updated_at: now,
+        };
+
+        await this.db.insert(users).values(user).run();
+        await createDefaultCategories(this.db, user.id);
+
+        return toPublicUser(user);
+    }
+
+    async createSession(userId: string, expiresAt: Date): Promise<string> {
+        const sessionId = crypto.randomUUID();
+
+        await this.db
+            .insert(sessions)
+            .values({
+                id: sessionId,
+                user_id: userId,
+                expires_at: expiresAt.toISOString(),
+            })
+            .run();
+
+        return sessionId;
+    }
+
+    async getUserBySessionId(
+        sessionId: string,
+        now = new Date(),
+    ): Promise<PublicUser | null> {
+        const row = await this.db
+            .select({
+                session: sessions,
+                user: users,
+            })
+            .from(sessions)
+            .innerJoin(users, eq(sessions.user_id, users.id))
+            .where(eq(sessions.id, sessionId))
+            .get();
+
+        if (!row) {
+            return null;
+        }
+
+        if (Date.parse(row.session.expires_at) <= now.getTime()) {
+            await this.deleteSession(sessionId);
+            return null;
+        }
+
+        return toPublicUser(row.user);
+    }
+
+    async deleteSession(sessionId: string): Promise<void> {
+        await this.db.delete(sessions).where(eq(sessions.id, sessionId)).run();
+    }
+}
+
+function toPublicUser(user: {
+    id: string;
+    email: string;
+    name: string;
+    created_at: string;
+    updated_at: string;
+}): PublicUser {
+    return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+    };
+}

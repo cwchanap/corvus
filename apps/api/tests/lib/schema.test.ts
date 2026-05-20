@@ -1,12 +1,69 @@
 import { describe, expect, it } from "vitest";
 import { getTableConfig } from "drizzle-orm/sqlite-core";
 import {
+    sessions,
+    users,
     wishlistCategories,
     wishlistItems,
     wishlistItemLinks,
 } from "../../src/lib/db/schema";
+import { createD1AuthStore } from "../../src/lib/auth/store";
 
 describe("database schema", () => {
+    describe("users table", () => {
+        it("defines Google identity columns and unique google_sub index", () => {
+            const config = getTableConfig(users);
+            const columnNames = config.columns.map((c) => c.name);
+            expect(columnNames).toEqual(
+                expect.arrayContaining([
+                    "id",
+                    "google_sub",
+                    "email",
+                    "name",
+                    "avatar_url",
+                    "created_at",
+                    "updated_at",
+                ]),
+            );
+
+            const googleSubCol = config.columns.find(
+                (c) => c.name === "google_sub",
+            );
+            expect(googleSubCol?.notNull).toBe(true);
+            expect(config.indexes.map((idx) => idx.config.name)).toContain(
+                "users_google_sub_unique",
+            );
+        });
+    });
+
+    describe("sessions table", () => {
+        it("defines session ownership and expiry indexes", () => {
+            const config = getTableConfig(sessions);
+            const columnNames = config.columns.map((c) => c.name);
+            expect(columnNames).toEqual(
+                expect.arrayContaining([
+                    "id",
+                    "user_id",
+                    "expires_at",
+                    "created_at",
+                ]),
+            );
+
+            const userIdCol = config.columns.find((c) => c.name === "user_id");
+            expect(userIdCol?.notNull).toBe(true);
+            expect(config.indexes.map((idx) => idx.config.name)).toEqual(
+                expect.arrayContaining([
+                    "sessions_user_id_idx",
+                    "sessions_expires_at_idx",
+                ]),
+            );
+        });
+
+        it("has a createD1AuthStore factory for local auth persistence", () => {
+            expect(createD1AuthStore).toBeTypeOf("function");
+        });
+    });
+
     describe("wishlistCategories table", () => {
         it("has correct table name", () => {
             const config = getTableConfig(wishlistCategories);
