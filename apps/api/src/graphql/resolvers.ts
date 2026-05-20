@@ -1,11 +1,11 @@
 import { GraphQLError } from "graphql";
 import type { Resolvers, WishlistItem as GraphQLWishlistItem } from "./types";
-import { AuthServiceError, SupabaseAuthService } from "../lib/auth/service";
 import {
     WishlistService,
     WishlistAuthorizationError,
 } from "../lib/wishlist/service";
 import { mapUser, mapCategory, mapItem, mapLink } from "./mappers";
+import { SESSION_COOKIE_NAME, buildExpiredCookie } from "../lib/auth/cookies";
 
 type WishlistItemWithLinksState = GraphQLWishlistItem & {
     __linksLoaded?: boolean;
@@ -192,79 +192,19 @@ export const resolvers: Resolvers = {
         },
     },
     Mutation: {
-        register: async (_parent, args, context) => {
-            const authService = new SupabaseAuthService(
-                context.supabase,
-                context.db,
-            );
-
-            try {
-                const user = await authService.register(
-                    args.input.email,
-                    args.input.password,
-                    args.input.name,
-                );
-
-                return {
-                    success: true,
-                    user: mapUser(user),
-                    error: null,
-                };
-            } catch (error) {
-                const registerErrorPayload = toRegisterErrorPayload(error);
-                if (registerErrorPayload) {
-                    return registerErrorPayload;
-                }
-                console.error("Registration error:", error);
-                throw new GraphQLError("Registration failed", {
-                    extensions: { code: "INTERNAL_SERVER_ERROR" },
-                });
-            }
-        },
-        login: async (_parent, args, context) => {
-            const authService = new SupabaseAuthService(
-                context.supabase,
-                context.db,
-            );
-
-            try {
-                const user = await authService.login(
-                    args.input.email,
-                    args.input.password,
-                );
-
-                if (!user) {
-                    return {
-                        success: false,
-                        user: null,
-                        error: "Invalid email or password",
-                    };
-                }
-
-                return {
-                    success: true,
-                    user: mapUser(user),
-                    error: null,
-                };
-            } catch (error) {
-                const loginGraphQLError = toLoginGraphQLError(error);
-                if (loginGraphQLError) {
-                    throw loginGraphQLError;
-                }
-
-                console.error("Login error:", error);
-                throw new GraphQLError("Login failed", {
-                    extensions: { code: "INTERNAL_SERVER_ERROR" },
-                });
-            }
-        },
         logout: async (_parent, _args, context) => {
-            const authService = new SupabaseAuthService(
-                context.supabase,
-                context.db,
-            );
             try {
-                await authService.logout();
+                await context.authService.logout(context.sessionId);
+                context.honoContext.header(
+                    "Set-Cookie",
+                    buildExpiredCookie({
+                        name: SESSION_COOKIE_NAME,
+                        requestUrl: context.honoContext.req.url,
+                        origin: context.honoContext.req.header("origin"),
+                        env: context.honoContext.env,
+                    }),
+                    { append: true },
+                );
             } catch (error) {
                 console.error("Logout error:", error);
                 throw new GraphQLError("Logout failed", {
@@ -670,78 +610,3 @@ export const resolvers: Resolvers = {
         },
     },
 };
-
-function toRegisterErrorPayload(error: unknown): {
-    success: false;
-    user: null;
-    error: string;
-} | null {
-    if (!(error instanceof AuthServiceError)) {
-        return null;
-    }
-
-    if (error.code === "ALREADY_EXISTS") {
-        return {
-            success: false,
-            user: null,
-            error: "User already exists",
-        };
-    }
-
-    if (
-        error.code === "UNCONFIRMED_ACCOUNT" ||
-        error.code === "REGISTRATION_SETUP_FAILED"
-    ) {
-        return {
-            success: false,
-            user: null,
-            error: error.message,
-        };
-    }
-
-    return null;
-}
-
-function toLoginGraphQLError(error: unknown): GraphQLError | null {
-    if (!(error instanceof AuthServiceError)) {
-        return null;
-    }
-
-    if (error.code === "RATE_LIMITED") {
-        return new GraphQLError(
-            "Too many login attempts. Please wait and try again.",
-            {
-                extensions: {
-                    code: "RATE_LIMITED",
-                    status: error.status ?? 429,
-                },
-            },
-        );
-    }
-
-    if (error.code === "TRANSIENT") {
-        return new GraphQLError(
-            "Login is temporarily unavailable. Please try again.",
-            {
-                extensions: {
-                    code: "SERVICE_UNAVAILABLE",
-                    status: error.status ?? 503,
-                },
-            },
-        );
-    }
-
-    if (error.code === "UNCONFIRMED_ACCOUNT") {
-        return new GraphQLError(
-            "Please confirm your email before logging in.",
-            {
-                extensions: {
-                    code: "BAD_USER_INPUT",
-                    status: error.status ?? 400,
-                },
-            },
-        );
-    }
-
-    return null;
-}
