@@ -12,12 +12,6 @@ export interface GraphQLUser {
     updatedAt: string;
 }
 
-export interface AuthPayload {
-    success: boolean;
-    user: GraphQLUser | null;
-    error: string | null;
-}
-
 // Wishlist types (matching GraphQL schema)
 export interface GraphQLWishlistCategory {
     id: string;
@@ -82,17 +76,6 @@ export interface GraphQLWishlistPayload {
 }
 
 // Input types
-export interface RegisterInput {
-    email: string;
-    password: string;
-    name: string;
-}
-
-export interface LoginInput {
-    email: string;
-    password: string;
-}
-
 export interface WishlistFilterInput {
     categoryId?: string;
     search?: string;

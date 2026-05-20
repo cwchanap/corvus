@@ -9,12 +9,8 @@ const EXPECTED_RUNTIME_EXPORTS = [
     "graphqlRequest",
     // operations/auth
     "ME_QUERY",
-    "REGISTER_MUTATION",
-    "LOGIN_MUTATION",
     "LOGOUT_MUTATION",
     "getCurrentUser",
-    "register",
-    "login",
     "logout",
     // operations/wishlist
     "WISHLIST_QUERY",
@@ -56,5 +52,12 @@ describe("graphql barrel (src/graphql/index.ts)", () => {
 
     it.each(EXPECTED_RUNTIME_EXPORTS)("barrel exports '%s'", (name) => {
         expect(graphqlBarrel).toHaveProperty(name);
+    });
+
+    it("does not re-export password auth helpers", () => {
+        expect(graphqlBarrel).not.toHaveProperty("REGISTER_MUTATION");
+        expect(graphqlBarrel).not.toHaveProperty("LOGIN_MUTATION");
+        expect(graphqlBarrel).not.toHaveProperty("register");
+        expect(graphqlBarrel).not.toHaveProperty("login");
     });
 });
