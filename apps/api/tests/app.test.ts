@@ -1,4 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
+
+const authMocks = vi.hoisted(() => ({
+    getAuthorizationUrl: vi.fn((state: string) => {
+        const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+        url.searchParams.set("state", state);
+        return url.toString();
+    }),
+    handleCallback: vi.fn(),
+}));
 
 // Hoisted mock: createGraphQLHandler is called at module scope in index.tsx,
 // so the mock must be available before the import is resolved.
@@ -10,6 +19,13 @@ vi.mock("../src/graphql/handler", () => ({
                 headers: { "content-type": "application/json" },
             }),
     ),
+}));
+
+vi.mock("../src/lib/auth/service", () => ({
+    GoogleAuthService: vi.fn(() => ({
+        getAuthorizationUrl: authMocks.getAuthorizationUrl,
+        handleCallback: authMocks.handleCallback,
+    })),
 }));
 
 import app from "../src/index";
@@ -32,6 +48,86 @@ function makeAssets(
 }
 
 const baseEnv = { DB: {} as unknown };
+
+beforeEach(() => {
+    vi.clearAllMocks();
+    authMocks.getAuthorizationUrl.mockImplementation((state: string) => {
+        const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+        url.searchParams.set("state", state);
+        return url.toString();
+    });
+    authMocks.handleCallback.mockResolvedValue({
+        user: {
+            id: "user-1",
+            email: "test@example.com",
+            name: "Test User",
+            created_at: "2026-05-20T12:00:00.000Z",
+            updated_at: "2026-05-20T12:00:00.000Z",
+        },
+        sessionId: "session-123",
+        expiresAt: new Date("2026-06-19T12:00:00.000Z"),
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Google OAuth routes
+// ---------------------------------------------------------------------------
+describe("Google OAuth routes", () => {
+    it("redirects /auth/google/start to Google and sets a state cookie", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/start",
+            {},
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toContain(
+            "https://accounts.google.com/o/oauth2/v2/auth",
+        );
+        expect(res.headers.get("set-cookie")).toContain("corvus-oauth-state=");
+        expect(authMocks.getAuthorizationUrl).toHaveBeenCalledWith(
+            expect.any(String),
+        );
+    });
+
+    it("rejects /auth/google/callback when state does not match", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?code=code-1&state=returned-state",
+            {
+                headers: {
+                    cookie: "corvus-oauth-state=different-state",
+                },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(400);
+        expect(await res.text()).toBe("Invalid OAuth state");
+        expect(authMocks.handleCallback).not.toHaveBeenCalled();
+    });
+
+    it("sets a session cookie and redirects to dashboard after callback", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?code=code-1&state=state-1",
+            {
+                headers: {
+                    cookie: "corvus-oauth-state=state-1",
+                },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/dashboard");
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toContain("corvus-session=session-123");
+        expect(setCookie).toContain("corvus-oauth-state=");
+        expect(authMocks.handleCallback).toHaveBeenCalledWith("code-1");
+    });
+});
 
 // ---------------------------------------------------------------------------
 // CORS middleware – origin callback branches (lines 18-38 of index.tsx)

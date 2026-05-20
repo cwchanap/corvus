@@ -10,15 +10,6 @@ type User {
 }
 
 """
-Authentication response payload
-"""
-type AuthPayload {
-  success: Boolean!
-  user: User
-  error: String
-}
-
-"""
 A wishlist category
 """
 type WishlistCategory {
@@ -96,23 +87,6 @@ type WishlistPayload {
   categories: [WishlistCategory!]!
   items: [WishlistItem!]!
   pagination: PaginationInfo!
-}
-
-"""
-Input for user registration
-"""
-input RegisterInput {
-  email: String!
-  password: String!
-  name: String!
-}
-
-"""
-Input for user login
-"""
-input LoginInput {
-  email: String!
-  password: String!
 }
 
 """
@@ -302,16 +276,6 @@ type Query {
 }
 
 type Mutation {
-  """
-  Register a new user
-  """
-  register(input: RegisterInput!): AuthPayload!
-
-  """
-  Login with email and password
-  """
-  login(input: LoginInput!): AuthPayload!
-
   """
   Logout the current user
   """

@@ -5,8 +5,8 @@
  */
 import { describe, it, expect } from "vitest";
 import {
-    SupabaseAuthService,
-    createSupabaseServerClient,
+    GoogleAuthService,
+    createD1AuthStore,
     requireAuth,
 } from "../../src/lib/auth";
 import {
@@ -15,14 +15,14 @@ import {
 } from "../../src/lib/db/index";
 
 describe("auth barrel (src/lib/auth/index.ts)", () => {
-    it("exports SupabaseAuthService", () => {
-        expect(SupabaseAuthService).toBeDefined();
-        expect(typeof SupabaseAuthService).toBe("function");
+    it("exports GoogleAuthService", () => {
+        expect(GoogleAuthService).toBeDefined();
+        expect(typeof GoogleAuthService).toBe("function");
     });
 
-    it("exports createSupabaseServerClient", () => {
-        expect(createSupabaseServerClient).toBeDefined();
-        expect(typeof createSupabaseServerClient).toBe("function");
+    it("exports createD1AuthStore", () => {
+        expect(createD1AuthStore).toBeDefined();
+        expect(typeof createD1AuthStore).toBe("function");
     });
 
     it("exports requireAuth", () => {
