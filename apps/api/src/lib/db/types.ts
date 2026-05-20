@@ -1,4 +1,10 @@
-import { wishlistCategories, wishlistItems, wishlistItemLinks } from "./schema";
+import {
+    sessions,
+    users,
+    wishlistCategories,
+    wishlistItems,
+    wishlistItemLinks,
+} from "./schema";
 
 export interface PublicUser {
     id: string;
@@ -9,6 +15,10 @@ export interface PublicUser {
 }
 
 export type WishlistCategory = typeof wishlistCategories.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
 export type NewWishlistCategory = typeof wishlistCategories.$inferInsert;
 export type WishlistCategoryUpdate = Partial<
     Omit<
