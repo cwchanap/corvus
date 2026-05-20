@@ -24,11 +24,11 @@ For faster test iterations, start the servers manually in separate terminals:
 ```bash
 # Terminal 1: Start API server
 cd apps/api
-bun run dev
+bun run dev:e2e
 
 # Terminal 2: Start web server
 cd apps/web
-bun run dev
+bun run dev:e2e
 
 # Terminal 3: Run tests with existing servers
 cd packages/e2e
@@ -63,8 +63,9 @@ bun run test:debug
 The Playwright configuration is in `playwright.config.ts`. It automatically:
 
 - Starts the API server on port 5002
-- Starts the web app on port 5000
-- Runs tests against `http://localhost:5000`
+- Applies local D1 migrations before starting the API server
+- Starts the web app on port 5001
+- Runs tests against `http://localhost:5001`
 - Uses Chromium browser by default
 
 ## Adding New Tests
@@ -80,6 +81,7 @@ The Playwright configuration is in `playwright.config.ts`. It automatically:
 ## CI/CD
 
 Tests automatically:
+
 - Fail if `test.only` is found in CI
 - Retry failed tests 2 times in CI
 - Run sequentially (workers: 1) in CI

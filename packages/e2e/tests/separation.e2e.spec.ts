@@ -3,7 +3,6 @@ import { test, expect } from "@playwright/test";
 // Test to verify GraphQL API works correctly
 test.describe("GraphQL API E2E", () => {
     const API_ENDPOINT =
-        // eslint-disable-next-line turbo/no-undeclared-env-vars
         process.env.VITE_API_URL ?? "http://localhost:5002/graphql";
 
     test("GraphQL endpoint responds correctly", async ({ page }) => {
@@ -67,14 +66,14 @@ test.describe("GraphQL API E2E", () => {
     });
 
     test("Verify GraphQL endpoint configuration", async ({ page }) => {
-        // Test that GraphQL mutations work (login mutation)
+        // Test that the public auth query works without password mutations.
         const response = await page.request.post(API_ENDPOINT, {
             data: {
                 query: `
-          mutation {
-            login(input: { email: "test@example.com", password: "test" }) {
-              success
-              error
+          query {
+            me {
+              id
+              email
             }
           }
         `,
@@ -84,8 +83,7 @@ test.describe("GraphQL API E2E", () => {
         expect(response.ok()).toBeTruthy();
         const json = await response.json();
 
-        // Should get a proper GraphQL response (data or errors)
         expect(json).toHaveProperty("data");
-        expect(json.data).toHaveProperty("login");
+        expect(json.data).toHaveProperty("me");
     });
 });
