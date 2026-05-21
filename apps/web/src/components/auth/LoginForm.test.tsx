@@ -10,6 +10,9 @@ describe("LoginForm", () => {
     expect(
       screen.getByRole("link", { name: "Continue with Google" }),
     ).toHaveAttribute("href", `${window.location.origin}/auth/google/start`);
+    expect(
+      screen.getByRole("link", { name: "Continue with Google" }),
+    ).toHaveAttribute("target", "_self");
   });
 
   it("does not render password auth fields or signup links", () => {
