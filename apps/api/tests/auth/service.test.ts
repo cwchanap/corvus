@@ -45,6 +45,10 @@ describe("GoogleAuthService", () => {
         vi.clearAllMocks();
     });
 
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
     it("builds a Google authorization URL with state", () => {
         const service = new GoogleAuthService(createStore(), env);
 
@@ -132,6 +136,48 @@ describe("GoogleAuthService", () => {
             sessionId: "session-123",
             expiresAt: new Date("2026-06-19T12:00:00.000Z"),
         });
+    });
+
+    it("calls the default Workers fetch without binding it as a service method", async () => {
+        const identity: GoogleIdentity = {
+            sub: "google-sub-1",
+            email: "ada@example.com",
+            name: "Ada Lovelace",
+            picture: null,
+        };
+        const store = createStore();
+        const verifyIdToken = vi.fn().mockResolvedValue(identity);
+        const fetchMock = vi.fn(function (
+            this: unknown,
+            ..._args: Parameters<typeof fetch>
+        ) {
+            if (this !== undefined) {
+                throw new TypeError("Illegal invocation");
+            }
+
+            return Promise.resolve(
+                new Response(JSON.stringify({ id_token: "id-token" }), {
+                    status: 200,
+                    headers: { "content-type": "application/json" },
+                }),
+            );
+        }) as unknown as typeof fetch;
+        vi.stubGlobal("fetch", fetchMock);
+
+        const service = new GoogleAuthService(store, env, {
+            now: () => fixedNow,
+            verifyIdToken,
+        });
+
+        await expect(service.handleCallback("oauth-code")).resolves.toEqual({
+            user,
+            sessionId: "session-123",
+            expiresAt: new Date("2026-06-19T12:00:00.000Z"),
+        });
+        expect(fetchMock).toHaveBeenCalledWith(
+            "https://oauth2.googleapis.com/token",
+            expect.objectContaining({ method: "POST" }),
+        );
     });
 
     it("returns null when no session id is present", async () => {
