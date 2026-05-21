@@ -17,6 +17,7 @@ export function LoginForm() {
       <CardContent class="px-8 pb-8">
         <a
           href={getGoogleAuthStartUrl()}
+          target="_self"
           class="flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-gray-900 shadow-lg ring-1 ring-gray-200 transition-colors duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
           Continue with Google
