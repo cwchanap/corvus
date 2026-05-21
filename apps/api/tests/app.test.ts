@@ -127,6 +127,28 @@ describe("Google OAuth routes", () => {
         expect(setCookie).toContain("corvus-oauth-state=");
         expect(authMocks.handleCallback).toHaveBeenCalledWith("code-1");
     });
+
+    it("redirects to login with error and clears state cookie when callback fails", async () => {
+        authMocks.handleCallback.mockRejectedValue(
+            new Error("Token exchange failed"),
+        );
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?code=bad-code&state=state-1",
+            {
+                headers: {
+                    cookie: "corvus-oauth-state=state-1",
+                },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("Max-Age=0");
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -299,5 +321,43 @@ describe("Static asset catch-all route", () => {
         // Falls back through and returns the original 404 asset response
         expect(res.status).toBe(404);
         expect(assets.fetch).toHaveBeenCalledTimes(2);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// /__test__/auth/session guard
+// ---------------------------------------------------------------------------
+describe("/__test__/auth/session guard", () => {
+    it("returns 404 when TEST_AUTH_ENABLED is not set", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/__test__/auth/session",
+            { method: "POST", body: JSON.stringify({}) },
+            { ...baseEnv, ASSETS: assets, DEV: "1" },
+        );
+
+        expect(res.status).toBe(404);
+    });
+
+    it("returns 404 when TEST_AUTH_ENABLED is set but not in dev mode", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/__test__/auth/session",
+            { method: "POST", body: JSON.stringify({}) },
+            { ...baseEnv, ASSETS: assets, TEST_AUTH_ENABLED: "1" },
+        );
+
+        expect(res.status).toBe(404);
+    });
+
+    it("returns 404 when DEV is set but TEST_AUTH_ENABLED is not", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/__test__/auth/session",
+            { method: "POST", body: JSON.stringify({}) },
+            { ...baseEnv, ASSETS: assets, DEV: "1" },
+        );
+
+        expect(res.status).toBe(404);
     });
 });
