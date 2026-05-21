@@ -5,7 +5,7 @@ import { cors } from "hono/cors";
 import { createGraphQLHandler } from "./graphql/handler";
 import { createDatabase } from "./lib/db";
 import { getD1 } from "./lib/cloudflare";
-import { GoogleAuthService } from "./lib/auth/service";
+import { AuthServiceError, GoogleAuthService } from "./lib/auth/service";
 import { createD1AuthStore } from "./lib/auth/store";
 import {
   OAUTH_STATE_COOKIE_NAME,
@@ -43,6 +43,31 @@ function cookieRequestOptions(c: Context<{ Bindings: AppBindings }>) {
     origin: c.req.header("origin"),
     env: c.env,
   };
+}
+
+function logOAuthCallbackFailure(error: unknown) {
+  if (error instanceof AuthServiceError) {
+    console.error("Google OAuth callback failed", {
+      code: error.code,
+      status: error.status ?? null,
+      details: error.details ?? null,
+    });
+    return;
+  }
+
+  if (error instanceof Error) {
+    console.error("Google OAuth callback failed", {
+      code: "UNKNOWN",
+      name: error.name,
+      message: error.message,
+    });
+    return;
+  }
+
+  console.error("Google OAuth callback failed", {
+    code: "UNKNOWN",
+    type: typeof error,
+  });
 }
 
 // Enable CORS for all routes
@@ -108,6 +133,16 @@ app.get("/auth/google/callback", async (c) => {
     !expectedState ||
     returnedState !== expectedState
   ) {
+    console.warn("Google OAuth callback rejected", {
+      reason: "state_mismatch",
+      hasCode: Boolean(code),
+      hasReturnedState: Boolean(returnedState),
+      hasExpectedState: Boolean(expectedState),
+      stateMatches:
+        Boolean(returnedState) &&
+        Boolean(expectedState) &&
+        returnedState === expectedState,
+    });
     c.header(
       "Set-Cookie",
       buildExpiredCookie({
@@ -123,7 +158,8 @@ app.get("/auth/google/callback", async (c) => {
   let result;
   try {
     result = await authService.handleCallback(code);
-  } catch {
+  } catch (error) {
+    logOAuthCallbackFailure(error);
     c.header(
       "Set-Cookie",
       buildExpiredCookie({

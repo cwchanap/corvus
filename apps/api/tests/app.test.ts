@@ -1,4 +1,4 @@
-import { beforeEach, describe, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
     getAuthorizationUrl: vi.fn((state: string) => {
@@ -27,6 +27,22 @@ vi.mock("../src/graphql/handler", () => ({
 }));
 
 vi.mock("../src/lib/auth/service", () => ({
+    AuthServiceError: class AuthServiceError extends Error {
+        readonly code: string;
+        readonly status?: number;
+        readonly details?: string;
+
+        constructor(
+            message: string,
+            options: { code: string; status?: number; details?: string },
+        ) {
+            super(message);
+            this.name = "AuthServiceError";
+            this.code = options.code;
+            this.status = options.status;
+            this.details = options.details;
+        }
+    },
     GoogleAuthService: vi.fn(() => ({
         getAuthorizationUrl: authMocks.getAuthorizationUrl,
         handleCallback: authMocks.handleCallback,
@@ -90,6 +106,23 @@ beforeEach(() => {
 // Google OAuth routes
 // ---------------------------------------------------------------------------
 describe("Google OAuth routes", () => {
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+    let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+        consoleErrorSpy = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => undefined);
+        consoleWarnSpy = vi
+            .spyOn(console, "warn")
+            .mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
+        consoleWarnSpy.mockRestore();
+    });
+
     it("redirects /auth/google/start to Google and sets a state cookie", async () => {
         const assets = makeAssets();
         const res = await app.request(
@@ -126,6 +159,16 @@ describe("Google OAuth routes", () => {
         expect(setCookie).toContain("corvus-oauth-state=");
         expect(setCookie).toContain("Max-Age=0");
         expect(authMocks.handleCallback).not.toHaveBeenCalled();
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+            "Google OAuth callback rejected",
+            expect.objectContaining({
+                reason: "state_mismatch",
+                hasCode: true,
+                hasReturnedState: true,
+                hasExpectedState: true,
+                stateMatches: false,
+            }),
+        );
     });
 
     it("sets a session cookie and redirects to dashboard after callback", async () => {
@@ -168,6 +211,14 @@ describe("Google OAuth routes", () => {
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
         expect(setCookie).toContain("Max-Age=0");
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            "Google OAuth callback failed",
+            expect.objectContaining({
+                code: "UNKNOWN",
+                name: "Error",
+                message: "Token exchange failed",
+            }),
+        );
     });
 });
 

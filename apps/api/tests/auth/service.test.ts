@@ -73,6 +73,8 @@ describe("GoogleAuthService", () => {
 
         await expect(service.handleCallback("bad-code")).rejects.toMatchObject({
             code: "TOKEN_EXCHANGE_FAILED",
+            status: 400,
+            details: "invalid_grant",
         });
     });
 
