@@ -1,6 +1,10 @@
 # Development environment variables for Cloudflare Workers (API)
 # Copy this file to .dev.vars and fill in real values before running `wrangler dev`
 
+# Google OAuth redirect URI for local development
+# Overrides the production value from wrangler.jsonc during wrangler dev
+GOOGLE_REDIRECT_URI="http://localhost:5002/auth/google/callback"
+
 # Supabase project URL (from Project Settings > API)
 SUPABASE_URL="https://your-project-ref.supabase.co"
 
