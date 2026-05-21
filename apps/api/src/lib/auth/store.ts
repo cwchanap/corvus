@@ -29,49 +29,42 @@ class D1AuthStore implements AuthStore {
     constructor(private readonly db: DB) {}
 
     async upsertGoogleUser(identity: GoogleIdentity): Promise<PublicUser> {
-        const existing = await this.db
-            .select()
-            .from(users)
-            .where(eq(users.google_sub, identity.sub))
-            .get();
-
         const now = new Date().toISOString();
+        const newId = crypto.randomUUID();
 
-        if (existing) {
-            await this.db
-                .update(users)
-                .set({
+        const [row] = await this.db
+            .insert(users)
+            .values({
+                id: newId,
+                google_sub: identity.sub,
+                email: identity.email,
+                name: identity.name,
+                avatar_url: identity.picture ?? null,
+                created_at: now,
+                updated_at: now,
+            })
+            .onConflictDoUpdate({
+                target: users.google_sub,
+                set: {
                     email: identity.email,
                     name: identity.name,
                     avatar_url: identity.picture ?? null,
                     updated_at: now,
-                })
-                .where(eq(users.id, existing.id))
-                .run();
+                },
+            })
+            .returning({
+                id: users.id,
+                email: users.email,
+                name: users.name,
+                created_at: users.created_at,
+                updated_at: users.updated_at,
+            });
 
-            return {
-                id: existing.id,
-                email: identity.email,
-                name: identity.name,
-                created_at: existing.created_at,
-                updated_at: now,
-            };
+        if (row.id === newId) {
+            await createDefaultCategories(this.db, newId);
         }
 
-        const user = {
-            id: crypto.randomUUID(),
-            google_sub: identity.sub,
-            email: identity.email,
-            name: identity.name,
-            avatar_url: identity.picture ?? null,
-            created_at: now,
-            updated_at: now,
-        };
-
-        await this.db.insert(users).values(user).run();
-        await createDefaultCategories(this.db, user.id);
-
-        return toPublicUser(user);
+        return row;
     }
 
     async createSession(userId: string, expiresAt: Date): Promise<string> {
