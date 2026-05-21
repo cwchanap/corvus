@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "node -e \"require('node:fs').mkdirSync('dist/client', { recursive: true })\" && wrangler dev",
-    "dev:e2e": "bun run build && wrangler d1 migrations apply corvus --local && bun run dev -- --local --var TEST_AUTH_ENABLED:1",
+    "dev:e2e": "bun run build && wrangler d1 migrations apply corvus --local && bun run dev -- --local --var TEST_AUTH_ENABLED:1 --var DEV:1",
     "build": "vite build",
     "copy-assets": "rm -rf dist/client && mkdir -p dist/client && cp -r ../web/.output/public/. dist/client/",
     "build:api": "vite build",

@@ -62,6 +62,20 @@ describe("auth cookie helpers", () => {
         expect(header).toContain("Secure");
     });
 
+    it("builds explicit cross-site secure cookies without an extension origin", () => {
+        const header = buildSetCookie({
+            name: "corvus-session",
+            value: "session-123",
+            maxAge: 3600,
+            requestUrl: "https://app.example.com/auth/google/callback",
+            sameSite: "None",
+            env: {},
+        });
+
+        expect(header).toContain("SameSite=None");
+        expect(header).toContain("Secure");
+    });
+
     it("builds cross-site secure cookies for moz-extension origins", () => {
         const header = buildSetCookie({
             name: "corvus-session",
