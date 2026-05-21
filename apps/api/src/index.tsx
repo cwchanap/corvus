@@ -112,7 +112,20 @@ app.get("/auth/google/callback", async (c) => {
   }
 
   const authService = createAuthService(c);
-  const result = await authService.handleCallback(code);
+  let result;
+  try {
+    result = await authService.handleCallback(code);
+  } catch {
+    c.header(
+      "Set-Cookie",
+      buildExpiredCookie({
+        name: OAUTH_STATE_COOKIE_NAME,
+        ...cookieRequestOptions(c),
+      }),
+      { append: true },
+    );
+    return c.redirect("/login?error=auth_failed");
+  }
   c.header(
     "Set-Cookie",
     buildSetCookie({
@@ -137,7 +150,9 @@ app.get("/auth/google/callback", async (c) => {
 });
 
 app.post("/__test__/auth/session", async (c) => {
-  if (c.env.TEST_AUTH_ENABLED !== "1") {
+  const testAuthEnabled = c.env.TEST_AUTH_ENABLED === "1";
+  const nonProductionMode = c.env.DEV === "1" || c.env.INSECURE_COOKIES === "1";
+  if (!testAuthEnabled || !nonProductionMode) {
     return c.text("Not found", 404);
   }
 
@@ -181,7 +196,7 @@ app.post("/__test__/auth/session", async (c) => {
   return c.json({ user });
 });
 
-// GraphQL endpoint - API is now GraphQL-only
+// GraphQL endpoint
 app.all("/graphql", createGraphQLHandler());
 
 // Catch-all for serving static assets (web app)
