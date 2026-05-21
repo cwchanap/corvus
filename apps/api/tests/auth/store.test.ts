@@ -78,7 +78,7 @@ describe("D1AuthStore", () => {
             expect(mockCreateDefaultCategories).toHaveBeenCalledTimes(1);
         });
 
-        it("updates an existing user without creating default categories", async () => {
+        it("updates an existing user and still ensures default categories exist", async () => {
             const db = createMockDb();
 
             db.insertChain.returning.mockResolvedValue([
@@ -100,7 +100,13 @@ describe("D1AuthStore", () => {
             });
 
             expect(result.id).toBe("existing-user-id");
-            expect(mockCreateDefaultCategories).not.toHaveBeenCalled();
+            // Always call createDefaultCategories (idempotent with
+            // onConflictDoNothing) so that a previously-failed bootstrap is
+            // recovered on the next login.
+            expect(mockCreateDefaultCategories).toHaveBeenCalledWith(
+                db,
+                "existing-user-id",
+            );
         });
     });
 
