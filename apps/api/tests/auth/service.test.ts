@@ -727,4 +727,90 @@ describe("verifyGoogleIdToken", () => {
             message: "Google ID token email is not verified",
         });
     });
+
+    it("rejects token with missing email_verified", async () => {
+        const keyPair = await generateRsaKeyPair();
+        const kid = "test-key-id";
+        const now = Math.floor(Date.now() / 1000);
+
+        const claims = {
+            iss: "https://accounts.google.com",
+            aud: clientId,
+            exp: now + 3600,
+            sub: "google-sub-1",
+            email: "test@example.com",
+        };
+
+        const token = await createSignedJwt(
+            keyPair.privateKey,
+            { alg: "RS256", kid },
+            claims,
+        );
+        vi.stubGlobal("fetch", stubJwksFetch(keyPair, kid));
+
+        await expect(
+            verifyGoogleIdToken(token, clientId),
+        ).rejects.toMatchObject({
+            code: "INVALID_ID_TOKEN",
+            message: "Google ID token email is not verified",
+        });
+    });
+
+    it("rejects token with null email_verified", async () => {
+        const keyPair = await generateRsaKeyPair();
+        const kid = "test-key-id";
+        const now = Math.floor(Date.now() / 1000);
+
+        const claims = {
+            iss: "https://accounts.google.com",
+            aud: clientId,
+            exp: now + 3600,
+            sub: "google-sub-1",
+            email: "test@example.com",
+            email_verified: null,
+        };
+
+        const token = await createSignedJwt(
+            keyPair.privateKey,
+            { alg: "RS256", kid },
+            claims,
+        );
+        vi.stubGlobal("fetch", stubJwksFetch(keyPair, kid));
+
+        await expect(
+            verifyGoogleIdToken(token, clientId),
+        ).rejects.toMatchObject({
+            code: "INVALID_ID_TOKEN",
+            message: "Google ID token email is not verified",
+        });
+    });
+
+    it("rejects token with string email_verified", async () => {
+        const keyPair = await generateRsaKeyPair();
+        const kid = "test-key-id";
+        const now = Math.floor(Date.now() / 1000);
+
+        const claims = {
+            iss: "https://accounts.google.com",
+            aud: clientId,
+            exp: now + 3600,
+            sub: "google-sub-1",
+            email: "test@example.com",
+            email_verified: "true",
+        };
+
+        const token = await createSignedJwt(
+            keyPair.privateKey,
+            { alg: "RS256", kid },
+            claims,
+        );
+        vi.stubGlobal("fetch", stubJwksFetch(keyPair, kid));
+
+        await expect(
+            verifyGoogleIdToken(token, clientId),
+        ).rejects.toMatchObject({
+            code: "INVALID_ID_TOKEN",
+            message: "Google ID token email is not verified",
+        });
+    });
 });

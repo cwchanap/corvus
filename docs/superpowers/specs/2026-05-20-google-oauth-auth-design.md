@@ -4,7 +4,7 @@
 
 Corvus currently signs users in through Supabase Auth email/password GraphQL mutations. The rest of the product checks authentication through the `me` query and a server-managed session cookie, while wishlist ownership is stored as a text `user_id` on D1 wishlist tables.
 
-The new direction is a clean replacement: remove password signin and signup, remove Supabase Auth from the runtime auth boundary, and make Google OAuth the only user-facing authentication path.
+The new direction is a clean replacement: remove password sign-in and sign-up, remove Supabase Auth from the runtime auth boundary, and make Google OAuth the only user-facing authentication path.
 
 Primary references:
 
@@ -24,7 +24,7 @@ Primary references:
 - Account linking with prior Supabase users is not included.
 - Password fallback, email confirmation, forgot-password, and manual registration are removed.
 - Google Workspace domain restriction is not included unless added later as a product requirement.
-- Accessing Google APIs after signin is not included; the OAuth flow is for authentication.
+- Accessing Google APIs after sign-in is not included; the OAuth flow is for authentication.
 
 ## Architecture
 
@@ -66,7 +66,7 @@ Wishlist tables continue storing `user_id text`. New wishlist rows use the local
 - `state` is random, short-lived, HttpOnly, and must match the callback query.
 - The callback must reject missing `code`, missing `state`, mismatched state, token exchange failure, missing ID token, invalid signature, invalid issuer, wrong audience, expired token, or missing `sub`.
 - The implementation must not use email as the stable identity key; Google `sub` is the account key.
-- Session cookies are HttpOnly, path `/`, SameSite Lax for normal web signin, Secure outside local HTTP development, and have a finite max age.
+- Session cookies are HttpOnly, path `/`, SameSite Lax for normal web sign-in, Secure outside local HTTP development, and have a finite max age.
 - Extension-origin GraphQL requests may need the existing cross-site cookie handling preserved for the session cookie.
 
 ## API Contract
