@@ -73,7 +73,12 @@ export class GoogleAuthService {
         this.fetchImpl =
             options.fetchImpl ?? ((input, init) => fetch(input, init));
         this.now = options.now ?? (() => new Date());
-        this.verifyIdToken = options.verifyIdToken ?? verifyGoogleIdToken;
+        this.verifyIdToken =
+            options.verifyIdToken ??
+            ((idToken, clientId) =>
+                verifyGoogleIdToken(idToken, clientId, () =>
+                    this.now().getTime(),
+                ));
         this.sessionTtlMs = options.sessionTtlMs ?? DEFAULT_SESSION_TTL_MS;
     }
 
@@ -175,6 +180,7 @@ export class GoogleAuthService {
 export async function verifyGoogleIdToken(
     idToken: string,
     clientId: string,
+    nowMs: () => number = Date.now,
 ): Promise<GoogleIdentity> {
     const parts = idToken.split(".");
     if (parts.length !== 3) {
@@ -231,7 +237,7 @@ export async function verifyGoogleIdToken(
         throw invalidToken("Invalid Google ID token signature");
     }
 
-    validateClaims(claims, clientId);
+    validateClaims(claims, clientId, nowMs);
 
     return {
         sub: claims.sub as string,
@@ -254,6 +260,7 @@ function validateClaims(
         email_verified?: unknown;
     },
     clientId: string,
+    nowMs: () => number = Date.now,
 ) {
     if (
         claims.iss !== "https://accounts.google.com" &&
@@ -266,7 +273,7 @@ function validateClaims(
     }
     if (
         typeof claims.exp !== "number" ||
-        claims.exp <= Math.floor(Date.now() / 1000)
+        claims.exp <= Math.floor(nowMs() / 1000)
     ) {
         throw invalidToken("Google ID token is expired");
     }
