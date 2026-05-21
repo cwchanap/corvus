@@ -8,7 +8,7 @@ vi.mock("@repo/common/graphql/client", () => ({
 const mockedBaseRequest = vi.mocked(commonClient.graphqlRequest);
 
 // Import after mocking to pick up the mock
-import { graphqlRequest } from "./client";
+import { getGoogleAuthStartUrl, graphqlRequest } from "./client";
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -26,8 +26,14 @@ describe("graphqlRequest (web client wrapper)", () => {
             undefined,
             expect.objectContaining({
                 credentials: "include",
-                endpoint: expect.stringContaining("/graphql"),
+                endpoint: "/graphql",
             }),
+        );
+    });
+
+    it("builds the Google auth URL from the current origin by default", () => {
+        expect(getGoogleAuthStartUrl()).toBe(
+            `${window.location.origin}/auth/google/start`,
         );
     });
 
