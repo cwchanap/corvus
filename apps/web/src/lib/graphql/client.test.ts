@@ -12,6 +12,7 @@ import { getGoogleAuthStartUrl, graphqlRequest } from "./client";
 
 beforeEach(() => {
     vi.clearAllMocks();
+    window.history.replaceState({}, "", "/");
 });
 
 describe("graphqlRequest (web client wrapper)", () => {
@@ -26,14 +27,22 @@ describe("graphqlRequest (web client wrapper)", () => {
             undefined,
             expect.objectContaining({
                 credentials: "include",
-                endpoint: "/graphql",
+                endpoint: "http://localhost:5002/graphql",
             }),
         );
     });
 
-    it("builds the Google auth URL from the current origin by default", () => {
+    it("builds the Google auth URL from the dev API origin by default", () => {
         expect(getGoogleAuthStartUrl()).toBe(
-            `${window.location.origin}/auth/google/start`,
+            "http://localhost:5002/auth/google/start",
+        );
+    });
+
+    it("preserves the extension source for Google auth redirects", () => {
+        window.history.replaceState({}, "", "/login?source=extension");
+
+        expect(getGoogleAuthStartUrl()).toBe(
+            "http://localhost:5002/auth/google/start?source=extension",
         );
     });
 
