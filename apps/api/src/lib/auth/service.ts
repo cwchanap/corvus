@@ -10,18 +10,21 @@ type AuthServiceErrorCode =
 export class AuthServiceError extends Error {
     readonly code: AuthServiceErrorCode;
     readonly status?: number;
+    readonly details?: string;
 
     constructor(
         message: string,
         options: {
             code: AuthServiceErrorCode;
             status?: number;
+            details?: string;
         },
     ) {
         super(message);
         this.name = "AuthServiceError";
         this.code = options.code;
         this.status = options.status;
+        this.details = options.details;
     }
 }
 
@@ -108,9 +111,11 @@ export class GoogleAuthService {
         });
 
         if (!response.ok) {
+            const details = await readGoogleErrorDetails(response);
             throw new AuthServiceError("Google token exchange failed", {
                 code: "TOKEN_EXCHANGE_FAILED",
                 status: response.status,
+                details,
             });
         }
 
@@ -299,4 +304,40 @@ function base64UrlToBytes(value: string): Uint8Array {
 
 function invalidToken(message: string): AuthServiceError {
     return new AuthServiceError(message, { code: "INVALID_ID_TOKEN" });
+}
+
+async function readGoogleErrorDetails(
+    response: Response,
+): Promise<string | undefined> {
+    const raw = await response.text().catch(() => "");
+    const trimmed = raw.trim();
+    if (trimmed.length === 0) {
+        return undefined;
+    }
+
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+        try {
+            const parsed = JSON.parse(trimmed) as {
+                error?: unknown;
+                error_description?: unknown;
+            };
+            const error =
+                typeof parsed.error === "string" ? parsed.error.trim() : "";
+            const description =
+                typeof parsed.error_description === "string"
+                    ? parsed.error_description.trim()
+                    : "";
+            const details = [error, description].filter(Boolean).join(": ");
+            return truncateLogDetail(details || trimmed);
+        } catch {
+            return truncateLogDetail(trimmed);
+        }
+    }
+
+    return truncateLogDetail(trimmed);
+}
+
+function truncateLogDetail(value: string): string {
+    return value.length > 240 ? `${value.slice(0, 240)}...` : value;
 }
