@@ -32,9 +32,9 @@ describe("graphqlRequest (web client wrapper)", () => {
         );
     });
 
-    it("builds the Google auth URL from the dev API origin by default", () => {
+    it("builds the Google auth URL from the web origin (window.location.origin)", () => {
         expect(getGoogleAuthStartUrl()).toBe(
-            "http://localhost:5002/auth/google/start",
+            `${window.location.origin}/auth/google/start`,
         );
     });
 
@@ -42,7 +42,7 @@ describe("graphqlRequest (web client wrapper)", () => {
         window.history.replaceState({}, "", "/login?source=extension");
 
         expect(getGoogleAuthStartUrl()).toBe(
-            "http://localhost:5002/auth/google/start?source=extension",
+            `${window.location.origin}/auth/google/start?source=extension`,
         );
     });
 

@@ -60,9 +60,11 @@ class D1AuthStore implements AuthStore {
                 updated_at: users.updated_at,
             });
 
-        if (row.id === newId) {
-            await createDefaultCategories(this.db, newId);
-        }
+        // Always attempt to seed default categories. The function uses
+        // onConflictDoNothing so it is idempotent — existing categories are
+        // left untouched. This also recovers from a previous login where the
+        // user insert committed but the category bootstrap failed.
+        await createDefaultCategories(this.db, row.id);
 
         return row;
     }
