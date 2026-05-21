@@ -270,7 +270,7 @@ function validateClaims(
     if (typeof claims.email !== "string" || claims.email.length === 0) {
         throw invalidToken("Google ID token missing email");
     }
-    if (claims.email_verified === false) {
+    if (claims.email_verified !== true) {
         throw invalidToken("Google ID token email is not verified");
     }
 }

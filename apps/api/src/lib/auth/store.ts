@@ -100,7 +100,8 @@ class D1AuthStore implements AuthStore {
             return null;
         }
 
-        if (Date.parse(row.session.expires_at) <= now.getTime()) {
+        const parsed = Date.parse(row.session.expires_at);
+        if (Number.isNaN(parsed) || parsed <= now.getTime()) {
             await this.deleteSession(sessionId);
             return null;
         }

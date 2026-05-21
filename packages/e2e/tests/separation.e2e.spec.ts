@@ -65,7 +65,9 @@ test.describe("GraphQL API E2E", () => {
         }
     });
 
-    test("Verify GraphQL endpoint configuration", async ({ page }) => {
+    test("GraphQL schema accepts me query (unauthenticated returns null)", async ({
+        page,
+    }) => {
         // Test that the public auth query works without password mutations.
         const response = await page.request.post(API_ENDPOINT, {
             data: {
@@ -85,5 +87,7 @@ test.describe("GraphQL API E2E", () => {
 
         expect(json).toHaveProperty("data");
         expect(json.data).toHaveProperty("me");
+        // Unauthenticated requests should return null for me
+        expect(json.data.me).toBeNull();
     });
 });

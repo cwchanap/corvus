@@ -108,7 +108,15 @@ app.get("/auth/google/callback", async (c) => {
     !expectedState ||
     returnedState !== expectedState
   ) {
-    return c.text("Invalid OAuth state", 400);
+    c.header(
+      "Set-Cookie",
+      buildExpiredCookie({
+        name: OAUTH_STATE_COOKIE_NAME,
+        ...cookieRequestOptions(c),
+      }),
+      { append: true },
+    );
+    return c.redirect("/login?error=auth_failed");
   }
 
   const authService = createAuthService(c);

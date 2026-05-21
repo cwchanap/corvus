@@ -6,8 +6,14 @@
 import { describe, it, expect } from "vitest";
 import {
     GoogleAuthService,
+    AuthServiceError,
     createD1AuthStore,
     requireAuth,
+    OAUTH_STATE_COOKIE_NAME,
+    SESSION_COOKIE_NAME,
+    buildExpiredCookie,
+    buildSetCookie,
+    readCookie,
 } from "../../src/lib/auth";
 import {
     createDatabase,
@@ -28,6 +34,36 @@ describe("auth barrel (src/lib/auth/index.ts)", () => {
     it("exports requireAuth", () => {
         expect(requireAuth).toBeDefined();
         expect(typeof requireAuth).toBe("function");
+    });
+
+    it("exports AuthServiceError", () => {
+        expect(AuthServiceError).toBeDefined();
+        expect(typeof AuthServiceError).toBe("function");
+    });
+
+    it("exports OAUTH_STATE_COOKIE_NAME", () => {
+        expect(OAUTH_STATE_COOKIE_NAME).toBeDefined();
+        expect(typeof OAUTH_STATE_COOKIE_NAME).toBe("string");
+    });
+
+    it("exports SESSION_COOKIE_NAME", () => {
+        expect(SESSION_COOKIE_NAME).toBeDefined();
+        expect(typeof SESSION_COOKIE_NAME).toBe("string");
+    });
+
+    it("exports buildExpiredCookie", () => {
+        expect(buildExpiredCookie).toBeDefined();
+        expect(typeof buildExpiredCookie).toBe("function");
+    });
+
+    it("exports buildSetCookie", () => {
+        expect(buildSetCookie).toBeDefined();
+        expect(typeof buildSetCookie).toBe("function");
+    });
+
+    it("exports readCookie", () => {
+        expect(readCookie).toBeDefined();
+        expect(typeof readCookie).toBe("function");
     });
 });
 

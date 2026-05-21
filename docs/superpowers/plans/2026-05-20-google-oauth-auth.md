@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace Supabase password signin/signup with direct Google OAuth and Corvus-owned D1 sessions.
+**Goal:** Replace Supabase password sign-in/sign-up with direct Google OAuth and Corvus-owned D1 sessions.
 
 **Architecture:** The API owns the OAuth authorization-code callback, validates Google identity, upserts a local D1 user, creates an HttpOnly Corvus session cookie, and exposes the authenticated user through the existing GraphQL context. Web and extension clients keep using `me` and `logout`, while login/register password surfaces are removed.
 
@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Local Identity Schema And Session Store
+## Task 1: Local Identity Schema And Session Store
 
 **Files:**
 
@@ -87,7 +87,7 @@ git add apps/api/src/lib/db/schema.ts apps/api/src/lib/db/types.ts apps/api/src/
 git commit -m "feat(api): add local google auth storage"
 ```
 
-### Task 2: OAuth Cookies, Token Validation, And Auth Service
+## Task 2: OAuth Cookies, Token Validation, And Auth Service
 
 **Files:**
 
@@ -147,7 +147,7 @@ git add apps/api/src/lib/auth apps/api/tests/auth
 git commit -m "feat(api): add google oauth auth service"
 ```
 
-### Task 3: API Routes And GraphQL Context
+## Task 3: API Routes And GraphQL Context
 
 **Files:**
 
@@ -198,7 +198,7 @@ git add apps/api/src apps/api/tests apps/api/drizzle apps/api/codegen.ts
 git commit -m "feat(api): wire google oauth routes"
 ```
 
-### Task 4: Shared GraphQL Contract Cleanup
+## Task 4: Shared GraphQL Contract Cleanup
 
 **Files:**
 
@@ -248,7 +248,7 @@ git add packages/common apps/web/src/lib/graphql apps/extension/src/lib/graphql 
 git commit -m "refactor: remove password auth graphql operations"
 ```
 
-### Task 5: Web Login/Register UI
+## Task 5: Web Login/Register UI
 
 **Files:**
 
@@ -291,7 +291,7 @@ git add apps/web/src
 git commit -m "feat(web): switch login to google sso"
 ```
 
-### Task 6: E2E Updates And Final Verification
+## Task 6: E2E Updates And Final Verification
 
 **Files:**
 
