@@ -70,7 +70,8 @@ export class GoogleAuthService {
         private readonly env: GoogleAuthEnv,
         options: GoogleAuthServiceOptions = {},
     ) {
-        this.fetchImpl = options.fetchImpl ?? fetch;
+        this.fetchImpl =
+            options.fetchImpl ?? ((input, init) => fetch(input, init));
         this.now = options.now ?? (() => new Date());
         this.verifyIdToken = options.verifyIdToken ?? verifyGoogleIdToken;
         this.sessionTtlMs = options.sessionTtlMs ?? DEFAULT_SESSION_TTL_MS;
