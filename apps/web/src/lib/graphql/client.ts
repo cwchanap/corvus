@@ -9,8 +9,7 @@ import {
 } from "@repo/common/graphql/client";
 
 const GRAPHQL_ENDPOINT =
-    (import.meta.env.VITE_API_URL as string | undefined) ||
-    "http://localhost:5002/graphql";
+    (import.meta.env.VITE_API_URL as string | undefined) || "/graphql";
 
 export function getGoogleAuthStartUrl(): string {
     const fallbackOrigin =
