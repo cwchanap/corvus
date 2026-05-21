@@ -136,9 +136,26 @@ describe("Google OAuth routes", () => {
             "https://accounts.google.com/o/oauth2/v2/auth",
         );
         expect(res.headers.get("set-cookie")).toContain("corvus-oauth-state=");
+        expect(res.headers.get("set-cookie")).toContain("corvus-oauth-source=");
+        expect(res.headers.get("set-cookie")).toContain("Max-Age=0");
         expect(authMocks.getAuthorizationUrl).toHaveBeenCalledWith(
             expect.any(String),
         );
+    });
+
+    it("tracks extension OAuth source through the start route", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/start?source=extension",
+            {},
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("corvus-oauth-source=extension");
+        expect(setCookie).toContain("Max-Age=600");
     });
 
     it("rejects /auth/google/callback when state does not match", async () => {
@@ -147,7 +164,7 @@ describe("Google OAuth routes", () => {
             "https://app.example.com/auth/google/callback?code=code-1&state=returned-state",
             {
                 headers: {
-                    cookie: "corvus-oauth-state=different-state",
+                    cookie: "corvus-oauth-state=different-state; corvus-oauth-source=extension",
                 },
             },
             { ...baseEnv, ASSETS: assets },
@@ -157,6 +174,7 @@ describe("Google OAuth routes", () => {
         expect(res.headers.get("location")).toBe("/login?error=auth_failed");
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("corvus-oauth-source=");
         expect(setCookie).toContain("Max-Age=0");
         expect(authMocks.handleCallback).not.toHaveBeenCalled();
         expect(consoleWarnSpy).toHaveBeenCalledWith(
@@ -187,8 +205,32 @@ describe("Google OAuth routes", () => {
         expect(res.headers.get("location")).toBe("/dashboard");
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-session=session-123");
+        expect(setCookie).toContain("SameSite=Lax");
         expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("corvus-oauth-source=");
         expect(authMocks.handleCallback).toHaveBeenCalledWith("code-1");
+    });
+
+    it("sets an extension-compatible session cookie after extension OAuth callback", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?code=code-1&state=state-1",
+            {
+                headers: {
+                    cookie: "corvus-oauth-state=state-1; corvus-oauth-source=extension",
+                },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/dashboard");
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toMatch(
+            /corvus-session=session-123; HttpOnly; Path=\/; SameSite=None; Secure; Max-Age=/,
+        );
+        expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("corvus-oauth-source=");
     });
 
     it("redirects to login with error and clears state cookie when callback fails", async () => {
@@ -200,7 +242,7 @@ describe("Google OAuth routes", () => {
             "https://app.example.com/auth/google/callback?code=bad-code&state=state-1",
             {
                 headers: {
-                    cookie: "corvus-oauth-state=state-1",
+                    cookie: "corvus-oauth-state=state-1; corvus-oauth-source=extension",
                 },
             },
             { ...baseEnv, ASSETS: assets },
@@ -210,6 +252,7 @@ describe("Google OAuth routes", () => {
         expect(res.headers.get("location")).toBe("/login?error=auth_failed");
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("corvus-oauth-source=");
         expect(setCookie).toContain("Max-Age=0");
         expect(consoleErrorSpy).toHaveBeenCalledWith(
             "Google OAuth callback failed",

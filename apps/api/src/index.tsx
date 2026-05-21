@@ -8,6 +8,7 @@ import { getD1 } from "./lib/cloudflare";
 import { AuthServiceError, GoogleAuthService } from "./lib/auth/service";
 import { createD1AuthStore } from "./lib/auth/store";
 import {
+  OAUTH_SOURCE_COOKIE_NAME,
   OAUTH_STATE_COOKIE_NAME,
   SESSION_COOKIE_NAME,
   buildExpiredCookie,
@@ -30,6 +31,7 @@ const app = new Hono<{ Bindings: AppBindings }>();
 
 const OAUTH_STATE_MAX_AGE_SECONDS = 10 * 60;
 const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+const OAUTH_SOURCE_EXTENSION = "extension";
 
 function createAuthService(c: Context<{ Bindings: AppBindings }>) {
   const db = createDatabase(getD1(c));
@@ -43,6 +45,25 @@ function cookieRequestOptions(c: Context<{ Bindings: AppBindings }>) {
     origin: c.req.header("origin"),
     env: c.env,
   };
+}
+
+function appendExpiredAuthCookie(
+  c: Context<{ Bindings: AppBindings }>,
+  name: string,
+) {
+  c.header(
+    "Set-Cookie",
+    buildExpiredCookie({
+      name,
+      ...cookieRequestOptions(c),
+    }),
+    { append: true },
+  );
+}
+
+function clearOAuthFlowCookies(c: Context<{ Bindings: AppBindings }>) {
+  appendExpiredAuthCookie(c, OAUTH_STATE_COOKIE_NAME);
+  appendExpiredAuthCookie(c, OAUTH_SOURCE_COOKIE_NAME);
 }
 
 function logOAuthCallbackFailure(error: unknown) {
@@ -104,6 +125,10 @@ app.use(
 
 app.get("/auth/google/start", (c) => {
   const state = crypto.randomUUID();
+  const oauthSource =
+    c.req.query("source") === OAUTH_SOURCE_EXTENSION
+      ? OAUTH_SOURCE_EXTENSION
+      : null;
   const authService = createAuthService(c);
   c.header(
     "Set-Cookie",
@@ -115,6 +140,20 @@ app.get("/auth/google/start", (c) => {
     }),
     { append: true },
   );
+  if (oauthSource) {
+    c.header(
+      "Set-Cookie",
+      buildSetCookie({
+        name: OAUTH_SOURCE_COOKIE_NAME,
+        value: oauthSource,
+        maxAge: OAUTH_STATE_MAX_AGE_SECONDS,
+        ...cookieRequestOptions(c),
+      }),
+      { append: true },
+    );
+  } else {
+    appendExpiredAuthCookie(c, OAUTH_SOURCE_COOKIE_NAME);
+  }
 
   return c.redirect(authService.getAuthorizationUrl(state));
 });
@@ -122,10 +161,10 @@ app.get("/auth/google/start", (c) => {
 app.get("/auth/google/callback", async (c) => {
   const code = c.req.query("code");
   const returnedState = c.req.query("state");
-  const expectedState = readCookie(
-    c.req.header("cookie"),
-    OAUTH_STATE_COOKIE_NAME,
-  );
+  const cookieHeader = c.req.header("cookie");
+  const expectedState = readCookie(cookieHeader, OAUTH_STATE_COOKIE_NAME);
+  const oauthSource = readCookie(cookieHeader, OAUTH_SOURCE_COOKIE_NAME);
+  const extensionOAuthSource = oauthSource === OAUTH_SOURCE_EXTENSION;
 
   if (
     !code ||
@@ -143,14 +182,7 @@ app.get("/auth/google/callback", async (c) => {
         Boolean(expectedState) &&
         returnedState === expectedState,
     });
-    c.header(
-      "Set-Cookie",
-      buildExpiredCookie({
-        name: OAUTH_STATE_COOKIE_NAME,
-        ...cookieRequestOptions(c),
-      }),
-      { append: true },
-    );
+    clearOAuthFlowCookies(c);
     return c.redirect("/login?error=auth_failed");
   }
 
@@ -160,16 +192,13 @@ app.get("/auth/google/callback", async (c) => {
     result = await authService.handleCallback(code);
   } catch (error) {
     logOAuthCallbackFailure(error);
-    c.header(
-      "Set-Cookie",
-      buildExpiredCookie({
-        name: OAUTH_STATE_COOKIE_NAME,
-        ...cookieRequestOptions(c),
-      }),
-      { append: true },
-    );
+    clearOAuthFlowCookies(c);
     return c.redirect("/login?error=auth_failed");
   }
+  const sessionCookieOptions = {
+    ...cookieRequestOptions(c),
+    sameSite: extensionOAuthSource ? ("None" as const) : undefined,
+  };
   c.header(
     "Set-Cookie",
     buildSetCookie({
@@ -177,18 +206,11 @@ app.get("/auth/google/callback", async (c) => {
       value: result.sessionId,
       maxAge: SESSION_MAX_AGE_SECONDS,
       expires: result.expiresAt,
-      ...cookieRequestOptions(c),
+      ...sessionCookieOptions,
     }),
     { append: true },
   );
-  c.header(
-    "Set-Cookie",
-    buildExpiredCookie({
-      name: OAUTH_STATE_COOKIE_NAME,
-      ...cookieRequestOptions(c),
-    }),
-    { append: true },
-  );
+  clearOAuthFlowCookies(c);
 
   return c.redirect("/dashboard");
 });

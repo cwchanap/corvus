@@ -9,7 +9,10 @@ import {
 } from "@repo/common/graphql/client";
 
 const GRAPHQL_ENDPOINT =
-    (import.meta.env.VITE_API_URL as string | undefined) || "/graphql";
+    (import.meta.env.VITE_API_URL as string | undefined) ||
+    (["development", "test"].includes(import.meta.env.MODE)
+        ? "http://localhost:5002/graphql"
+        : "/graphql");
 
 export function getGoogleAuthStartUrl(): string {
     const fallbackOrigin =
@@ -17,7 +20,16 @@ export function getGoogleAuthStartUrl(): string {
             ? "http://localhost:5000"
             : window.location.origin;
     const apiUrl = new URL(GRAPHQL_ENDPOINT, fallbackOrigin);
-    return `${apiUrl.origin}/auth/google/start`;
+    const authUrl = new URL("/auth/google/start", apiUrl.origin);
+    if (typeof window !== "undefined") {
+        const source = new URLSearchParams(window.location.search).get(
+            "source",
+        );
+        if (source === "extension") {
+            authUrl.searchParams.set("source", source);
+        }
+    }
+    return authUrl.toString();
 }
 
 /**

@@ -34,7 +34,9 @@ function ErrorScreen(props: {
   const webAppUrl = import.meta.env.VITE_WEB_BASE || "http://localhost:5000";
 
   const handleLoginRedirect = () => {
-    browser.tabs.create({ url: `${webAppUrl}/login` });
+    const loginUrl = new URL("/login", webAppUrl);
+    loginUrl.searchParams.set("source", "extension");
+    browser.tabs.create({ url: loginUrl.toString() });
   };
 
   return (
