@@ -15,12 +15,16 @@ const GRAPHQL_ENDPOINT =
         : "/graphql");
 
 export function getGoogleAuthStartUrl(): string {
-    const fallbackOrigin =
+    // In the browser, always use the current page origin so the OAuth flow
+    // stays on the web-app origin.  In development the Vite dev server proxies
+    // /auth/* to the API; in production the API Worker serves both.
+    // SSR / test contexts that lack `window` fall back to deriving the origin
+    // from the configured GraphQL endpoint.
+    const authOrigin =
         typeof window === "undefined"
-            ? "http://localhost:5002"
+            ? new URL(GRAPHQL_ENDPOINT, "http://localhost:5002").origin
             : window.location.origin;
-    const apiUrl = new URL(GRAPHQL_ENDPOINT, fallbackOrigin);
-    const authUrl = new URL("/auth/google/start", apiUrl.origin);
+    const authUrl = new URL("/auth/google/start", authOrigin);
     if (typeof window !== "undefined") {
         const source = new URLSearchParams(window.location.search).get(
             "source",
