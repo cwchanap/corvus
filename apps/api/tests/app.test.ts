@@ -9,6 +9,11 @@ const authMocks = vi.hoisted(() => ({
     handleCallback: vi.fn(),
 }));
 
+const storeMocks = vi.hoisted(() => ({
+    upsertGoogleUser: vi.fn(),
+    createSession: vi.fn(),
+}));
+
 // Hoisted mock: createGraphQLHandler is called at module scope in index.tsx,
 // so the mock must be available before the import is resolved.
 vi.mock("../src/graphql/handler", () => ({
@@ -26,6 +31,18 @@ vi.mock("../src/lib/auth/service", () => ({
         getAuthorizationUrl: authMocks.getAuthorizationUrl,
         handleCallback: authMocks.handleCallback,
     })),
+}));
+
+vi.mock("../src/lib/cloudflare", () => ({
+    getD1: vi.fn(() => ({}) as any),
+}));
+
+vi.mock("../src/lib/auth/store", () => ({
+    createD1AuthStore: vi.fn(() => storeMocks),
+}));
+
+vi.mock("../src/lib/db", () => ({
+    createDatabase: vi.fn(() => ({})),
 }));
 
 import app from "../src/index";
@@ -359,5 +376,172 @@ describe("/__test__/auth/session guard", () => {
         );
 
         expect(res.status).toBe(404);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// /__test__/auth/session success path
+// ---------------------------------------------------------------------------
+describe("/__test__/auth/session success path", () => {
+    const testAuthEnv = {
+        ...baseEnv,
+        ASSETS: makeAssets(),
+        TEST_AUTH_ENABLED: "1",
+        DEV: "1",
+    };
+
+    beforeEach(() => {
+        storeMocks.upsertGoogleUser.mockResolvedValue({
+            id: "test-user-id",
+            email: "test@example.com",
+            name: "Test User",
+            created_at: "2026-05-20T12:00:00.000Z",
+            updated_at: "2026-05-20T12:00:00.000Z",
+        });
+        storeMocks.createSession.mockResolvedValue("test-session-id");
+    });
+
+    it("creates a test session with default values", async () => {
+        const res = await app.request(
+            "https://app.example.com/__test__/auth/session",
+            { method: "POST", body: JSON.stringify({}) },
+            testAuthEnv,
+        );
+
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.user).toEqual({
+            id: "test-user-id",
+            email: "test@example.com",
+            name: "Test User",
+            created_at: "2026-05-20T12:00:00.000Z",
+            updated_at: "2026-05-20T12:00:00.000Z",
+        });
+        expect(storeMocks.upsertGoogleUser).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sub: "test-google-sub",
+                email: "test@example.com",
+                name: "Test User",
+            }),
+        );
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toContain("corvus-session=test-session-id");
+    });
+
+    it("creates a test session with custom email and name", async () => {
+        storeMocks.upsertGoogleUser.mockResolvedValue({
+            id: "custom-user-id",
+            email: "custom@example.com",
+            name: "Custom User",
+            created_at: "2026-05-20T12:00:00.000Z",
+            updated_at: "2026-05-20T12:00:00.000Z",
+        });
+
+        const res = await app.request(
+            "https://app.example.com/__test__/auth/session",
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    email: "custom@example.com",
+                    name: "Custom User",
+                    sub: "custom-google-sub",
+                }),
+            },
+            testAuthEnv,
+        );
+
+        expect(res.status).toBe(200);
+        expect(storeMocks.upsertGoogleUser).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sub: "custom-google-sub",
+                email: "custom@example.com",
+                name: "Custom User",
+            }),
+        );
+    });
+
+    it("handles malformed JSON body with defaults", async () => {
+        const res = await app.request(
+            "https://app.example.com/__test__/auth/session",
+            { method: "POST", body: "not-json" },
+            testAuthEnv,
+        );
+
+        expect(res.status).toBe(200);
+        expect(storeMocks.upsertGoogleUser).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sub: "test-google-sub",
+            }),
+        );
+    });
+
+    it("returns 404 when INSECURE_COOKIES is set without DEV", async () => {
+        const res = await app.request(
+            "https://app.example.com/__test__/auth/session",
+            { method: "POST", body: JSON.stringify({}) },
+            { ...baseEnv, ASSETS: makeAssets(), TEST_AUTH_ENABLED: "1" },
+        );
+
+        expect(res.status).toBe(404);
+    });
+
+    it("allows INSECURE_COOKIES instead of DEV", async () => {
+        const res = await app.request(
+            "https://app.example.com/__test__/auth/session",
+            { method: "POST", body: JSON.stringify({}) },
+            {
+                ...baseEnv,
+                ASSETS: makeAssets(),
+                TEST_AUTH_ENABLED: "1",
+                INSECURE_COOKIES: "1",
+            },
+        );
+
+        expect(res.status).toBe(200);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// OAuth callback missing params
+// ---------------------------------------------------------------------------
+describe("OAuth callback missing parameters", () => {
+    it("rejects callback when code is missing", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?state=state-1",
+            {
+                headers: { cookie: "corvus-oauth-state=state-1" },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(400);
+        expect(authMocks.handleCallback).not.toHaveBeenCalled();
+    });
+
+    it("rejects callback when state query param is missing", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?code=code-1",
+            {
+                headers: { cookie: "corvus-oauth-state=state-1" },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(400);
+        expect(authMocks.handleCallback).not.toHaveBeenCalled();
+    });
+
+    it("rejects callback when state cookie is missing", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?code=code-1&state=state-1",
+            {},
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(400);
+        expect(authMocks.handleCallback).not.toHaveBeenCalled();
     });
 });
