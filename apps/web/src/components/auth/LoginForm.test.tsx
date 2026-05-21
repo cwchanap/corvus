@@ -9,7 +9,7 @@ describe("LoginForm", () => {
     expect(screen.getByText("Welcome Back")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Continue with Google" }),
-    ).toHaveAttribute("href", "http://localhost:5002/auth/google/start");
+    ).toHaveAttribute("href", `${window.location.origin}/auth/google/start`);
   });
 
   it("does not render password auth fields or signup links", () => {
