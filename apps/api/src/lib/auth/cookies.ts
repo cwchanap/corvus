@@ -1,11 +1,13 @@
 export const SESSION_COOKIE_NAME = "corvus-session";
 export const OAUTH_STATE_COOKIE_NAME = "corvus-oauth-state";
+export const OAUTH_SOURCE_COOKIE_NAME = "corvus-oauth-source";
 
 interface CookieOptions {
     name: string;
     requestUrl: string;
     env: Record<string, unknown>;
     origin?: string;
+    sameSite?: "Lax" | "None";
 }
 
 interface SetCookieOptions extends CookieOptions {
@@ -69,6 +71,14 @@ function getCookieSecurityAttributes(options: CookieOptions): {
     sameSite: "Lax" | "None";
     secure: boolean;
 } {
+    if (options.sameSite === "None") {
+        return { sameSite: "None", secure: true };
+    }
+
+    if (options.sameSite === "Lax") {
+        return { sameSite: "Lax", secure: shouldUseSecureCookie(options) };
+    }
+
     const extensionOrigin =
         options.origin?.startsWith("chrome-extension://") ||
         options.origin?.startsWith("moz-extension://");
@@ -77,16 +87,20 @@ function getCookieSecurityAttributes(options: CookieOptions): {
         return { sameSite: "None", secure: true };
     }
 
+    return {
+        sameSite: "Lax",
+        secure: shouldUseSecureCookie(options),
+    };
+}
+
+function shouldUseSecureCookie(options: CookieOptions): boolean {
     const requestUrl = new URL(options.requestUrl);
     const localInsecure =
         requestUrl.protocol === "http:" ||
         readBooleanEnv(options.env.DEV) ||
         readBooleanEnv(options.env.INSECURE_COOKIES);
 
-    return {
-        sameSite: "Lax",
-        secure: !localInsecure,
-    };
+    return !localInsecure;
 }
 
 function readBooleanEnv(value: unknown): boolean {
