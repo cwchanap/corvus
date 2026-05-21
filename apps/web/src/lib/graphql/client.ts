@@ -17,7 +17,7 @@ const GRAPHQL_ENDPOINT =
 export function getGoogleAuthStartUrl(): string {
     const fallbackOrigin =
         typeof window === "undefined"
-            ? "http://localhost:5000"
+            ? "http://localhost:5002"
             : window.location.origin;
     const apiUrl = new URL(GRAPHQL_ENDPOINT, fallbackOrigin);
     const authUrl = new URL("/auth/google/start", apiUrl.origin);
