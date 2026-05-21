@@ -262,6 +262,38 @@ describe("GoogleAuthService", () => {
             expect.any(Date),
         );
     });
+
+    it("threads injected now through to default verifyIdToken", async () => {
+        const fixedTime = new Date("2026-05-20T12:00:00.000Z");
+        let receivedNowMs: (() => number) | undefined;
+
+        const captureVerifyIdToken = vi
+            .fn()
+            .mockImplementation(async (_idToken: string, _clientId: string) => {
+                return {
+                    sub: "google-sub-1",
+                    email: "test@example.com",
+                    name: "Test User",
+                    picture: null,
+                };
+            });
+
+        const store = createStore();
+        const service = new GoogleAuthService(store, env, {
+            fetchImpl: createTokenResponseFetch(200, {
+                id_token: "header.payload.signature",
+            }),
+            now: () => fixedTime,
+            verifyIdToken: captureVerifyIdToken,
+        });
+
+        await service.handleCallback("oauth-code");
+
+        expect(captureVerifyIdToken).toHaveBeenCalledWith(
+            "header.payload.signature",
+            "google-client-id",
+        );
+    });
 });
 
 async function generateRsaKeyPair() {
@@ -859,6 +891,63 @@ describe("verifyGoogleIdToken", () => {
         ).rejects.toMatchObject({
             code: "INVALID_ID_TOKEN",
             message: "Google ID token email is not verified",
+        });
+    });
+
+    it("uses injected nowMs for expiry check", async () => {
+        const keyPair = await generateRsaKeyPair();
+        const kid = "test-key-id";
+        const fixedTimeSec = 1700000000;
+        const fixedNowMs = () => fixedTimeSec * 1000;
+
+        const claims = {
+            iss: "https://accounts.google.com",
+            aud: clientId,
+            exp: fixedTimeSec + 3600,
+            sub: "google-sub-1",
+            email: "test@example.com",
+            email_verified: true,
+            name: "Test User",
+        };
+
+        const token = await createSignedJwt(
+            keyPair.privateKey,
+            { alg: "RS256", kid },
+            claims,
+        );
+        vi.stubGlobal("fetch", stubJwksFetch(keyPair, kid));
+
+        const identity = await verifyGoogleIdToken(token, clientId, fixedNowMs);
+
+        expect(identity.sub).toBe("google-sub-1");
+    });
+
+    it("rejects expired token using injected nowMs", async () => {
+        const keyPair = await generateRsaKeyPair();
+        const kid = "test-key-id";
+        const fixedTimeSec = 1700000000;
+        const fixedNowMs = () => fixedTimeSec * 1000;
+
+        const claims = {
+            iss: "https://accounts.google.com",
+            aud: clientId,
+            exp: fixedTimeSec - 3600,
+            sub: "google-sub-1",
+            email: "test@example.com",
+        };
+
+        const token = await createSignedJwt(
+            keyPair.privateKey,
+            { alg: "RS256", kid },
+            claims,
+        );
+        vi.stubGlobal("fetch", stubJwksFetch(keyPair, kid));
+
+        await expect(
+            verifyGoogleIdToken(token, clientId, fixedNowMs),
+        ).rejects.toMatchObject({
+            code: "INVALID_ID_TOKEN",
+            message: "Google ID token is expired",
         });
     });
 });
