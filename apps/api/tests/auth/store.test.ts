@@ -213,6 +213,30 @@ describe("D1AuthStore", () => {
 
             expect(result).toBeNull();
         });
+
+        it("deletes and returns null when expires_at is unparseable", async () => {
+            const db = createMockDb();
+            db.selectChain.get.mockResolvedValue({
+                session: {
+                    id: "s-1",
+                    user_id: "u-1",
+                    expires_at: "not-a-date",
+                },
+                user: {
+                    id: "u-1",
+                    email: "test@example.com",
+                    name: "Test User",
+                    created_at: "2026-01-01T00:00:00.000Z",
+                    updated_at: "2026-05-20T12:00:00.000Z",
+                },
+            });
+
+            const store = createD1AuthStore(db as any);
+            const result = await store.getUserBySessionId("s-1");
+
+            expect(result).toBeNull();
+            expect(db.delete).toHaveBeenCalled();
+        });
     });
 
     describe("deleteSession", () => {

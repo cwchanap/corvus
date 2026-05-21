@@ -120,8 +120,11 @@ describe("Google OAuth routes", () => {
             { ...baseEnv, ASSETS: assets },
         );
 
-        expect(res.status).toBe(400);
-        expect(await res.text()).toBe("Invalid OAuth state");
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("Max-Age=0");
         expect(authMocks.handleCallback).not.toHaveBeenCalled();
     });
 
@@ -515,7 +518,11 @@ describe("OAuth callback missing parameters", () => {
             { ...baseEnv, ASSETS: assets },
         );
 
-        expect(res.status).toBe(400);
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("Max-Age=0");
         expect(authMocks.handleCallback).not.toHaveBeenCalled();
     });
 
@@ -529,7 +536,11 @@ describe("OAuth callback missing parameters", () => {
             { ...baseEnv, ASSETS: assets },
         );
 
-        expect(res.status).toBe(400);
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("Max-Age=0");
         expect(authMocks.handleCallback).not.toHaveBeenCalled();
     });
 
@@ -541,7 +552,11 @@ describe("OAuth callback missing parameters", () => {
             { ...baseEnv, ASSETS: assets },
         );
 
-        expect(res.status).toBe(400);
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toContain("corvus-oauth-state=");
+        expect(setCookie).toContain("Max-Age=0");
         expect(authMocks.handleCallback).not.toHaveBeenCalled();
     });
 });
