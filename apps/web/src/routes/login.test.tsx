@@ -6,6 +6,10 @@ vi.mock("@solidjs/meta", () => ({
   Title: () => null,
 }));
 
+vi.mock("@solidjs/router", () => ({
+  useSearchParams: () => [{ error: undefined }],
+}));
+
 vi.mock("../lib/theme/context", () => ({
   ThemeProvider: (props: { children: unknown }) => (
     <>{props.children as never}</>
@@ -13,7 +17,11 @@ vi.mock("../lib/theme/context", () => ({
 }));
 
 vi.mock("../components/auth/LoginForm", () => ({
-  LoginForm: () => <div data-testid="login-form">LoginForm</div>,
+  LoginForm: (props: { error?: string }) => (
+    <div data-testid="login-form" data-error={props.error ?? ""}>
+      LoginForm
+    </div>
+  ),
 }));
 
 describe("Login route", () => {
@@ -32,5 +40,10 @@ describe("Login route", () => {
     expect(
       screen.getByText("Your personal wishlist companion"),
     ).toBeInTheDocument();
+  });
+
+  it("passes empty error to LoginForm when no search param present", () => {
+    render(() => <Login />);
+    expect(screen.getByTestId("login-form")).toHaveAttribute("data-error", "");
   });
 });

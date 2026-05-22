@@ -22,4 +22,32 @@ describe("LoginForm", () => {
     expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
     expect(screen.queryByText("Create Account")).not.toBeInTheDocument();
   });
+
+  it("does not show an error message when no error prop is provided", () => {
+    render(() => <LoginForm />);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("shows an error message when error prop is auth_failed", () => {
+    render(() => <LoginForm error="auth_failed" />);
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("alert").textContent).toContain("Sign-in failed");
+  });
+
+  it("shows a generic error message for unknown error codes", () => {
+    render(() => <LoginForm error="unknown_error" />);
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("alert").textContent).toContain(
+      "An unexpected error occurred",
+    );
+  });
+
+  it("does not show an error message when error prop is null", () => {
+    render(() => <LoginForm error={null} />);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });
