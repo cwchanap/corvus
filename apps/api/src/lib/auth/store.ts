@@ -60,11 +60,19 @@ class D1AuthStore implements AuthStore {
                 updated_at: users.updated_at,
             });
 
-        // Always attempt to seed default categories. The function uses
+        // Best-effort seeding of default categories.  The function uses
         // onConflictDoNothing so it is idempotent — existing categories are
-        // left untouched. This also recovers from a previous login where the
-        // user insert committed but the category bootstrap failed.
-        await createDefaultCategories(this.db, row.id);
+        // left untouched.  A failure here must NOT abort the login flow; the
+        // user can still use the app (just without default categories until
+        // the next login attempt recovers them).
+        try {
+            await createDefaultCategories(this.db, row.id);
+        } catch (err) {
+            console.error("Failed to seed default categories", {
+                userId: row.id,
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
 
         return row;
     }

@@ -265,7 +265,6 @@ describe("GoogleAuthService", () => {
 
     it("threads injected now through to default verifyIdToken", async () => {
         const fixedTime = new Date("2026-05-20T12:00:00.000Z");
-        let receivedNowMs: (() => number) | undefined;
 
         const captureVerifyIdToken = vi
             .fn()
