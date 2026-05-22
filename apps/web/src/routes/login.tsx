@@ -5,6 +5,9 @@ import { ThemeProvider } from "../lib/theme/context";
 
 export default function Login() {
   const [searchParams] = useSearchParams();
+  const error = Array.isArray(searchParams.error)
+    ? searchParams.error[0]
+    : searchParams.error;
 
   return (
     <ThemeProvider>
@@ -19,7 +22,7 @@ export default function Login() {
               Your personal wishlist companion
             </p>
           </div>
-          <LoginForm error={searchParams.error} />
+          <LoginForm error={error} />
         </div>
       </div>
     </ThemeProvider>

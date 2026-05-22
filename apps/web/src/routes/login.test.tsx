@@ -7,7 +7,7 @@ vi.mock("@solidjs/meta", () => ({
 }));
 
 vi.mock("@solidjs/router", () => ({
-  useSearchParams: () => [{ error: undefined }],
+  useSearchParams: vi.fn(() => [{ error: undefined }]),
 }));
 
 vi.mock("../lib/theme/context", () => ({
@@ -45,5 +45,18 @@ describe("Login route", () => {
   it("passes empty error to LoginForm when no search param present", () => {
     render(() => <Login />);
     expect(screen.getByTestId("login-form")).toHaveAttribute("data-error", "");
+  });
+
+  it("normalizes array error param to first element", async () => {
+    const { useSearchParams } = await import("@solidjs/router");
+    vi.mocked(useSearchParams).mockReturnValue([
+      { error: ["auth_failed", "extra"] },
+      expect.any(Function),
+    ]);
+    render(() => <Login />);
+    expect(screen.getByTestId("login-form")).toHaveAttribute(
+      "data-error",
+      "auth_failed",
+    );
   });
 });
