@@ -212,7 +212,7 @@ export async function verifyGoogleIdToken(
     }
 
     const jwks = (await jwksResponse.json()) as {
-        keys?: JsonWebKey[];
+        keys?: (JsonWebKey & { kid?: string })[];
     };
     const key = jwks.keys?.find((candidate) => candidate.kid === header.kid);
     if (!key) {
