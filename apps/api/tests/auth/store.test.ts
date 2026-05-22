@@ -8,6 +8,8 @@ vi.mock("../../src/lib/db/migrations", () => ({
 import { createD1AuthStore } from "../../src/lib/auth/store";
 import { createDefaultCategories } from "../../src/lib/db/migrations";
 
+let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
 function createMockDb() {
     const insertChain: Record<string, any> = {};
     insertChain.values = vi.fn().mockReturnValue(insertChain);
@@ -43,6 +45,9 @@ describe("D1AuthStore", () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         mockCreateDefaultCategories.mockResolvedValue(undefined);
+        consoleErrorSpy = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => undefined);
     });
 
     describe("upsertGoogleUser", () => {
@@ -106,6 +111,43 @@ describe("D1AuthStore", () => {
             expect(mockCreateDefaultCategories).toHaveBeenCalledWith(
                 db,
                 "existing-user-id",
+            );
+        });
+
+        it("returns the user even when createDefaultCategories throws", async () => {
+            const db = createMockDb();
+
+            db.insertChain.returning.mockResolvedValue([
+                {
+                    id: "user-1",
+                    email: "test@example.com",
+                    name: "Test User",
+                    created_at: "2026-05-20T12:00:00.000Z",
+                    updated_at: "2026-05-20T12:00:00.000Z",
+                },
+            ]);
+
+            mockCreateDefaultCategories.mockRejectedValue(
+                new Error("DB connection lost"),
+            );
+
+            const store = createD1AuthStore(db as any);
+            const result = await store.upsertGoogleUser({
+                sub: "google-sub-1",
+                email: "test@example.com",
+                name: "Test User",
+                picture: null,
+            });
+
+            // Login must succeed despite category seeding failure
+            expect(result.id).toBe("user-1");
+            expect(result.email).toBe("test@example.com");
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                "Failed to seed default categories",
+                expect.objectContaining({
+                    userId: "user-1",
+                    error: "DB connection lost",
+                }),
             );
         });
     });
