@@ -336,14 +336,16 @@ describe("CORS middleware origin handling", () => {
         expect(res.headers.get("access-control-allow-origin")).toBeNull();
     });
 
-    it("blocks moz-extension:// origins when no allowlist is configured", async () => {
+    it("allows moz-extension:// origins without an allowlist", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
             { headers: { origin: "moz-extension://some-firefox-id" } },
             { ...baseEnv, ASSETS: assets },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "moz-extension://some-firefox-id",
+        );
     });
 
     it("reflects allowlisted chrome-extension:// origins", async () => {
@@ -363,20 +365,19 @@ describe("CORS middleware origin handling", () => {
         );
     });
 
-    it("reflects allowlisted moz-extension:// origins", async () => {
+    it("allows moz-extension:// origins regardless of allowlist", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
-            { headers: { origin: "moz-extension://otherid" } },
+            { headers: { origin: "moz-extension://random-per-install-id" } },
             {
                 ...baseEnv,
                 ASSETS: assets,
-                ALLOWED_EXTENSION_ORIGINS:
-                    "chrome-extension://exampleid,moz-extension://otherid",
+                ALLOWED_EXTENSION_ORIGINS: "chrome-extension://exampleid",
             },
         );
         expect(res.headers.get("access-control-allow-origin")).toBe(
-            "moz-extension://otherid",
+            "moz-extension://random-per-install-id",
         );
     });
 
@@ -426,7 +427,7 @@ describe("CORS middleware origin handling", () => {
         );
     });
 
-    it("allows all moz-extension origins in dev mode", async () => {
+    it("allows moz-extension origins in dev mode", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
