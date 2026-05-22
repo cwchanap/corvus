@@ -336,14 +336,16 @@ describe("CORS middleware origin handling", () => {
         expect(res.headers.get("access-control-allow-origin")).toBeNull();
     });
 
-    it("blocks moz-extension:// origins when no allowlist is configured", async () => {
+    it("allows moz-extension:// origins without allowlist", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
             { headers: { origin: "moz-extension://some-firefox-id" } },
             { ...baseEnv, ASSETS: assets },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "moz-extension://some-firefox-id",
+        );
     });
 
     it("reflects allowlisted chrome-extension:// origins", async () => {
@@ -363,7 +365,7 @@ describe("CORS middleware origin handling", () => {
         );
     });
 
-    it("blocks moz-extension:// origins not in the allowlist", async () => {
+    it("allows moz-extension:// origins not in the chrome-extension allowlist", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
@@ -374,7 +376,9 @@ describe("CORS middleware origin handling", () => {
                 ALLOWED_EXTENSION_ORIGINS: "chrome-extension://exampleid",
             },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "moz-extension://random-per-install-id",
+        );
     });
 
     it("reflects allowlisted moz-extension:// origins", async () => {
