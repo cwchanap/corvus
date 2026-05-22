@@ -171,7 +171,9 @@ describe("Google OAuth routes", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        expect(res.headers.get("location")).toBe(
+            "/login?error=auth_failed&source=extension",
+        );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
         expect(setCookie).toContain("corvus-oauth-source=");
@@ -249,7 +251,9 @@ describe("Google OAuth routes", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        expect(res.headers.get("location")).toBe(
+            "/login?error=auth_failed&source=extension",
+        );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
         expect(setCookie).toContain("corvus-oauth-source=");
@@ -262,6 +266,25 @@ describe("Google OAuth routes", () => {
                 message: "Token exchange failed",
             }),
         );
+    });
+
+    it("redirects to login without source=extension when non-extension callback fails", async () => {
+        authMocks.handleCallback.mockRejectedValue(
+            new Error("Token exchange failed"),
+        );
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?code=bad-code&state=state-1",
+            {
+                headers: {
+                    cookie: "corvus-oauth-state=state-1",
+                },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
     });
 });
 
@@ -389,6 +412,30 @@ describe("CORS middleware origin handling", () => {
             { ...baseEnv, ASSETS: assets },
         );
         expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    it("allows all extension origins in dev mode", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "chrome-extension://any-extension-id" } },
+            { ...baseEnv, ASSETS: assets, DEV: "1" },
+        );
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "chrome-extension://any-extension-id",
+        );
+    });
+
+    it("allows all moz-extension origins in dev mode", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "moz-extension://any-firefox-id" } },
+            { ...baseEnv, ASSETS: assets, DEV: "1" },
+        );
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "moz-extension://any-firefox-id",
+        );
     });
 });
 

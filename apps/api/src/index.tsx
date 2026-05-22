@@ -121,7 +121,11 @@ app.use(
         origin.startsWith("chrome-extension://") ||
         origin.startsWith("moz-extension://")
       ) {
-        const allowedRaw = (c.env as AppBindings).ALLOWED_EXTENSION_ORIGINS;
+        const env = c.env as AppBindings;
+        if (env.DEV === "1") {
+          return origin;
+        }
+        const allowedRaw = env.ALLOWED_EXTENSION_ORIGINS;
         if (!allowedRaw) {
           return null;
         }
@@ -198,7 +202,8 @@ app.get("/auth/google/callback", async (c) => {
         returnedState === expectedState,
     });
     clearOAuthFlowCookies(c);
-    return c.redirect("/login?error=auth_failed");
+    const retryParams = extensionOAuthSource ? "&source=extension" : "";
+    return c.redirect(`/login?error=auth_failed${retryParams}`);
   }
 
   const authService = createAuthService(c);
@@ -208,7 +213,8 @@ app.get("/auth/google/callback", async (c) => {
   } catch (error) {
     logOAuthCallbackFailure(error);
     clearOAuthFlowCookies(c);
-    return c.redirect("/login?error=auth_failed");
+    const retryParams = extensionOAuthSource ? "&source=extension" : "";
+    return c.redirect(`/login?error=auth_failed${retryParams}`);
   }
   const sessionCookieOptions = {
     ...cookieRequestOptions(c),
