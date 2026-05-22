@@ -117,10 +117,15 @@ app.use(
         return origin;
       }
 
-      if (
-        origin.startsWith("chrome-extension://") ||
-        origin.startsWith("moz-extension://")
-      ) {
+      if (origin.startsWith("moz-extension://")) {
+        // Firefox generates a random UUID per installation, so a static
+        // allowlist cannot work.  Allow all moz-extension:// origins; the
+        // per-installation UUID is already a strong random identifier and the
+        // session cookie gates actual access.
+        return origin;
+      }
+
+      if (origin.startsWith("chrome-extension://")) {
         const env = c.env as AppBindings;
         if (env.DEV === "1") {
           return origin;

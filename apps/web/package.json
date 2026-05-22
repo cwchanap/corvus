@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "vinxi dev --port 5000",
-    "dev:e2e": "vinxi dev --port 5001",
+    "dev:e2e": "vinxi dev --port 5003",
     "dev:ui": "vinxi dev --port 5000",
     "build": "vinxi build",
     "build:web": "vinxi build",
