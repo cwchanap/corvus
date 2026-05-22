@@ -43,7 +43,7 @@ export default defineConfig({
         {
             command: "cd ../../apps/api && bun run dev:e2e",
             url: "http://localhost:5002/graphql",
-            reuseExistingServer: !process.env.CI,
+            reuseExistingServer: false,
             timeout: 120 * 1000,
             stdout: "pipe",
             stderr: "pipe",
