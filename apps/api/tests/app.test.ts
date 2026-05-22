@@ -303,28 +303,82 @@ describe("CORS middleware origin handling", () => {
         );
     });
 
-    it("reflects chrome-extension:// origins", async () => {
+    it("blocks chrome-extension:// origins when no allowlist is configured", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
             { headers: { origin: "chrome-extension://exampleid" } },
             { ...baseEnv, ASSETS: assets },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBe(
-            "chrome-extension://exampleid",
-        );
+        expect(res.headers.get("access-control-allow-origin")).toBeNull();
     });
 
-    it("reflects moz-extension:// origins", async () => {
+    it("blocks moz-extension:// origins when no allowlist is configured", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
             { headers: { origin: "moz-extension://some-firefox-id" } },
             { ...baseEnv, ASSETS: assets },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBe(
-            "moz-extension://some-firefox-id",
+        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    it("reflects allowlisted chrome-extension:// origins", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "chrome-extension://exampleid" } },
+            {
+                ...baseEnv,
+                ASSETS: assets,
+                ALLOWED_EXTENSION_ORIGINS:
+                    "chrome-extension://exampleid,moz-extension://otherid",
+            },
         );
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "chrome-extension://exampleid",
+        );
+    });
+
+    it("reflects allowlisted moz-extension:// origins", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "moz-extension://otherid" } },
+            {
+                ...baseEnv,
+                ASSETS: assets,
+                ALLOWED_EXTENSION_ORIGINS:
+                    "chrome-extension://exampleid,moz-extension://otherid",
+            },
+        );
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "moz-extension://otherid",
+        );
+    });
+
+    it("blocks extension origins not in the allowlist", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "chrome-extension://malicious-ext" } },
+            {
+                ...baseEnv,
+                ASSETS: assets,
+                ALLOWED_EXTENSION_ORIGINS: "chrome-extension://exampleid",
+            },
+        );
+        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    it("blocks extension origins when allowlist is empty string", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "chrome-extension://exampleid" } },
+            { ...baseEnv, ASSETS: assets, ALLOWED_EXTENSION_ORIGINS: "" },
+        );
+        expect(res.headers.get("access-control-allow-origin")).toBeNull();
     });
 
     it("blocks unknown external origins", async () => {

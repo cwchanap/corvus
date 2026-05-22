@@ -24,6 +24,7 @@ type AppBindings = {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   GOOGLE_REDIRECT_URI?: string;
+  ALLOWED_EXTENSION_ORIGINS?: string;
   TEST_AUTH_ENABLED?: string;
 };
 
@@ -91,11 +92,20 @@ function logOAuthCallbackFailure(error: unknown) {
   });
 }
 
+function isAllowedExtensionOrigin(
+  origin: string,
+  allowedExtensionOrigins: string[],
+): boolean {
+  return allowedExtensionOrigins.some(
+    (allowed) => allowed.trim().toLowerCase() === origin.toLowerCase(),
+  );
+}
+
 // Enable CORS for all routes
 app.use(
   "*",
   cors({
-    origin: (origin) => {
+    origin: (origin, c) => {
       if (!origin) {
         return "*";
       }
@@ -111,7 +121,12 @@ app.use(
         origin.startsWith("chrome-extension://") ||
         origin.startsWith("moz-extension://")
       ) {
-        return origin;
+        const allowedRaw = (c.env as AppBindings).ALLOWED_EXTENSION_ORIGINS;
+        if (!allowedRaw) {
+          return null;
+        }
+        const allowed = allowedRaw.split(",").filter(Boolean);
+        return isAllowedExtensionOrigin(origin, allowed) ? origin : null;
       }
 
       return null;

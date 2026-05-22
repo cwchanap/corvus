@@ -1,8 +1,11 @@
 import { Title } from "@solidjs/meta";
+import { useSearchParams } from "@solidjs/router";
 import { LoginForm } from "../components/auth/LoginForm";
 import { ThemeProvider } from "../lib/theme/context";
 
 export default function Login() {
+  const [searchParams] = useSearchParams();
+
   return (
     <ThemeProvider>
       <Title>Sign In - Corvus</Title>
@@ -16,7 +19,7 @@ export default function Login() {
               Your personal wishlist companion
             </p>
           </div>
-          <LoginForm />
+          <LoginForm error={searchParams.error} />
         </div>
       </div>
     </ThemeProvider>
