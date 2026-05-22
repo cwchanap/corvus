@@ -336,16 +336,14 @@ describe("CORS middleware origin handling", () => {
         expect(res.headers.get("access-control-allow-origin")).toBeNull();
     });
 
-    it("allows moz-extension:// origins without an allowlist", async () => {
+    it("blocks moz-extension:// origins when no allowlist is configured", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
             { headers: { origin: "moz-extension://some-firefox-id" } },
             { ...baseEnv, ASSETS: assets },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBe(
-            "moz-extension://some-firefox-id",
-        );
+        expect(res.headers.get("access-control-allow-origin")).toBeNull();
     });
 
     it("reflects allowlisted chrome-extension:// origins", async () => {
@@ -365,7 +363,7 @@ describe("CORS middleware origin handling", () => {
         );
     });
 
-    it("allows moz-extension:// origins regardless of allowlist", async () => {
+    it("blocks moz-extension:// origins not in the allowlist", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
@@ -376,8 +374,23 @@ describe("CORS middleware origin handling", () => {
                 ALLOWED_EXTENSION_ORIGINS: "chrome-extension://exampleid",
             },
         );
+        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    it("reflects allowlisted moz-extension:// origins", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "moz-extension://allowed-id" } },
+            {
+                ...baseEnv,
+                ASSETS: assets,
+                ALLOWED_EXTENSION_ORIGINS:
+                    "chrome-extension://exampleid,moz-extension://allowed-id",
+            },
+        );
         expect(res.headers.get("access-control-allow-origin")).toBe(
-            "moz-extension://random-per-install-id",
+            "moz-extension://allowed-id",
         );
     });
 
