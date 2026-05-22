@@ -119,20 +119,8 @@ app.use(
 
       if (origin.startsWith("moz-extension://")) {
         // Firefox generates a random UUID per installation, so a static
-        // allowlist is impractical in dev.  In development, allow all
-        // moz-extension:// origins.  In production, require the origin to be
-        // listed in ALLOWED_EXTENSION_ORIGINS (comma-separated), matching the
-        // chrome-extension:// security posture.
-        const env = c.env as AppBindings;
-        if (env.DEV === "1") {
-          return origin;
-        }
-        const allowedRaw = env.ALLOWED_EXTENSION_ORIGINS;
-        if (!allowedRaw) {
-          return null;
-        }
-        const allowed = allowedRaw.split(",").filter(Boolean);
-        return isAllowedExtensionOrigin(origin, allowed) ? origin : null;
+        // allowlist is impractical. Allow all moz-extension:// origins.
+        return origin;
       }
 
       if (origin.startsWith("chrome-extension://")) {
