@@ -6,7 +6,24 @@ import {
 } from "@repo/ui-components/card";
 import { getGoogleAuthStartUrl } from "../../lib/graphql/client";
 
-export function LoginForm() {
+interface LoginFormProps {
+  error?: string | null;
+}
+
+const ERROR_MESSAGES: Record<string, string> = {
+  auth_failed:
+    "Sign-in failed. The request may have expired or been invalid. Please try again.",
+};
+
+export function LoginForm(props: LoginFormProps) {
+  const errorMessage = () => {
+    const key = props.error;
+    if (!key) return null;
+    return (
+      ERROR_MESSAGES[key] ?? "An unexpected error occurred. Please try again."
+    );
+  };
+
   return (
     <Card class="w-full shadow-xl border-0 bg-card/80 backdrop-blur-sm">
       <CardHeader class="text-center pb-4">
@@ -15,6 +32,14 @@ export function LoginForm() {
         </CardTitle>
       </CardHeader>
       <CardContent class="px-8 pb-8">
+        {errorMessage() && (
+          <div
+            role="alert"
+            class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200"
+          >
+            {errorMessage()}
+          </div>
+        )}
         <a
           href={getGoogleAuthStartUrl()}
           target="_self"
