@@ -532,6 +532,18 @@ describe("CORS middleware origin handling", () => {
             "chrome-extension://any-chrome-id",
         );
     });
+
+    it("reflects same-origin requests in production", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "https://app.example.com" } },
+            { ...baseEnv, ASSETS: assets },
+        );
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "https://app.example.com",
+        );
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -637,6 +649,23 @@ describe("CSRF protection on /graphql", () => {
                 },
             },
             { ...baseEnv, ASSETS: assets, DEV: "1" },
+        );
+        expect(res.status).toBe(200);
+    });
+
+    it("allows credentialed POST with same origin in production", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/graphql",
+            {
+                method: "POST",
+                body: '{"query":"{__typename}"}',
+                headers: {
+                    cookie: "corvus-session=abc123",
+                    origin: "https://app.example.com",
+                },
+            },
+            { ...baseEnv, ASSETS: assets },
         );
         expect(res.status).toBe(200);
     });
