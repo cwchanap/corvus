@@ -114,7 +114,11 @@ app.use(
         origin.startsWith("http://localhost:") ||
         origin.startsWith("https://localhost:")
       ) {
-        return origin;
+        const env = c.env as AppBindings;
+        if (env.DEV === "1") {
+          return origin;
+        }
+        return null;
       }
 
       if (origin.startsWith("moz-extension://")) {
