@@ -356,14 +356,16 @@ describe("CORS middleware origin handling", () => {
         expect(res.headers.get("access-control-allow-origin")).toBeNull();
     });
 
-    it("blocks moz-extension:// origins when no allowlist is configured", async () => {
+    it("reflects moz-extension:// origins without an allowlist (Firefox per-install UUIDs)", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
             { headers: { origin: "moz-extension://some-firefox-id" } },
             { ...baseEnv, ASSETS: assets },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "moz-extension://some-firefox-id",
+        );
     });
 
     it("reflects allowlisted chrome-extension:// origins", async () => {
@@ -383,7 +385,7 @@ describe("CORS middleware origin handling", () => {
         );
     });
 
-    it("blocks moz-extension:// origins not in the allowlist", async () => {
+    it("reflects moz-extension:// origins even when not in the allowlist (Firefox per-install UUIDs)", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
@@ -394,10 +396,12 @@ describe("CORS middleware origin handling", () => {
                 ALLOWED_EXTENSION_ORIGINS: "chrome-extension://exampleid",
             },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "moz-extension://random-per-install-id",
+        );
     });
 
-    it("reflects allowlisted moz-extension:// origins", async () => {
+    it("reflects moz-extension:// origins without needing allowlist", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
@@ -405,8 +409,7 @@ describe("CORS middleware origin handling", () => {
             {
                 ...baseEnv,
                 ASSETS: assets,
-                ALLOWED_EXTENSION_ORIGINS:
-                    "chrome-extension://exampleid,moz-extension://allowed-id",
+                ALLOWED_EXTENSION_ORIGINS: "chrome-extension://exampleid",
             },
         );
         expect(res.headers.get("access-control-allow-origin")).toBe(
@@ -460,14 +463,16 @@ describe("CORS middleware origin handling", () => {
         );
     });
 
-    it("blocks moz-extension:// origins when allowlist is empty string", async () => {
+    it("reflects moz-extension:// origins even when allowlist is empty string", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
             { headers: { origin: "moz-extension://some-firefox-id" } },
             { ...baseEnv, ASSETS: assets, ALLOWED_EXTENSION_ORIGINS: "" },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "moz-extension://some-firefox-id",
+        );
     });
 
     it("allows moz-extension origins in dev mode", async () => {
@@ -481,6 +486,18 @@ describe("CORS middleware origin handling", () => {
             "moz-extension://any-firefox-id",
         );
     });
+
+    it("allows chrome-extension origins in dev mode", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "chrome-extension://any-chrome-id" } },
+            { ...baseEnv, ASSETS: assets, DEV: "1" },
+        );
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "chrome-extension://any-chrome-id",
+        );
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -492,6 +509,128 @@ describe("/graphql route", () => {
         const res = await app.request(
             "https://app.example.com/graphql",
             { method: "POST", body: '{"query":"{__typename}"}' },
+            { ...baseEnv, ASSETS: assets },
+        );
+        expect(res.status).toBe(200);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// CSRF protection on /graphql
+// ---------------------------------------------------------------------------
+describe("CSRF protection on /graphql", () => {
+    it("rejects credentialed POST with a disallowed origin", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/graphql",
+            {
+                method: "POST",
+                body: '{"query":"{__typename}"}',
+                headers: {
+                    cookie: "corvus-session=abc123",
+                    origin: "https://evil.example.com",
+                },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+        expect(res.status).toBe(403);
+        const body = await res.json();
+        expect(body).toEqual({ errors: [{ message: "CSRF check failed" }] });
+    });
+
+    it("rejects credentialed POST with no origin header", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/graphql",
+            {
+                method: "POST",
+                body: '{"query":"{__typename}"}',
+                headers: { cookie: "corvus-session=abc123" },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+        expect(res.status).toBe(403);
+    });
+
+    it("allows credentialed POST with allowed chrome-extension origin", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/graphql",
+            {
+                method: "POST",
+                body: '{"query":"{__typename}"}',
+                headers: {
+                    cookie: "corvus-session=abc123",
+                    origin: "chrome-extension://exampleid",
+                },
+            },
+            {
+                ...baseEnv,
+                ASSETS: assets,
+                ALLOWED_EXTENSION_ORIGINS: "chrome-extension://exampleid",
+            },
+        );
+        expect(res.status).toBe(200);
+    });
+
+    it("allows credentialed POST with moz-extension origin", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/graphql",
+            {
+                method: "POST",
+                body: '{"query":"{__typename}"}',
+                headers: {
+                    cookie: "corvus-session=abc123",
+                    origin: "moz-extension://random-uuid",
+                },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+        expect(res.status).toBe(200);
+    });
+
+    it("allows credentialed POST from localhost in dev mode", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/graphql",
+            {
+                method: "POST",
+                body: '{"query":"{__typename}"}',
+                headers: {
+                    cookie: "corvus-session=abc123",
+                    origin: "http://localhost:5173",
+                },
+            },
+            { ...baseEnv, ASSETS: assets, DEV: "1" },
+        );
+        expect(res.status).toBe(200);
+    });
+
+    it("allows uncredentialed POST with any origin", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/graphql",
+            {
+                method: "POST",
+                body: '{"query":"{__typename}"}',
+                headers: { origin: "https://evil.example.com" },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+        expect(res.status).toBe(200);
+    });
+
+    it("allows GET requests regardless of origin and session", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/graphql?query={__typename}",
+            {
+                headers: {
+                    cookie: "corvus-session=abc123",
+                    origin: "https://evil.example.com",
+                },
+            },
             { ...baseEnv, ASSETS: assets },
         );
         expect(res.status).toBe(200);
