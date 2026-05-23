@@ -13,6 +13,15 @@ interface LoginFormProps {
 const ERROR_MESSAGES: Record<string, string> = {
   auth_failed:
     "Sign-in failed. The request may have expired or been invalid. Please try again.",
+  auth_canceled: "Sign-in was canceled. Please try again when ready.",
+  auth_misconfig:
+    "Sign-in is currently unavailable due to a server configuration issue. Please try again later.",
+  auth_provider_unavailable:
+    "Google sign-in is temporarily unavailable. Please try again in a few minutes.",
+  auth_token_invalid:
+    "Sign-in failed due to an invalid authentication response. Please try again.",
+  auth_state_mismatch:
+    "Sign-in failed due to an expired or invalid request. Please try again.",
 };
 
 export function LoginForm(props: LoginFormProps) {

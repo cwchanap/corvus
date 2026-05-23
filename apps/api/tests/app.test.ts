@@ -141,6 +141,37 @@ describe("Google OAuth routes", () => {
         expect(authMocks.getAuthorizationUrl).toHaveBeenCalledWith(
             expect.any(String),
         );
+
+        // Verify the state cookie value matches the state passed to getAuthorizationUrl
+        const statePassedToAuth = authMocks.getAuthorizationUrl.mock
+            .calls[0][0] as string;
+        const setCookie = res.headers.get("set-cookie") ?? "";
+        expect(setCookie).toContain(
+            `corvus-oauth-state=${encodeURIComponent(statePassedToAuth)}`,
+        );
+
+        // State should be UUID-shaped
+        expect(statePassedToAuth).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+        );
+    });
+
+    it("produces distinct state values across two /start calls", async () => {
+        const assets = makeAssets();
+        const res1 = await app.request(
+            "https://app.example.com/auth/google/start",
+            {},
+            { ...baseEnv, ASSETS: assets },
+        );
+        const res2 = await app.request(
+            "https://app.example.com/auth/google/start",
+            {},
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        const state1 = authMocks.getAuthorizationUrl.mock.calls[0][0] as string;
+        const state2 = authMocks.getAuthorizationUrl.mock.calls[1][0 as string];
+        expect(state1).not.toBe(state2);
     });
 
     it("tracks extension OAuth source through the start route", async () => {
@@ -172,7 +203,7 @@ describe("Google OAuth routes", () => {
 
         expect(res.status).toBe(302);
         expect(res.headers.get("location")).toBe(
-            "/login?error=auth_failed&source=extension",
+            "/login?error=auth_state_mismatch&source=extension",
         );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
@@ -207,7 +238,10 @@ describe("Google OAuth routes", () => {
         expect(res.headers.get("location")).toBe("/dashboard");
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-session=session-123");
+        expect(setCookie).toContain("HttpOnly");
         expect(setCookie).toContain("SameSite=Lax");
+        expect(setCookie).toContain("Path=/");
+        expect(setCookie).toMatch(/Max-Age=\d+/);
         expect(setCookie).toContain("corvus-oauth-state=");
         expect(setCookie).toContain("corvus-oauth-source=");
         expect(authMocks.handleCallback).toHaveBeenCalledWith("code-1");
@@ -841,19 +875,20 @@ describe("/__test__/auth/session success path", () => {
         );
     });
 
-    it("handles malformed JSON body with defaults", async () => {
+    it("rejects malformed JSON body with 400", async () => {
+        const consoleInfoSpy = vi
+            .spyOn(console, "info")
+            .mockImplementation(() => undefined);
         const res = await app.request(
             "https://app.example.com/__test__/auth/session",
             { method: "POST", body: "not-json" },
             testAuthEnv,
         );
 
-        expect(res.status).toBe(200);
-        expect(storeMocks.upsertGoogleUser).toHaveBeenCalledWith(
-            expect.objectContaining({
-                sub: "test-google-sub",
-            }),
-        );
+        expect(res.status).toBe(400);
+        expect(await res.text()).toBe("Invalid JSON body");
+        expect(storeMocks.upsertGoogleUser).not.toHaveBeenCalled();
+        consoleInfoSpy.mockRestore();
     });
 
     it("returns 404 when INSECURE_COOKIES is set without DEV", async () => {
@@ -897,7 +932,9 @@ describe("OAuth callback missing parameters", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        expect(res.headers.get("location")).toBe(
+            "/login?error=auth_state_mismatch",
+        );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
         expect(setCookie).toContain("Max-Age=0");
@@ -915,7 +952,9 @@ describe("OAuth callback missing parameters", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        expect(res.headers.get("location")).toBe(
+            "/login?error=auth_state_mismatch",
+        );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
         expect(setCookie).toContain("Max-Age=0");
@@ -931,10 +970,143 @@ describe("OAuth callback missing parameters", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        expect(res.headers.get("location")).toBe(
+            "/login?error=auth_state_mismatch",
+        );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
         expect(setCookie).toContain("Max-Age=0");
         expect(authMocks.handleCallback).not.toHaveBeenCalled();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// OAuth error mapping
+// ---------------------------------------------------------------------------
+describe("OAuth error mapping", () => {
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+    let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+        consoleErrorSpy = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => undefined);
+        consoleWarnSpy = vi
+            .spyOn(console, "warn")
+            .mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
+        consoleWarnSpy.mockRestore();
+    });
+
+    it("redirects with auth_canceled when Google returns access_denied", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?error=access_denied&state=state-1",
+            {
+                headers: { cookie: "corvus-oauth-state=state-1" },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_canceled");
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+            "Google OAuth callback rejected",
+            expect.objectContaining({
+                reason: "google_error",
+                googleError: "access_denied",
+            }),
+        );
+    });
+
+    it("redirects with auth_failed for unknown Google errors", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?error=server_error",
+            {
+                headers: { cookie: "corvus-oauth-state=state-1" },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+    });
+
+    it("redirects with auth_canceled preserving extension source", async () => {
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?error=access_denied",
+            {
+                headers: { cookie: "corvus-oauth-source=extension" },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe(
+            "/login?error=auth_canceled&source=extension",
+        );
+    });
+
+    it("maps AuthServiceError MISSING_ENV to auth_misconfig in callback", async () => {
+        const { AuthServiceError: RealError } = await import(
+            "../src/lib/auth/service"
+        );
+        authMocks.handleCallback.mockRejectedValue(
+            new RealError("Missing env", { code: "MISSING_ENV" }),
+        );
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/callback?code=code-1&state=state-1",
+            {
+                headers: { cookie: "corvus-oauth-state=state-1" },
+            },
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_misconfig");
+    });
+});
+
+// ---------------------------------------------------------------------------
+// /auth/google/start error handling
+// ---------------------------------------------------------------------------
+describe("/auth/google/start error handling", () => {
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+        consoleErrorSpy = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
+    });
+
+    it("redirects to login with auth_misconfig when env vars are missing", async () => {
+        const { AuthServiceError: RealError } = await import(
+            "../src/lib/auth/service"
+        );
+        authMocks.getAuthorizationUrl.mockImplementation(() => {
+            throw new RealError("Missing required auth env GOOGLE_CLIENT_ID", {
+                code: "MISSING_ENV",
+            });
+        });
+        const assets = makeAssets();
+        const res = await app.request(
+            "https://app.example.com/auth/google/start",
+            {},
+            { ...baseEnv, ASSETS: assets },
+        );
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe("/login?error=auth_misconfig");
+        expect(consoleErrorSpy).toHaveBeenCalled();
     });
 });
