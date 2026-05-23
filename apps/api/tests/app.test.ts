@@ -302,28 +302,48 @@ describe("CORS middleware origin handling", () => {
         expect(res.status).toBe(200);
     });
 
-    it("reflects http://localhost:* origins", async () => {
+    it("reflects http://localhost:* origins in dev mode", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
             { headers: { origin: "http://localhost:5173" } },
-            { ...baseEnv, ASSETS: assets },
+            { ...baseEnv, ASSETS: assets, DEV: "1" },
         );
         expect(res.headers.get("access-control-allow-origin")).toBe(
             "http://localhost:5173",
         );
     });
 
-    it("reflects https://localhost:* origins", async () => {
+    it("reflects https://localhost:* origins in dev mode", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "https://localhost:8443" } },
+            { ...baseEnv, ASSETS: assets, DEV: "1" },
+        );
+        expect(res.headers.get("access-control-allow-origin")).toBe(
+            "https://localhost:8443",
+        );
+    });
+
+    it("blocks http://localhost:* origins when not in dev mode", async () => {
+        const assets = makeAssets({ status: 200, body: "ok" });
+        const res = await app.request(
+            "https://app.example.com/anything",
+            { headers: { origin: "http://localhost:5173" } },
+            { ...baseEnv, ASSETS: assets },
+        );
+        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    it("blocks https://localhost:* origins when not in dev mode", async () => {
         const assets = makeAssets({ status: 200, body: "ok" });
         const res = await app.request(
             "https://app.example.com/anything",
             { headers: { origin: "https://localhost:8443" } },
             { ...baseEnv, ASSETS: assets },
         );
-        expect(res.headers.get("access-control-allow-origin")).toBe(
-            "https://localhost:8443",
-        );
+        expect(res.headers.get("access-control-allow-origin")).toBeNull();
     });
 
     it("blocks chrome-extension:// origins when no allowlist is configured", async () => {
