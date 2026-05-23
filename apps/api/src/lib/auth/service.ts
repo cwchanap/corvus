@@ -5,6 +5,7 @@ type AuthServiceErrorCode =
     | "MISSING_ENV"
     | "TOKEN_EXCHANGE_FAILED"
     | "INVALID_ID_TOKEN"
+    | "JWKS_FETCH_FAILED"
     | "UNKNOWN";
 
 export class AuthServiceError extends Error {
@@ -76,8 +77,11 @@ export class GoogleAuthService {
         this.verifyIdToken =
             options.verifyIdToken ??
             ((idToken, clientId) =>
-                verifyGoogleIdToken(idToken, clientId, () =>
-                    this.now().getTime(),
+                verifyGoogleIdToken(
+                    idToken,
+                    clientId,
+                    () => this.now().getTime(),
+                    this.fetchImpl,
                 ));
         this.sessionTtlMs = options.sessionTtlMs ?? DEFAULT_SESSION_TTL_MS;
     }
@@ -125,9 +129,17 @@ export class GoogleAuthService {
             });
         }
 
-        const tokenResponse = (await response.json()) as {
-            id_token?: unknown;
-        };
+        let tokenResponse: { id_token?: unknown };
+        try {
+            tokenResponse = (await response.json()) as { id_token?: unknown };
+        } catch {
+            throw new AuthServiceError(
+                "Google token response was not valid JSON",
+                {
+                    code: "TOKEN_EXCHANGE_FAILED",
+                },
+            );
+        }
 
         if (typeof tokenResponse.id_token !== "string") {
             throw new AuthServiceError(
@@ -181,6 +193,7 @@ export async function verifyGoogleIdToken(
     idToken: string,
     clientId: string,
     nowMs: () => number = Date.now,
+    fetchImpl: typeof fetch = (input, init) => fetch(input, init),
 ): Promise<GoogleIdentity> {
     const parts = idToken.split(".");
     if (parts.length !== 3) {
@@ -206,9 +219,11 @@ export async function verifyGoogleIdToken(
         throw invalidToken("ID token header is not a Google RS256 key");
     }
 
-    const jwksResponse = await fetch(GOOGLE_JWKS_URL);
+    const jwksResponse = await fetchImpl(GOOGLE_JWKS_URL);
     if (!jwksResponse.ok) {
-        throw invalidToken("Unable to fetch Google signing keys");
+        throw new AuthServiceError("Unable to fetch Google signing keys", {
+            code: "JWKS_FETCH_FAILED",
+        });
     }
 
     const jwks = (await jwksResponse.json()) as {

@@ -237,6 +237,24 @@ describe("GoogleAuthService", () => {
         );
     });
 
+    it("throws TOKEN_EXCHANGE_FAILED when token response is not valid JSON", async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(
+            new Response("not-json", {
+                status: 200,
+                headers: { "content-type": "application/json" },
+            }),
+        ) as unknown as typeof fetch;
+        const service = new GoogleAuthService(createStore(), env, {
+            fetchImpl,
+            verifyIdToken: vi.fn(),
+        });
+
+        await expect(service.handleCallback("code")).rejects.toMatchObject({
+            code: "TOKEN_EXCHANGE_FAILED",
+            message: "Google token response was not valid JSON",
+        });
+    });
+
     it("throws when token response has no id_token", async () => {
         const service = new GoogleAuthService(createStore(), env, {
             fetchImpl: createTokenResponseFetch(200, {
@@ -558,7 +576,7 @@ describe("verifyGoogleIdToken", () => {
         await expect(
             verifyGoogleIdToken(token, clientId),
         ).rejects.toMatchObject({
-            code: "INVALID_ID_TOKEN",
+            code: "JWKS_FETCH_FAILED",
             message: "Unable to fetch Google signing keys",
         });
     });

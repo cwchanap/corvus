@@ -150,4 +150,39 @@ describe("useLogout", () => {
     expect(testClient.getQueryData(["auth", "me"])).toBeNull();
     expect(invalidateSpy).toHaveBeenCalled();
   });
+
+  it("logs error on logout failure", async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    mockedLogout.mockRejectedValueOnce(new Error("Network error"));
+
+    function Component() {
+      const mutation = useLogout();
+      return (
+        <div>
+          <button onClick={() => mutation.mutate()}>Logout</button>
+          <span>{mutation.isError ? "error" : "idle"}</span>
+        </div>
+      );
+    }
+
+    render(() => (
+      <Wrapper>
+        <Component />
+      </Wrapper>
+    ));
+
+    screen.getByText("Logout").click();
+
+    await waitFor(() => {
+      expect(screen.getByText("error")).toBeInTheDocument();
+    });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "[useLogout] Logout failed:",
+      expect.any(Error),
+    );
+    consoleErrorSpy.mockRestore();
+  });
 });
