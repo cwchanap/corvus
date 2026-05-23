@@ -101,6 +101,43 @@ function isAllowedExtensionOrigin(
   );
 }
 
+/**
+ * Determine whether a request origin is allowed for CORS and CSRF checks.
+ *
+ * Firefox assigns `moz-extension://<uuid>` per installation so the UUID
+ * cannot be pre-allowlisted. Any `moz-extension://` origin is accepted
+ * because only browser-installed extensions can hold that origin — a web
+ * page cannot spoof it.
+ */
+function isAllowedRequestOrigin(origin: string, env: AppBindings): boolean {
+  if (
+    origin.startsWith("http://localhost:") ||
+    origin.startsWith("https://localhost:")
+  ) {
+    return env.DEV === "1";
+  }
+
+  // Firefox extensions: accept any moz-extension:// origin.
+  // The browser guarantees only installed extensions hold these origins.
+  if (origin.startsWith("moz-extension://")) {
+    return true;
+  }
+
+  if (origin.startsWith("chrome-extension://")) {
+    if (env.DEV === "1") {
+      return true;
+    }
+    const allowedRaw = env.ALLOWED_EXTENSION_ORIGINS;
+    if (!allowedRaw) {
+      return false;
+    }
+    const allowed = allowedRaw.split(",").filter(Boolean);
+    return isAllowedExtensionOrigin(origin, allowed);
+  }
+
+  return false;
+}
+
 // Enable CORS for all routes
 app.use(
   "*",
@@ -110,44 +147,8 @@ app.use(
         return "*";
       }
 
-      if (
-        origin.startsWith("http://localhost:") ||
-        origin.startsWith("https://localhost:")
-      ) {
-        const env = c.env as AppBindings;
-        if (env.DEV === "1") {
-          return origin;
-        }
-        return null;
-      }
-
-      if (origin.startsWith("moz-extension://")) {
-        const env = c.env as AppBindings;
-        if (env.DEV === "1") {
-          return origin;
-        }
-        const allowedRaw = env.ALLOWED_EXTENSION_ORIGINS;
-        if (!allowedRaw) {
-          return null;
-        }
-        const allowed = allowedRaw.split(",").filter(Boolean);
-        return isAllowedExtensionOrigin(origin, allowed) ? origin : null;
-      }
-
-      if (origin.startsWith("chrome-extension://")) {
-        const env = c.env as AppBindings;
-        if (env.DEV === "1") {
-          return origin;
-        }
-        const allowedRaw = env.ALLOWED_EXTENSION_ORIGINS;
-        if (!allowedRaw) {
-          return null;
-        }
-        const allowed = allowedRaw.split(",").filter(Boolean);
-        return isAllowedExtensionOrigin(origin, allowed) ? origin : null;
-      }
-
-      return null;
+      const env = c.env as AppBindings;
+      return isAllowedRequestOrigin(origin, env) ? origin : null;
     },
     allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -155,6 +156,36 @@ app.use(
     maxAge: 86400, // 24 hours
   }),
 );
+
+// CSRF protection: reject credentialed state-changing /graphql requests
+// whose Origin header is not allowed. This prevents cross-site request
+// forgery via simple HTML form submissions (application/x-www-form-urlencoded)
+// which bypass CORS preflight.
+app.use("/graphql", async (c, next) => {
+  const method = c.req.method;
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
+    return next();
+  }
+
+  const hasSession = Boolean(
+    readCookie(c.req.header("cookie"), SESSION_COOKIE_NAME),
+  );
+  if (!hasSession) {
+    return next();
+  }
+
+  const origin = c.req.header("origin");
+  if (!origin) {
+    return c.json({ errors: [{ message: "CSRF check failed" }] }, 403);
+  }
+
+  const env = c.env as AppBindings;
+  if (!isAllowedRequestOrigin(origin, env)) {
+    return c.json({ errors: [{ message: "CSRF check failed" }] }, 403);
+  }
+
+  return next();
+});
 
 app.get("/auth/google/start", (c) => {
   const state = crypto.randomUUID();
