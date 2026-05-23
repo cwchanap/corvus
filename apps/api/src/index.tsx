@@ -92,6 +92,22 @@ function logOAuthCallbackFailure(error: unknown) {
   });
 }
 
+function mapAuthErrorToRedirectToken(error: unknown): string {
+  if (error instanceof AuthServiceError) {
+    switch (error.code) {
+      case "MISSING_ENV":
+        return "auth_misconfig";
+      case "JWKS_FETCH_FAILED":
+        return "auth_provider_unavailable";
+      case "INVALID_ID_TOKEN":
+        return "auth_token_invalid";
+      default:
+        return "auth_failed";
+    }
+  }
+  return "auth_failed";
+}
+
 function isAllowedExtensionOrigin(
   origin: string,
   allowedExtensionOrigins: string[],
@@ -138,7 +154,6 @@ function isAllowedRequestOrigin(origin: string, env: AppBindings): boolean {
   return false;
 }
 
-// Enable CORS for all routes
 app.use(
   "*",
   cors({
@@ -159,8 +174,8 @@ app.use(
 
 // CSRF protection: reject credentialed state-changing /graphql requests
 // whose Origin header is not allowed. This prevents cross-site request
-// forgery via simple HTML form submissions (application/x-www-form-urlencoded)
-// which bypass CORS preflight.
+// forgery via credentialed fetch() calls and simple HTML form submissions
+// (application/x-www-form-urlencoded) which bypass CORS preflight.
 app.use("/graphql", async (c, next) => {
   const method = c.req.method;
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
@@ -194,6 +209,18 @@ app.get("/auth/google/start", (c) => {
       ? OAUTH_SOURCE_EXTENSION
       : null;
   const authService = createAuthService(c);
+
+  let authorizationUrl: string;
+  try {
+    authorizationUrl = authService.getAuthorizationUrl(state);
+  } catch (error) {
+    logOAuthCallbackFailure(error);
+    const retryParams = oauthSource ? "&source=extension" : "";
+    return c.redirect(
+      `/login?error=${mapAuthErrorToRedirectToken(error)}${retryParams}`,
+    );
+  }
+
   c.header(
     "Set-Cookie",
     buildSetCookie({
@@ -219,16 +246,30 @@ app.get("/auth/google/start", (c) => {
     appendExpiredAuthCookie(c, OAUTH_SOURCE_COOKIE_NAME);
   }
 
-  return c.redirect(authService.getAuthorizationUrl(state));
+  return c.redirect(authorizationUrl);
 });
 
 app.get("/auth/google/callback", async (c) => {
+  const googleError = c.req.query("error");
   const code = c.req.query("code");
   const returnedState = c.req.query("state");
   const cookieHeader = c.req.header("cookie");
   const expectedState = readCookie(cookieHeader, OAUTH_STATE_COOKIE_NAME);
   const oauthSource = readCookie(cookieHeader, OAUTH_SOURCE_COOKIE_NAME);
   const extensionOAuthSource = oauthSource === OAUTH_SOURCE_EXTENSION;
+
+  // Handle Google's own error response (e.g. user denied consent)
+  if (googleError) {
+    console.warn("Google OAuth callback rejected", {
+      reason: "google_error",
+      googleError,
+    });
+    clearOAuthFlowCookies(c);
+    const retryParams = extensionOAuthSource ? "&source=extension" : "";
+    const token =
+      googleError === "access_denied" ? "auth_canceled" : "auth_failed";
+    return c.redirect(`/login?error=${token}${retryParams}`);
+  }
 
   if (
     !code ||
@@ -248,7 +289,7 @@ app.get("/auth/google/callback", async (c) => {
     });
     clearOAuthFlowCookies(c);
     const retryParams = extensionOAuthSource ? "&source=extension" : "";
-    return c.redirect(`/login?error=auth_failed${retryParams}`);
+    return c.redirect(`/login?error=auth_state_mismatch${retryParams}`);
   }
 
   const authService = createAuthService(c);
@@ -259,7 +300,9 @@ app.get("/auth/google/callback", async (c) => {
     logOAuthCallbackFailure(error);
     clearOAuthFlowCookies(c);
     const retryParams = extensionOAuthSource ? "&source=extension" : "";
-    return c.redirect(`/login?error=auth_failed${retryParams}`);
+    return c.redirect(
+      `/login?error=${mapAuthErrorToRedirectToken(error)}${retryParams}`,
+    );
   }
   const sessionCookieOptions = {
     ...cookieRequestOptions(c),
@@ -288,11 +331,18 @@ app.post("/__test__/auth/session", async (c) => {
     return c.text("Not found", 404);
   }
 
-  const body = (await c.req.json().catch(() => ({}))) as {
-    email?: unknown;
-    name?: unknown;
-    sub?: unknown;
-  };
+  let body: { email?: unknown; name?: unknown; sub?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.text("Invalid JSON body", 400);
+  }
+
+  console.info("[test-auth] Creating test session", {
+    sub: typeof body.sub === "string" ? body.sub : "(default)",
+    email: typeof body.email === "string" ? body.email : "(default)",
+  });
+
   const db = createDatabase(getD1(c));
   const store = createD1AuthStore(db);
   const user = await store.upsertGoogleUser({
@@ -328,7 +378,6 @@ app.post("/__test__/auth/session", async (c) => {
   return c.json({ user });
 });
 
-// GraphQL endpoint
 app.all("/graphql", createGraphQLHandler());
 
 // Catch-all for serving static assets (web app)
