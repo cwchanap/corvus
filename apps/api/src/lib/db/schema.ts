@@ -26,6 +26,7 @@ export const users = sqliteTable(
         googleSubUnique: uniqueIndex("users_google_sub_unique").on(
             table.google_sub,
         ),
+        emailUnique: uniqueIndex("users_email_unique").on(table.email),
     }),
 );
 

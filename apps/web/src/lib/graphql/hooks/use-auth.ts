@@ -33,5 +33,8 @@ export function useLogout() {
             queryClient.setQueryData(["auth", "me"], null);
             queryClient.invalidateQueries();
         },
+        onError: (error) => {
+            console.error("[useLogout] Logout failed:", error);
+        },
     }));
 }

@@ -11,12 +11,6 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 # Overrides the production value from wrangler.jsonc during wrangler dev.
 GOOGLE_REDIRECT_URI="http://localhost:5000/auth/google/callback"
 
-# Supabase project URL (from Project Settings > API)
-SUPABASE_URL="https://your-project-ref.supabase.co"
-
-# Supabase anon/public key (from Project Settings > API)
-SUPABASE_ANON_KEY="your-supabase-anon-key"
-
 # Comma-separated list of extension origins allowed to make credentialed
 # cross-site requests.  In development (DEV=1) all extension origins are
 # allowed, so this is only needed in production.

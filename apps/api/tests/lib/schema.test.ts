@@ -34,6 +34,13 @@ describe("database schema", () => {
                 "users_google_sub_unique",
             );
         });
+
+        it("has a unique index on email", () => {
+            const config = getTableConfig(users);
+            expect(config.indexes.map((idx) => idx.config.name)).toContain(
+                "users_email_unique",
+            );
+        });
     });
 
     describe("sessions table", () => {
