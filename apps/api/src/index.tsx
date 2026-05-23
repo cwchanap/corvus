@@ -125,7 +125,16 @@ function isAllowedExtensionOrigin(
  * because only browser-installed extensions can hold that origin — a web
  * page cannot spoof it.
  */
-function isAllowedRequestOrigin(origin: string, env: AppBindings): boolean {
+function isAllowedRequestOrigin(
+  origin: string,
+  env: AppBindings,
+  requestOrigin?: string,
+): boolean {
+  // Same-origin requests (e.g. SPA served by this Worker in production)
+  if (requestOrigin && origin === requestOrigin) {
+    return true;
+  }
+
   if (
     origin.startsWith("http://localhost:") ||
     origin.startsWith("https://localhost:")
@@ -163,7 +172,8 @@ app.use(
       }
 
       const env = c.env as AppBindings;
-      return isAllowedRequestOrigin(origin, env) ? origin : null;
+      const requestOrigin = new URL(c.req.url).origin;
+      return isAllowedRequestOrigin(origin, env, requestOrigin) ? origin : null;
     },
     allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -195,7 +205,8 @@ app.use("/graphql", async (c, next) => {
   }
 
   const env = c.env as AppBindings;
-  if (!isAllowedRequestOrigin(origin, env)) {
+  const requestOrigin = new URL(c.req.url).origin;
+  if (!isAllowedRequestOrigin(origin, env, requestOrigin)) {
     return c.json({ errors: [{ message: "CSRF check failed" }] }, 403);
   }
 
