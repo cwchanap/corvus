@@ -25,18 +25,13 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
       - name: Install dependencies
         run: bun install
 
       - name: Build web assets
         run: |
-          bun --cwd apps/web run build
-          bun --cwd apps/api run copy-assets
+          bun --cwd apps/web build
+          bun --cwd apps/api copy-assets
 
       - name: Setup local D1 database
         run: cd apps/api && bun run db:migrate
@@ -44,30 +39,9 @@ jobs:
       - name: Install Playwright browsers
         run: cd packages/e2e && bunx playwright install --with-deps chromium
 
-      - name: Start local Supabase
+      - name: Configure API dev vars for E2E
         run: |
-          if [ ! -f supabase/config.toml ]; then
-            supabase init
-          fi
-          supabase start
-
-      - name: Configure local Supabase bindings for Wrangler
-        run: |
-          set -euo pipefail
-          supabase status --output env > /tmp/supabase.env
-          SUPABASE_URL="$(sed -n -E 's/^(export )?(SUPA_API_URL|SUPABASE_URL|SUPABASE_API_URL|API_URL)=["'\'']?([^"'\'']*)["'\'']?$/\3/p' /tmp/supabase.env | head -n 1)"
-          SUPABASE_ANON_KEY="$(sed -n -E 's/^(export )?(SUPA_ANON_KEY|SUPABASE_ANON_KEY|SUPA_PUBLISHABLE_KEY|SUPABASE_PUBLISHABLE_KEY|PUBLISHABLE_KEY|ANON_KEY)=["'\'']?([^"'\'']*)["'\'']?$/\3/p' /tmp/supabase.env | head -n 1)"
-          SUPABASE_URL="${SUPABASE_URL:-http://127.0.0.1:54321}"
-          SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH}"
-          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
-            echo "Failed to read local Supabase URL or anon key."
-            exit 1
-          fi
-          {
-            echo "SUPABASE_URL=${SUPABASE_URL}"
-            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
-            echo "INSECURE_COOKIES=true"
-          } > apps/api/.dev.vars
+          echo "INSECURE_COOKIES=true" > apps/api/.dev.vars
 
       - name: Run Playwright tests
         run: bun run test
