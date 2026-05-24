@@ -581,6 +581,62 @@ describe("verifyGoogleIdToken", () => {
         });
     });
 
+    it("normalizes JWKS network error to JWKS_FETCH_FAILED", async () => {
+        const keyPair = await generateRsaKeyPair();
+        const kid = "test-key-id";
+        const now = Math.floor(Date.now() / 1000);
+
+        const token = await createSignedJwt(
+            keyPair.privateKey,
+            { alg: "RS256", kid },
+            {
+                iss: "https://accounts.google.com",
+                aud: clientId,
+                exp: now + 3600,
+            },
+        );
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockRejectedValue(new TypeError("Network error")),
+        );
+
+        await expect(
+            verifyGoogleIdToken(token, clientId),
+        ).rejects.toMatchObject({
+            code: "JWKS_FETCH_FAILED",
+            message: "Unable to fetch Google signing keys",
+        });
+    });
+
+    it("normalizes JWKS JSON parse error to JWKS_FETCH_FAILED", async () => {
+        const keyPair = await generateRsaKeyPair();
+        const kid = "test-key-id";
+        const now = Math.floor(Date.now() / 1000);
+
+        const token = await createSignedJwt(
+            keyPair.privateKey,
+            { alg: "RS256", kid },
+            {
+                iss: "https://accounts.google.com",
+                aud: clientId,
+                exp: now + 3600,
+            },
+        );
+        vi.stubGlobal(
+            "fetch",
+            vi
+                .fn()
+                .mockResolvedValue(new Response("not-json", { status: 200 })),
+        );
+
+        await expect(
+            verifyGoogleIdToken(token, clientId),
+        ).rejects.toMatchObject({
+            code: "JWKS_FETCH_FAILED",
+            message: "Unable to fetch Google signing keys",
+        });
+    });
+
     it("rejects token when no matching signing key is found", async () => {
         const keyPair = await generateRsaKeyPair();
         const wrongKeyPair = await generateRsaKeyPair();
