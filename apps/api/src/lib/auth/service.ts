@@ -219,16 +219,31 @@ export async function verifyGoogleIdToken(
         throw invalidToken("ID token header is not a Google RS256 key");
     }
 
-    const jwksResponse = await fetchImpl(GOOGLE_JWKS_URL);
+    let jwksResponse: Response;
+    try {
+        jwksResponse = await fetchImpl(GOOGLE_JWKS_URL);
+    } catch {
+        throw new AuthServiceError("Unable to fetch Google signing keys", {
+            code: "JWKS_FETCH_FAILED",
+        });
+    }
+
     if (!jwksResponse.ok) {
         throw new AuthServiceError("Unable to fetch Google signing keys", {
             code: "JWKS_FETCH_FAILED",
         });
     }
 
-    const jwks = (await jwksResponse.json()) as {
-        keys?: (JsonWebKey & { kid?: string })[];
-    };
+    let jwks: { keys?: (JsonWebKey & { kid?: string })[] };
+    try {
+        jwks = (await jwksResponse.json()) as {
+            keys?: (JsonWebKey & { kid?: string })[];
+        };
+    } catch {
+        throw new AuthServiceError("Unable to fetch Google signing keys", {
+            code: "JWKS_FETCH_FAILED",
+        });
+    }
     const key = jwks.keys?.find((candidate) => candidate.kid === header.kid);
     if (!key) {
         throw invalidToken("No matching Google signing key found");
