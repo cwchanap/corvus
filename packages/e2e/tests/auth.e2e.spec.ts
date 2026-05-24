@@ -22,9 +22,7 @@ test.describe("Auth E2E", () => {
         });
 
         await test.step("Verify wishlist GraphQL API", async () => {
-            const res = await page.request.post(API_ENDPOINT, {
-                data: {
-                    query: `
+            const query = `
             query {
               wishlist {
                 categories {
@@ -44,11 +42,37 @@ test.describe("Auth E2E", () => {
                 }
               }
             }
-          `,
+          `;
+            const result = await page.evaluate(
+                async ({ endpoint, query }) => {
+                    const response = await fetch(endpoint, {
+                        method: "POST",
+                        credentials: "include",
+                        headers: {
+                            "content-type": "application/json",
+                        },
+                        body: JSON.stringify({ query }),
+                    });
+
+                    return {
+                        ok: response.ok,
+                        status: response.status,
+                        body: (await response.json()) as {
+                            data?: {
+                                wishlist?: {
+                                    categories?: unknown;
+                                    items?: unknown;
+                                    pagination?: unknown;
+                                };
+                            };
+                            errors?: unknown;
+                        },
+                    };
                 },
-            });
-            expect(res.ok()).toBeTruthy();
-            const json = await res.json();
+                { endpoint: API_ENDPOINT, query },
+            );
+            expect(result.ok, JSON.stringify(result.body)).toBeTruthy();
+            const json = result.body;
 
             expect(json).toHaveProperty("data");
             expect(json.data).toHaveProperty("wishlist");
