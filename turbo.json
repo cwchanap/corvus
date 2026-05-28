@@ -25,18 +25,17 @@
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".output/**", ".vinxi/**"]
     },
+    "build:api": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/corvus/**"]
+    },
     "copy-assets": {
-      "dependsOn": ["web#build:web"],
+      "dependsOn": ["web#build:web", "build:api"],
       "cache": false,
       "outputs": ["dist/client/**"]
     },
-    "build:api": {
-      "dependsOn": ["copy-assets"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**"]
-    },
     "deploy": {
-      "dependsOn": ["build:api"],
+      "dependsOn": ["copy-assets"],
       "cache": false,
       "inputs": ["dist/**"],
       "passThroughEnv": ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
