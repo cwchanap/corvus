@@ -8,7 +8,7 @@
     "copy-assets": "rm -rf dist/client && mkdir -p dist/client && cp -r ../web/.output/public/. dist/client/",
     "build:api": "vite build",
     "preview": "$npm_execpath run build && vite preview",
-    "deploy": "wrangler d1 migrations apply corvus --remote && wrangler deploy && bun db:backfill-normalized-urls:remote",
+    "deploy": "node -e \"require('node:fs').existsSync('dist/client/index.html') || (console.error('Refusing to deploy: dist/client/index.html is missing. Run bun run build from the repo root first.'), process.exit(1))\" && wrangler d1 migrations apply corvus --remote && wrangler deploy && bun db:backfill-normalized-urls:remote",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "db:gen": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply corvus --local && bun db:backfill-normalized-urls",
