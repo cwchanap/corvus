@@ -70,4 +70,13 @@ describe("GoogleAuthForm (signup)", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByRole("alert").textContent).toContain("canceled");
   });
+
+  it("shows the generic fallback for an unknown error code (shared path)", () => {
+    render(() => <GoogleAuthForm mode="signup" error="unknown_code" />);
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("alert").textContent).toContain(
+      "An unexpected error occurred",
+    );
+  });
 });

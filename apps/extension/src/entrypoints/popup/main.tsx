@@ -10,6 +10,7 @@ import {
   WishlistDataProvider,
   useWishlistData,
 } from "../../lib/wishlist/context";
+import { isAuthError } from "../../lib/graphql/client";
 
 type View = "list" | "add" | "categories";
 
@@ -32,12 +33,14 @@ function ErrorScreen(props: {
   onRetry: () => void;
 }) {
   // Dev-aware fallback so local login redirects go to the dev web app (port
-  // 5000), not production. Only used when VITE_WEB_BASE is unset.
+  // 5000), not production. Only used when VITE_WEB_BASE is unset. Any mode
+  // that is not explicitly "production" falls through to localhost so a
+  // misconfigured or unexpected mode can never silently route login to prod.
   const webAppUrl =
     import.meta.env.VITE_WEB_BASE ||
-    (import.meta.env.MODE === "development"
-      ? "http://localhost:5000"
-      : "https://corvus.cwchanap.dev");
+    (import.meta.env.MODE === "production"
+      ? "https://corvus.cwchanap.dev"
+      : "http://localhost:5000");
 
   const handleLoginRedirect = () => {
     const loginUrl = new URL("/signin", webAppUrl);
@@ -89,24 +92,11 @@ function Popup() {
     return current === "ready" || current === "refreshing";
   };
 
-  const isAuthError = () => {
-    const cause = error();
-    if (cause instanceof Error) {
-      const msg = cause.message.toLowerCase();
-      return (
-        msg.includes("not authenticated") ||
-        msg.includes("unauthenticated") ||
-        msg.includes("unauthorized") ||
-        msg.includes("authentication") ||
-        msg.includes("sign in")
-      );
-    }
-    return false;
-  };
+  const isAuthFailure = () => isAuthError(error());
 
   const errorMessage = () => {
     const cause = error();
-    if (isAuthError()) {
+    if (isAuthFailure()) {
       return "Please sign in to access your wishlist.";
     }
     if (cause instanceof Error) {
@@ -121,7 +111,7 @@ function Popup() {
         <Match when={isErrored()}>
           <ErrorScreen
             message={errorMessage()}
-            isAuthError={isAuthError()}
+            isAuthError={isAuthFailure()}
             onRetry={() => void refetch()}
           />
         </Match>
