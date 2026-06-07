@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { graphqlRequest } from "../src/graphql/client";
+import {
+    graphqlRequest,
+    GraphQLError,
+    isAuthError,
+} from "../src/graphql/client";
 
 function makeFetch(
     status: number,
@@ -111,5 +115,136 @@ describe("graphqlRequest", () => {
         } finally {
             globalThis.fetch = original;
         }
+    });
+
+    it("throws a GraphQLError carrying the HTTP status on non-ok responses", async () => {
+        const fetchImpl = makeFetch(401, {}, false);
+        try {
+            await graphqlRequest("{ q }", undefined, { fetchImpl });
+            throw new Error("should have thrown");
+        } catch (err) {
+            expect(err).toBeInstanceOf(GraphQLError);
+            expect((err as GraphQLError).status).toBe(401);
+            expect((err as Error).message).toBe("HTTP error! status: 401");
+        }
+    });
+
+    it("throws a GraphQLError carrying the extension code on body errors", async () => {
+        const fetchImpl = makeFetch(200, {
+            errors: [
+                {
+                    message: "Not authenticated",
+                    extensions: { code: "UNAUTHENTICATED" },
+                },
+            ],
+        });
+        try {
+            await graphqlRequest("{ q }", undefined, { fetchImpl });
+            throw new Error("should have thrown");
+        } catch (err) {
+            expect(err).toBeInstanceOf(GraphQLError);
+            expect((err as GraphQLError).code).toBe("UNAUTHENTICATED");
+            expect((err as Error).message).toBe("Not authenticated");
+        }
+    });
+
+    it("omits code when the error extension code is not a string", async () => {
+        const fetchImpl = makeFetch(200, {
+            errors: [{ message: "Boom", extensions: { code: 123 } }],
+        });
+        try {
+            await graphqlRequest("{ q }", undefined, { fetchImpl });
+            throw new Error("should have thrown");
+        } catch (err) {
+            expect(err).toBeInstanceOf(GraphQLError);
+            expect((err as GraphQLError).code).toBeUndefined();
+        }
+    });
+});
+
+describe("GraphQLError", () => {
+    it("preserves the message for backwards compatibility", () => {
+        const err = new GraphQLError("something broke");
+        expect(err.message).toBe("something broke");
+        expect(err.name).toBe("GraphQLError");
+    });
+
+    it("is an instance of Error", () => {
+        const err = new GraphQLError("x");
+        expect(err).toBeInstanceOf(Error);
+    });
+
+    it("stores status and code when provided", () => {
+        const err = new GraphQLError("nope", {
+            status: 403,
+            code: "FORBIDDEN",
+        });
+        expect(err.status).toBe(403);
+        expect(err.code).toBe("FORBIDDEN");
+    });
+
+    it("leaves status and code undefined when not provided", () => {
+        const err = new GraphQLError("nope");
+        expect(err.status).toBeUndefined();
+        expect(err.code).toBeUndefined();
+    });
+});
+
+describe("isAuthError", () => {
+    it("returns true for HTTP 401 GraphQLError", () => {
+        expect(
+            isAuthError(
+                new GraphQLError("HTTP error! status: 401", { status: 401 }),
+            ),
+        ).toBe(true);
+    });
+
+    it("returns true for HTTP 403 GraphQLError", () => {
+        expect(
+            isAuthError(
+                new GraphQLError("HTTP error! status: 403", { status: 403 }),
+            ),
+        ).toBe(true);
+    });
+
+    it("returns true for UNAUTHENTICATED extension code", () => {
+        expect(
+            isAuthError(
+                new GraphQLError("Not authenticated", {
+                    code: "UNAUTHENTICATED",
+                }),
+            ),
+        ).toBe(true);
+    });
+
+    it("returns true for UNAUTHORIZED extension code", () => {
+        expect(
+            isAuthError(
+                new GraphQLError("Not authorized", { code: "UNAUTHORIZED" }),
+            ),
+        ).toBe(true);
+    });
+
+    it("returns false for a 500 GraphQLError", () => {
+        expect(
+            isAuthError(
+                new GraphQLError("HTTP error! status: 500", { status: 500 }),
+            ),
+        ).toBe(false);
+    });
+
+    it("returns false for a GraphQLError without auth-related status or code", () => {
+        expect(isAuthError(new GraphQLError("Item not found"))).toBe(false);
+    });
+
+    it("returns false for a plain Error (not a GraphQLError)", () => {
+        expect(isAuthError(new Error("Not authenticated"))).toBe(false);
+    });
+
+    it("returns false for non-Error values", () => {
+        expect(isAuthError(null)).toBe(false);
+        expect(isAuthError(undefined)).toBe(false);
+        expect(isAuthError("Not authenticated")).toBe(false);
+        expect(isAuthError({ status: 401 })).toBe(false);
     });
 });

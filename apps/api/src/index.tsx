@@ -228,7 +228,7 @@ app.get("/auth/google/start", (c) => {
     logOAuthCallbackFailure(error);
     const retryParams = oauthSource ? "&source=extension" : "";
     return c.redirect(
-      `/login?error=${mapAuthErrorToRedirectToken(error)}${retryParams}`,
+      `/signin?error=${mapAuthErrorToRedirectToken(error)}${retryParams}`,
     );
   }
 
@@ -279,7 +279,7 @@ app.get("/auth/google/callback", async (c) => {
     const retryParams = extensionOAuthSource ? "&source=extension" : "";
     const token =
       googleError === "access_denied" ? "auth_canceled" : "auth_failed";
-    return c.redirect(`/login?error=${token}${retryParams}`);
+    return c.redirect(`/signin?error=${token}${retryParams}`);
   }
 
   if (
@@ -300,7 +300,7 @@ app.get("/auth/google/callback", async (c) => {
     });
     clearOAuthFlowCookies(c);
     const retryParams = extensionOAuthSource ? "&source=extension" : "";
-    return c.redirect(`/login?error=auth_state_mismatch${retryParams}`);
+    return c.redirect(`/signin?error=auth_state_mismatch${retryParams}`);
   }
 
   const authService = createAuthService(c);
@@ -312,7 +312,7 @@ app.get("/auth/google/callback", async (c) => {
     clearOAuthFlowCookies(c);
     const retryParams = extensionOAuthSource ? "&source=extension" : "";
     return c.redirect(
-      `/login?error=${mapAuthErrorToRedirectToken(error)}${retryParams}`,
+      `/signin?error=${mapAuthErrorToRedirectToken(error)}${retryParams}`,
     );
   }
   const sessionCookieOptions = {
