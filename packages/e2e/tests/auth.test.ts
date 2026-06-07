@@ -2,11 +2,11 @@ import { test, expect } from "@playwright/test";
 import { signInWithTestSession } from "./helpers/auth";
 
 test.describe("Google-only auth surface", () => {
-    test("register route redirects to login", async ({ page }) => {
-        await page.goto("/register");
-        await expect(page).toHaveURL(/\/login/);
+    test("signup route offers Google sign up", async ({ page }) => {
+        await page.goto("/signup");
+        await expect(page).toHaveURL(/\/signup/);
         await expect(
-            page.getByRole("link", { name: "Continue with Google" }),
+            page.getByRole("link", { name: "Sign up with Google" }),
         ).toBeVisible();
     });
 
@@ -20,6 +20,6 @@ test.describe("Google-only auth surface", () => {
         await page.goto("/profile");
         await page.getByRole("button", { name: "Sign Out" }).click();
 
-        await expect(page).toHaveURL(/\/login|\/$/);
+        await expect(page).toHaveURL(/\/signin|\/$/);
     });
 });
