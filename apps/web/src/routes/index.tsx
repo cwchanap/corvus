@@ -5,7 +5,7 @@ export default function Home() {
   const navigate = useNavigate();
 
   onMount(() => {
-    // Immediately redirect to login page
+    // Immediately redirect to signin page
     navigate("/signin", { replace: true });
   });
 

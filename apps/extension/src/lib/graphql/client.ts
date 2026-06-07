@@ -10,11 +10,12 @@ import {
 
 const PROD_API_BASE = "https://corvus.cwchanap.dev";
 
-// Use VITE_API_BASE (same as REST client) and append /graphql
+// Use VITE_API_BASE (same as REST client) and append /graphql.
+// Dev fallback must match the API dev port (wrangler.jsonc dev.port = 5002).
 const API_BASE =
     (import.meta.env.VITE_API_BASE as string | undefined) ||
     (import.meta.env.MODE === "development"
-        ? "http://localhost:8787"
+        ? "http://localhost:5002"
         : PROD_API_BASE);
 
 const GRAPHQL_ENDPOINT = `${API_BASE}/graphql`;

@@ -11,18 +11,19 @@ interface GoogleAuthFormProps {
   error?: string | null;
 }
 
+// Mode-agnostic messages so they are accurate for both sign-in and sign-up.
 const ERROR_MESSAGES: Record<string, string> = {
   auth_failed:
-    "Sign-in failed. The request may have expired or been invalid. Please try again.",
-  auth_canceled: "Sign-in was canceled. Please try again when ready.",
+    "Authentication failed. The request may have expired or been invalid. Please try again.",
+  auth_canceled: "Authentication was canceled. Please try again when ready.",
   auth_misconfig:
-    "Sign-in is currently unavailable due to a server configuration issue. Please try again later.",
+    "Authentication is currently unavailable due to a server configuration issue. Please try again later.",
   auth_provider_unavailable:
-    "Google sign-in is temporarily unavailable. Please try again in a few minutes.",
+    "Google authentication is temporarily unavailable. Please try again in a few minutes.",
   auth_token_invalid:
-    "Sign-in failed due to an invalid authentication response. Please try again.",
+    "Authentication failed due to an invalid authentication response. Please try again.",
   auth_state_mismatch:
-    "Sign-in failed due to an expired or invalid request. Please try again.",
+    "Authentication failed due to an expired or invalid request. Please try again.",
 };
 
 const TITLES: Record<GoogleAuthFormProps["mode"], string> = {
