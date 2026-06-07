@@ -9,6 +9,7 @@
   },
   "vars": {
     "GOOGLE_REDIRECT_URI": "https://corvus.cwchanap.dev/auth/google/callback",
+    "ALLOWED_EXTENSION_ORIGINS": "chrome-extension://maoehepgeljihmfejeogbabjncjaajld",
   },
   "d1_databases": [
     {
