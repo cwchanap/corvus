@@ -8,17 +8,37 @@ import {
     type GraphQLClientOptions,
 } from "@repo/common/graphql/client";
 
+const DEV_API_BASE = "http://localhost:5002";
 const PROD_API_BASE = "https://corvus.cwchanap.dev";
 
-// Use VITE_API_BASE (same as REST client) and append /graphql.
-// Dev fallback must match the API dev port (wrangler.jsonc dev.port = 5002).
-const API_BASE =
-    (import.meta.env.VITE_API_BASE as string | undefined) ||
-    (import.meta.env.MODE === "development"
-        ? "http://localhost:5002"
-        : PROD_API_BASE);
+/** Shape of the env subset {@link resolveApiBase} reads. */
+export interface ApiBaseEnv {
+    VITE_API_BASE?: string;
+    MODE?: string;
+}
 
-const GRAPHQL_ENDPOINT = `${API_BASE}/graphql`;
+/**
+ * Resolve the API base URL.
+ *
+ * - Honors `VITE_API_BASE` when set (same var as the REST client).
+ * - Only targets the production host when `MODE` is explicitly
+ *   `"production"`. Any other value (development, test, undefined, a typo)
+ *   falls through to the dev port so an unexpected mode can never silently
+ *   route traffic to production. The dev port MUST match the API dev server
+ *   (`wrangler.jsonc` `dev.port`, currently 5002) — a test locks it.
+ *
+ * Exported so the resolution can be unit-tested in isolation.
+ */
+export function resolveApiBase(env: ApiBaseEnv = import.meta.env): string {
+    return (
+        (env.VITE_API_BASE && env.VITE_API_BASE.length > 0
+            ? env.VITE_API_BASE
+            : undefined) ||
+        (env.MODE === "production" ? PROD_API_BASE : DEV_API_BASE)
+    );
+}
+
+const GRAPHQL_ENDPOINT = `${resolveApiBase()}/graphql`;
 
 /**
  * Pre-configured GraphQL request function for the extension
@@ -36,5 +56,7 @@ export async function graphqlRequest<T>(
     });
 }
 
-// Re-export types
+// Re-export types and the structured auth-error helper from the shared client
+// so extension consumers depend only on the extension-local module surface.
 export type { GraphQLClientOptions } from "@repo/common/graphql/client";
+export { GraphQLError, isAuthError } from "@repo/common/graphql/client";

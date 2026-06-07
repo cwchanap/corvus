@@ -203,7 +203,7 @@ describe("Google OAuth routes", () => {
 
         expect(res.status).toBe(302);
         expect(res.headers.get("location")).toBe(
-            "/login?error=auth_state_mismatch&source=extension",
+            "/signin?error=auth_state_mismatch&source=extension",
         );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
@@ -269,7 +269,7 @@ describe("Google OAuth routes", () => {
         expect(setCookie).toContain("corvus-oauth-source=");
     });
 
-    it("redirects to login with error and clears state cookie when callback fails", async () => {
+    it("redirects to signin with error and clears state cookie when callback fails", async () => {
         authMocks.handleCallback.mockRejectedValue(
             new Error("Token exchange failed"),
         );
@@ -286,7 +286,7 @@ describe("Google OAuth routes", () => {
 
         expect(res.status).toBe(302);
         expect(res.headers.get("location")).toBe(
-            "/login?error=auth_failed&source=extension",
+            "/signin?error=auth_failed&source=extension",
         );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
@@ -302,7 +302,7 @@ describe("Google OAuth routes", () => {
         );
     });
 
-    it("redirects to login without source=extension when non-extension callback fails", async () => {
+    it("redirects to signin without source=extension when non-extension callback fails", async () => {
         authMocks.handleCallback.mockRejectedValue(
             new Error("Token exchange failed"),
         );
@@ -318,7 +318,7 @@ describe("Google OAuth routes", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        expect(res.headers.get("location")).toBe("/signin?error=auth_failed");
     });
 });
 
@@ -962,7 +962,7 @@ describe("OAuth callback missing parameters", () => {
 
         expect(res.status).toBe(302);
         expect(res.headers.get("location")).toBe(
-            "/login?error=auth_state_mismatch",
+            "/signin?error=auth_state_mismatch",
         );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
@@ -982,7 +982,7 @@ describe("OAuth callback missing parameters", () => {
 
         expect(res.status).toBe(302);
         expect(res.headers.get("location")).toBe(
-            "/login?error=auth_state_mismatch",
+            "/signin?error=auth_state_mismatch",
         );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
@@ -1000,7 +1000,7 @@ describe("OAuth callback missing parameters", () => {
 
         expect(res.status).toBe(302);
         expect(res.headers.get("location")).toBe(
-            "/login?error=auth_state_mismatch",
+            "/signin?error=auth_state_mismatch",
         );
         const setCookie = res.headers.get("set-cookie") ?? "";
         expect(setCookie).toContain("corvus-oauth-state=");
@@ -1041,7 +1041,7 @@ describe("OAuth error mapping", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_canceled");
+        expect(res.headers.get("location")).toBe("/signin?error=auth_canceled");
         expect(consoleWarnSpy).toHaveBeenCalledWith(
             "Google OAuth callback rejected",
             expect.objectContaining({
@@ -1062,7 +1062,7 @@ describe("OAuth error mapping", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_failed");
+        expect(res.headers.get("location")).toBe("/signin?error=auth_failed");
     });
 
     it("redirects with auth_canceled preserving extension source", async () => {
@@ -1077,7 +1077,7 @@ describe("OAuth error mapping", () => {
 
         expect(res.status).toBe(302);
         expect(res.headers.get("location")).toBe(
-            "/login?error=auth_canceled&source=extension",
+            "/signin?error=auth_canceled&source=extension",
         );
     });
 
@@ -1098,7 +1098,9 @@ describe("OAuth error mapping", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_misconfig");
+        expect(res.headers.get("location")).toBe(
+            "/signin?error=auth_misconfig",
+        );
     });
 });
 
@@ -1118,7 +1120,7 @@ describe("/auth/google/start error handling", () => {
         consoleErrorSpy.mockRestore();
     });
 
-    it("redirects to login with auth_misconfig when env vars are missing", async () => {
+    it("redirects to signin with auth_misconfig when env vars are missing", async () => {
         const { AuthServiceError: RealError } = await import(
             "../src/lib/auth/service"
         );
@@ -1135,7 +1137,9 @@ describe("/auth/google/start error handling", () => {
         );
 
         expect(res.status).toBe(302);
-        expect(res.headers.get("location")).toBe("/login?error=auth_misconfig");
+        expect(res.headers.get("location")).toBe(
+            "/signin?error=auth_misconfig",
+        );
         expect(consoleErrorSpy).toHaveBeenCalled();
     });
 });
