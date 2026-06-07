@@ -31,8 +31,13 @@ function ErrorScreen(props: {
   isAuthError: boolean;
   onRetry: () => void;
 }) {
+  // Dev-aware fallback so local login redirects go to the dev web app (port
+  // 5000), not production. Only used when VITE_WEB_BASE is unset.
   const webAppUrl =
-    import.meta.env.VITE_WEB_BASE || "https://corvus.cwchanap.dev";
+    import.meta.env.VITE_WEB_BASE ||
+    (import.meta.env.MODE === "development"
+      ? "http://localhost:5000"
+      : "https://corvus.cwchanap.dev");
 
   const handleLoginRedirect = () => {
     const loginUrl = new URL("/signin", webAppUrl);
