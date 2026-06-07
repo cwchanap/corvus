@@ -12,7 +12,7 @@ export default function Dashboard() {
   createEffect(() => {
     // Only redirect when loading is complete and user is not authenticated
     if (!auth.isLoading() && !auth.isAuthenticated()) {
-      navigate("/login", { replace: true });
+      navigate("/signin", { replace: true });
     }
   });
 

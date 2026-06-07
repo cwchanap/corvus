@@ -1,9 +1,9 @@
 import { Title } from "@solidjs/meta";
 import { useSearchParams } from "@solidjs/router";
-import { LoginForm } from "../components/auth/LoginForm";
+import { GoogleAuthForm } from "../components/auth/GoogleAuthForm";
 import { ThemeProvider } from "../lib/theme/context";
 
-export default function Login() {
+export default function SignUp() {
   const [searchParams] = useSearchParams();
   const error = Array.isArray(searchParams.error)
     ? searchParams.error[0]
@@ -11,7 +11,7 @@ export default function Login() {
 
   return (
     <ThemeProvider>
-      <Title>Sign In - Corvus</Title>
+      <Title>Sign Up - Corvus</Title>
       <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 py-8 px-4 sm:px-6 lg:px-8">
         <div class="w-full max-w-sm">
           <div class="text-center mb-8">
@@ -22,7 +22,7 @@ export default function Login() {
               Your personal wishlist companion
             </p>
           </div>
-          <LoginForm error={error} />
+          <GoogleAuthForm mode="signup" error={error} />
         </div>
       </div>
     </ThemeProvider>

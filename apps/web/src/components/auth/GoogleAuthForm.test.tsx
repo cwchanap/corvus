@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@solidjs/testing-library";
-import { LoginForm } from "./LoginForm";
+import { GoogleAuthForm } from "./GoogleAuthForm";
 
-describe("LoginForm", () => {
+describe("GoogleAuthForm (signin)", () => {
   it("renders Google-only sign in", () => {
-    render(() => <LoginForm />);
+    render(() => <GoogleAuthForm mode="signin" />);
 
     expect(screen.getByText("Welcome Back")).toBeInTheDocument();
     expect(
@@ -16,7 +16,7 @@ describe("LoginForm", () => {
   });
 
   it("does not render password auth fields or signup links", () => {
-    render(() => <LoginForm />);
+    render(() => <GoogleAuthForm mode="signin" />);
 
     expect(screen.queryByLabelText("Email Address")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
@@ -24,20 +24,20 @@ describe("LoginForm", () => {
   });
 
   it("does not show an error message when no error prop is provided", () => {
-    render(() => <LoginForm />);
+    render(() => <GoogleAuthForm mode="signin" />);
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("shows an error message when error prop is auth_failed", () => {
-    render(() => <LoginForm error="auth_failed" />);
+    render(() => <GoogleAuthForm mode="signin" error="auth_failed" />);
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByRole("alert").textContent).toContain("Sign-in failed");
   });
 
   it("shows a generic error message for unknown error codes", () => {
-    render(() => <LoginForm error="unknown_error" />);
+    render(() => <GoogleAuthForm mode="signin" error="unknown_error" />);
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByRole("alert").textContent).toContain(
@@ -46,8 +46,26 @@ describe("LoginForm", () => {
   });
 
   it("does not show an error message when error prop is null", () => {
-    render(() => <LoginForm error={null} />);
+    render(() => <GoogleAuthForm mode="signin" error={null} />);
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
+describe("GoogleAuthForm (signup)", () => {
+  it("renders Google-only sign up", () => {
+    render(() => <GoogleAuthForm mode="signup" />);
+
+    expect(screen.getByText("Get Started")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Sign up with Google" }),
+    ).toHaveAttribute("href", `${window.location.origin}/auth/google/start`);
+  });
+
+  it("shows an error message when error prop is provided", () => {
+    render(() => <GoogleAuthForm mode="signup" error="auth_canceled" />);
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("alert").textContent).toContain("canceled");
   });
 });
