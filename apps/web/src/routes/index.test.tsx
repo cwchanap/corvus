@@ -13,9 +13,9 @@ describe("Home route", () => {
     vi.clearAllMocks();
   });
 
-  it("navigates to /login on mount with replace", () => {
+  it("navigates to /signin on mount with replace", () => {
     render(() => <Home />);
-    expect(mockNavigate).toHaveBeenCalledWith("/login", { replace: true });
+    expect(mockNavigate).toHaveBeenCalledWith("/signin", { replace: true });
   });
 
   it("navigates exactly once", () => {

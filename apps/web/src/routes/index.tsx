@@ -6,7 +6,7 @@ export default function Home() {
 
   onMount(() => {
     // Immediately redirect to login page
-    navigate("/login", { replace: true });
+    navigate("/signin", { replace: true });
   });
 
   return null;

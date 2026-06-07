@@ -17,7 +17,10 @@ export const ProtectedRoute: ParentComponent = (props) => {
         </div>
       }
     >
-      <Show when={auth.isAuthenticated()} fallback={<Navigate href="/login" />}>
+      <Show
+        when={auth.isAuthenticated()}
+        fallback={<Navigate href="/signin" />}
+      >
         {props.children}
       </Show>
     </Show>

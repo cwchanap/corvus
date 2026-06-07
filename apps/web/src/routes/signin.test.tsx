@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@solidjs/testing-library";
-import Login from "./login";
+import SignIn from "./signin";
 
 vi.mock("@solidjs/meta", () => ({
   Title: () => null,
@@ -16,35 +16,46 @@ vi.mock("../lib/theme/context", () => ({
   ),
 }));
 
-vi.mock("../components/auth/LoginForm", () => ({
-  LoginForm: (props: { error?: string }) => (
-    <div data-testid="login-form" data-error={props.error ?? ""}>
-      LoginForm
+vi.mock("../components/auth/GoogleAuthForm", () => ({
+  GoogleAuthForm: (props: { mode: string; error?: string }) => (
+    <div
+      data-testid="google-auth-form"
+      data-mode={props.mode}
+      data-error={props.error ?? ""}
+    >
+      GoogleAuthForm
     </div>
   ),
 }));
 
-describe("Login route", () => {
-  it("renders the LoginForm component", () => {
-    render(() => <Login />);
-    expect(screen.getByTestId("login-form")).toBeInTheDocument();
+describe("SignIn route", () => {
+  it("renders the GoogleAuthForm component", () => {
+    render(() => <SignIn />);
+    expect(screen.getByTestId("google-auth-form")).toBeInTheDocument();
+    expect(screen.getByTestId("google-auth-form")).toHaveAttribute(
+      "data-mode",
+      "signin",
+    );
   });
 
   it("renders Corvus brand name", () => {
-    render(() => <Login />);
+    render(() => <SignIn />);
     expect(screen.getByText("Corvus")).toBeInTheDocument();
   });
 
   it("renders the tagline", () => {
-    render(() => <Login />);
+    render(() => <SignIn />);
     expect(
       screen.getByText("Your personal wishlist companion"),
     ).toBeInTheDocument();
   });
 
-  it("passes empty error to LoginForm when no search param present", () => {
-    render(() => <Login />);
-    expect(screen.getByTestId("login-form")).toHaveAttribute("data-error", "");
+  it("passes empty error to GoogleAuthForm when no search param present", () => {
+    render(() => <SignIn />);
+    expect(screen.getByTestId("google-auth-form")).toHaveAttribute(
+      "data-error",
+      "",
+    );
   });
 
   it("normalizes array error param to first element", async () => {
@@ -53,8 +64,8 @@ describe("Login route", () => {
       { error: ["auth_failed", "extra"] },
       expect.any(Function),
     ]);
-    render(() => <Login />);
-    expect(screen.getByTestId("login-form")).toHaveAttribute(
+    render(() => <SignIn />);
+    expect(screen.getByTestId("google-auth-form")).toHaveAttribute(
       "data-error",
       "auth_failed",
     );

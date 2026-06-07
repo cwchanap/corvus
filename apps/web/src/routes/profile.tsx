@@ -54,7 +54,7 @@ export default function Profile() {
                   Please sign in to view your profile.
                 </p>
                 <div class="flex gap-3 justify-center">
-                  <A href="/login">
+                  <A href="/signin">
                     <Button class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
                       Sign In
                     </Button>
