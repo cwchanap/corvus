@@ -31,7 +31,8 @@ function ErrorScreen(props: {
   isAuthError: boolean;
   onRetry: () => void;
 }) {
-  const webAppUrl = import.meta.env.VITE_WEB_BASE || "http://localhost:5000";
+  const webAppUrl =
+    import.meta.env.VITE_WEB_BASE || "https://corvus.cwchanap.dev";
 
   const handleLoginRedirect = () => {
     const loginUrl = new URL("/login", webAppUrl);

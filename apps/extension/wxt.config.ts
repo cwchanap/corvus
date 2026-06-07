@@ -5,7 +5,9 @@ export default defineConfig({
     vite: () => ({
         plugins: [solid()],
     }),
+    publicDir: "../public",
     manifest: {
+        key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0j3plwLA7MAzVIjLK8T9OHTYF7hyKumWqM8lJHjiXG4PrKfRvyLtxjPB3ZI9zYJjWOYeRJ7YWPCGZ8mQWUjokSE97YezIdgMvDKRpNXPPi2Qn51p91sSDW6KHw0p3YVg0vJW8DGrx7ksCg/HlahrgvtxVBbgCucOlInWqy9xoyrIkhmIQBTYBfMRymWiD1U8QW5Crc3lPYDD9ze7xi7PsTkVmF1kt4Xnl3kWG+KueJ0ZQA5J1QACp3XObG/B9mxJ603WUMU0/OmQeiFzJ/KbzyKGbQ6q5dnJ5qGuqGUwVEBxtU6WcADl4/uhP2zr44E19jJrVLNH9S15XTES/1kZ1QIDAQAB",
         name: "Corvus Wishlist",
         version: "1.0.0",
         description:
