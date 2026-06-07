@@ -78,7 +78,7 @@ describe("Dashboard route", () => {
   });
 
   describe("unauthenticated state", () => {
-    it("redirects to /login when not authenticated", () => {
+    it("redirects to /signin when not authenticated", () => {
       mockedUseAuth.mockReturnValue({
         isLoading: () => false,
         isAuthenticated: () => false,
@@ -87,7 +87,7 @@ describe("Dashboard route", () => {
 
       render(() => <Dashboard />);
 
-      expect(mockNavigate).toHaveBeenCalledWith("/login", { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith("/signin", { replace: true });
     });
 
     it("shows redirecting state when not authenticated and not loading", () => {

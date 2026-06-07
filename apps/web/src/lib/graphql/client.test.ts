@@ -39,7 +39,7 @@ describe("graphqlRequest (web client wrapper)", () => {
     });
 
     it("preserves the extension source for Google auth redirects", () => {
-        window.history.replaceState({}, "", "/login?source=extension");
+        window.history.replaceState({}, "", "/signin?source=extension");
 
         expect(getGoogleAuthStartUrl()).toBe(
             `${window.location.origin}/auth/google/start?source=extension`,

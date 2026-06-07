@@ -50,7 +50,7 @@ describe("ProtectedRoute", () => {
 
     const navigate = screen.getByTestId("navigate");
     expect(navigate).toBeInTheDocument();
-    expect(navigate.getAttribute("data-href")).toBe("/login");
+    expect(navigate.getAttribute("data-href")).toBe("/signin");
     expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
   });
 

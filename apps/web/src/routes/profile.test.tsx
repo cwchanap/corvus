@@ -78,7 +78,7 @@ describe("Profile route", () => {
       render(() => <Profile />);
       const signInLink = screen.getByText("Sign In");
       expect(signInLink).toBeInTheDocument();
-      expect(signInLink.closest("a")).toHaveAttribute("href", "/login");
+      expect(signInLink.closest("a")).toHaveAttribute("href", "/signin");
     });
 
     it("does not show a Create Account link", () => {
