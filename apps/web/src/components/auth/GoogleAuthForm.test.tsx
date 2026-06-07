@@ -33,7 +33,9 @@ describe("GoogleAuthForm (signin)", () => {
     render(() => <GoogleAuthForm mode="signin" error="auth_failed" />);
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByRole("alert").textContent).toContain("Sign-in failed");
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Authentication failed",
+    );
   });
 
   it("shows a generic error message for unknown error codes", () => {
