@@ -11,7 +11,8 @@ interface GoogleAuthFormProps {
   error?: string | null;
 }
 
-// Mode-agnostic messages so they are accurate for both sign-in and sign-up.
+// Error messages are mode-agnostic: they apply to both sign-in and sign-up.
+// (TITLES and BUTTON_LABELS below are intentionally mode-specific.)
 const ERROR_MESSAGES: Record<string, string> = {
   auth_failed:
     "Authentication failed. The request may have expired or been invalid. Please try again.",
