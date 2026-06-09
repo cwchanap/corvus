@@ -100,13 +100,31 @@ export function CategoryManager(props: CategoryManagerProps) {
 
   return (
     <>
-      <Card class="w-full">
+      <Card class="w-full rounded-sm">
         <CardHeader>
           <div class="flex items-center justify-between">
-            <CardTitle class="text-lg">Manage Categories</CardTitle>
+            <CardTitle class="font-display text-lg">
+              Manage Categories
+            </CardTitle>
             <Show when={props.onClose}>
-              <Button variant="ghost" size="sm" onClick={props.onClose}>
-                ✕
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={props.onClose}
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  class="h-4 w-4"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
               </Button>
             </Show>
           </div>
@@ -114,14 +132,16 @@ export function CategoryManager(props: CategoryManagerProps) {
         <CardContent class="space-y-6">
           {/* Error Display */}
           <Show when={error()}>
-            <div class="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+            <div class="p-3 bg-destructive/10 border border-destructive/20 rounded-sm text-sm text-destructive">
               {error()}
             </div>
           </Show>
 
           {/* Add new category */}
           <div class="space-y-3">
-            <label class="text-sm font-medium">Add New Category</label>
+            <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+              Add New Category
+            </label>
             <div class="flex gap-2">
               <Input
                 placeholder="Category name..."
@@ -134,7 +154,7 @@ export function CategoryManager(props: CategoryManagerProps) {
                 type="color"
                 value={newCategoryColor()}
                 onInput={(e) => setNewCategoryColor(e.currentTarget.value)}
-                class="w-12 h-10 rounded-md border border-input cursor-pointer"
+                class="w-12 h-10 rounded-sm border border-input cursor-pointer"
                 title="Choose color"
               />
               <Button
@@ -142,8 +162,20 @@ export function CategoryManager(props: CategoryManagerProps) {
                 variant="outline"
                 size="sm"
                 title="Random color"
+                aria-label="Random color"
               >
-                🎨
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  class="h-4 w-4"
+                >
+                  <path d="M21.64 3.64a1 1 0 0 0-1.28 0l-2.3 2.3A9 9 0 1 0 21 12a1 1 0 0 0-2 0 7 7 0 1 1-6.23-6.94l-2.3 2.3a1 1 0 0 0 1.41 1.41l4.95-4.95a1 1 0 0 0 0-1.28z" />
+                </svg>
               </Button>
               <Button
                 onClick={handleAddCategory}
@@ -159,11 +191,13 @@ export function CategoryManager(props: CategoryManagerProps) {
 
           {/* Existing categories */}
           <div class="space-y-3">
-            <label class="text-sm font-medium">Existing Categories</label>
-            <div class="space-y-2 max-h-96 overflow-y-auto">
+            <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+              Existing Categories
+            </label>
+            <div class="divide-y divide-border border border-border rounded-sm max-h-96 overflow-y-auto">
               <For each={props.categories}>
                 {(category) => (
-                  <div class="flex items-center justify-between p-3 border border-border rounded-lg bg-card hover:bg-accent transition-colors">
+                  <div class="flex items-center justify-between p-3 bg-card hover:bg-accent transition-colors">
                     <div class="flex items-center gap-3">
                       <div
                         data-testid="category-color"
@@ -172,13 +206,14 @@ export function CategoryManager(props: CategoryManagerProps) {
                           "background-color": category.color || "#6366f1",
                         }}
                       />
-                      <span class="text-sm font-medium">{category.name}</span>
+                      <span class="font-serif text-sm">{category.name}</span>
                     </div>
                     <div class="flex items-center gap-2">
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDeleteClick(category)}
+                        aria-label={`Remove ${category.name}`}
                         class="h-8 px-3"
                       >
                         Remove
