@@ -260,7 +260,7 @@ describe("ViewItemDialog", () => {
       />
     ));
 
-    const closeButton = screen.getByText("×");
+    const closeButton = screen.getByRole("button", { name: "Close dialog" });
     fireEvent.click(closeButton);
 
     expect(mockOnOpenChange).toHaveBeenCalledWith(false);
