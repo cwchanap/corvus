@@ -22,7 +22,7 @@ describe("ThemeToggle", () => {
         resolvedTheme={() => "light"}
       />
     ));
-    expect(screen.getByText("☀️")).toBeInTheDocument();
+    expect(screen.getByLabelText("Light theme active")).toBeInTheDocument();
   });
 
   it("shows moon icon when resolved theme is dark", () => {
@@ -33,7 +33,7 @@ describe("ThemeToggle", () => {
         resolvedTheme={() => "dark"}
       />
     ));
-    expect(screen.getByText("🌙")).toBeInTheDocument();
+    expect(screen.getByLabelText("Dark theme active")).toBeInTheDocument();
   });
 
   it("shows Light label in title when resolved theme is light", () => {
