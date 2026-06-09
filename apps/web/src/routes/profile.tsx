@@ -5,13 +5,8 @@ import { useAuth } from "../lib/auth/context";
 import { ThemeProvider } from "../lib/theme/context";
 import { useLogout } from "../lib/graphql/hooks/use-auth";
 import { Button } from "@repo/ui-components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@repo/ui-components/card";
+import { Card, CardContent } from "@repo/ui-components/card";
+import { PaperBackground } from "@repo/ui-components/paper-background";
 
 function formatDate(value: unknown): string {
   if (!value) return "—";
@@ -44,104 +39,96 @@ export default function Profile() {
       <Show
         when={auth.user()}
         fallback={
-          <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
-            <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm max-w-md">
-              <CardContent class="text-center p-8">
-                <h1 class="text-2xl font-bold text-foreground mb-4">
-                  Access Denied
-                </h1>
-                <p class="text-muted-foreground mb-6">
-                  Please sign in to view your profile.
-                </p>
-                <div class="flex gap-3 justify-center">
-                  <A href="/signin">
-                    <Button class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
-                      Sign In
-                    </Button>
-                  </A>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <>
+            <PaperBackground />
+            <div class="relative flex min-h-screen items-center justify-center px-4">
+              <Card class="max-w-md border border-border bg-card">
+                <CardContent class="p-8 text-center">
+                  <h1 class="font-display text-2xl font-semibold text-foreground">
+                    Access Denied
+                  </h1>
+                  <p class="mb-6 mt-3 font-serif text-muted-foreground">
+                    Please sign in to view your profile.
+                  </p>
+                  <div class="flex justify-center gap-3">
+                    <A href="/signin">
+                      <Button>Sign In</Button>
+                    </A>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
         }
       >
-        <main class="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
-          <div class="container mx-auto px-4 py-12">
-            <div class="text-center mb-8">
-              <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-                Your Profile
-              </h1>
-              <p class="text-muted-foreground">
-                Manage your account information
-              </p>
-            </div>
+        <>
+          <PaperBackground />
+          <main class="relative min-h-screen">
+            <div class="container mx-auto px-4 py-12">
+              <div class="mb-10">
+                <p class="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Specimen Record
+                </p>
+                <h1 class="font-display text-4xl font-semibold tracking-tight text-foreground">
+                  Your Profile
+                </h1>
+                <div class="mt-4 h-px w-full origin-left bg-border animate-rule" />
+              </div>
 
-            <Card class="max-w-2xl mx-auto shadow-xl border-0 bg-card/80 backdrop-blur-sm">
-              <CardHeader class="text-center pb-6">
-                <CardTitle class="text-2xl text-card-foreground">
-                  Account Details
-                </CardTitle>
-                <CardDescription class="text-muted-foreground">
-                  Your personal information
-                </CardDescription>
-              </CardHeader>
-              <CardContent class="px-8 pb-8 space-y-8">
-                <div class="space-y-6">
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center py-4 border-b border-border">
-                    <div class="text-sm font-medium text-muted-foreground">
-                      Name
+              <Card class="mx-auto max-w-2xl border border-border bg-card">
+                <CardContent class="px-8 py-8">
+                  <dl class="divide-y divide-border">
+                    <div class="grid grid-cols-1 gap-2 py-4 sm:grid-cols-3 sm:items-baseline">
+                      <dt class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                        Name
+                      </dt>
+                      <dd class="font-serif text-lg text-foreground sm:col-span-2">
+                        {auth.user()!.name}
+                      </dd>
                     </div>
-                    <div class="col-span-2 font-semibold text-foreground text-lg">
-                      {auth.user()!.name}
+                    <div class="grid grid-cols-1 gap-2 py-4 sm:grid-cols-3 sm:items-baseline">
+                      <dt class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                        Email
+                      </dt>
+                      <dd class="font-serif text-foreground sm:col-span-2">
+                        {auth.user()!.email}
+                      </dd>
                     </div>
-                  </div>
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center py-4 border-b border-border">
-                    <div class="text-sm font-medium text-muted-foreground">
-                      Email
+                    <div class="grid grid-cols-1 gap-2 py-4 sm:grid-cols-3 sm:items-baseline">
+                      <dt class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                        Member Since
+                      </dt>
+                      <dd class="font-mono text-sm text-foreground sm:col-span-2">
+                        {formatDate(auth.user()!.createdAt)}
+                      </dd>
                     </div>
-                    <div class="col-span-2 text-foreground">
-                      {auth.user()!.email}
+                    <div class="grid grid-cols-1 gap-2 py-4 sm:grid-cols-3 sm:items-baseline">
+                      <dt class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                        Last Updated
+                      </dt>
+                      <dd class="font-mono text-sm text-foreground sm:col-span-2">
+                        {formatDate(auth.user()!.updatedAt)}
+                      </dd>
                     </div>
-                  </div>
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center py-4 border-b border-border">
-                    <div class="text-sm font-medium text-muted-foreground">
-                      Member Since
-                    </div>
-                    <div class="col-span-2 text-foreground">
-                      {formatDate(auth.user()!.createdAt)}
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center py-4">
-                    <div class="text-sm font-medium text-muted-foreground">
-                      Last Updated
-                    </div>
-                    <div class="col-span-2 text-foreground">
-                      {formatDate(auth.user()!.updatedAt)}
-                    </div>
-                  </div>
-                </div>
+                  </dl>
 
-                <div class="flex flex-col sm:flex-row items-center gap-4 pt-6">
-                  <A href="/dashboard">
+                  <div class="mt-8 flex flex-col items-center gap-4 border-t border-border pt-6 sm:flex-row">
+                    <A href="/dashboard">
+                      <Button variant="outline">Back to Dashboard</Button>
+                    </A>
                     <Button
-                      variant="outline"
-                      class="border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/50 px-6 py-3 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto"
+                      variant="destructive"
+                      onClick={handleLogout}
+                      disabled={logoutMutation.isPending}
                     >
-                      Back to Dashboard
+                      {logoutMutation.isPending ? "Signing Out…" : "Sign Out"}
                     </Button>
-                  </A>
-                  <Button
-                    onClick={handleLogout}
-                    disabled={logoutMutation.isPending}
-                    class="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto disabled:opacity-50"
-                  >
-                    {logoutMutation.isPending ? "Signing Out..." : "Sign Out"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </>
       </Show>
     </ThemeProvider>
   );
