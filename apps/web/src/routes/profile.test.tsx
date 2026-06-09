@@ -29,6 +29,10 @@ vi.mock("../lib/graphql/hooks/use-auth", () => ({
   useLogout: vi.fn(),
 }));
 
+vi.mock("@repo/ui-components/paper-background", () => ({
+  PaperBackground: () => null,
+}));
+
 import { useAuth } from "../lib/auth/context";
 import { useLogout } from "../lib/graphql/hooks/use-auth";
 const mockedUseAuth = vi.mocked(useAuth);
@@ -88,7 +92,7 @@ describe("Profile route", () => {
 
     it("does not show user details when unauthenticated", () => {
       render(() => <Profile />);
-      expect(screen.queryByText("Account Details")).not.toBeInTheDocument();
+      expect(screen.queryByText("Your Profile")).not.toBeInTheDocument();
     });
   });
 
@@ -101,9 +105,9 @@ describe("Profile route", () => {
       });
     });
 
-    it("renders Account Details heading", () => {
+    it("renders Your Profile heading", () => {
       render(() => <Profile />);
-      expect(screen.getByText("Account Details")).toBeInTheDocument();
+      expect(screen.getByText("Your Profile")).toBeInTheDocument();
     });
 
     it("displays user name", () => {
@@ -147,7 +151,7 @@ describe("Profile route", () => {
       expect(screen.getByText("Sign Out")).toBeInTheDocument();
     });
 
-    it("shows Signing Out... text when logout is pending", () => {
+    it("shows Signing Out… text when logout is pending", () => {
       mockedUseLogout.mockReturnValue({
         mutateAsync: mockMutateAsync,
         isPending: true,
@@ -155,7 +159,7 @@ describe("Profile route", () => {
 
       render(() => <Profile />);
 
-      expect(screen.getByText("Signing Out...")).toBeInTheDocument();
+      expect(screen.getByText("Signing Out…")).toBeInTheDocument();
     });
 
     it("disables sign out button when logout is pending", () => {
@@ -166,7 +170,7 @@ describe("Profile route", () => {
 
       render(() => <Profile />);
 
-      const button = screen.getByText("Signing Out...").closest("button");
+      const button = screen.getByText("Signing Out…").closest("button");
       expect(button).toBeDisabled();
     });
 
