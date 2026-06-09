@@ -17,7 +17,7 @@ describe("Card", () => {
 
   it("applies card base classes", () => {
     const { container } = render(() => <Card>Content</Card>);
-    expect(container.querySelector("div")!.className).toContain("rounded-lg");
+    expect(container.querySelector("div")!.className).toContain("rounded-sm");
   });
 
   it("merges custom class", () => {

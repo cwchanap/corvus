@@ -16,7 +16,7 @@ describe("Input", () => {
   it("applies base styling classes", () => {
     const { container } = render(() => <Input />);
     const input = container.querySelector("input")!;
-    expect(input.className).toContain("rounded-md");
+    expect(input.className).toContain("rounded-sm");
     expect(input.className).toContain("border");
   });
 
