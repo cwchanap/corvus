@@ -26,7 +26,7 @@ Self-hosted (not CDN) so the browser extension popup works offline and is CSP-sa
 
 Light is primary; dark (espresso) is the secondary theme. Single sharp **oxblood** accent on warm neutrals.
 
-```
+```text
 LIGHT (primary)                          DARK (secondary, espresso)
 --background  40 33% 94%   paper         --background  30 12% 8%
 --card        42 44% 97%   card-stock    --card        30 10% 11%

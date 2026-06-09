@@ -14,7 +14,7 @@ describe("ThemeToggle", () => {
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
 
-  it("shows sun icon when resolved theme is light", () => {
+  it("shows sun icon when theme is light", () => {
     render(() => (
       <ThemeToggle
         theme={() => "light"}
@@ -25,7 +25,7 @@ describe("ThemeToggle", () => {
     expect(screen.getByLabelText("Light theme active")).toBeInTheDocument();
   });
 
-  it("shows moon icon when resolved theme is dark", () => {
+  it("shows moon icon when theme is dark", () => {
     render(() => (
       <ThemeToggle
         theme={() => "dark"}
@@ -36,7 +36,18 @@ describe("ThemeToggle", () => {
     expect(screen.getByLabelText("Dark theme active")).toBeInTheDocument();
   });
 
-  it("shows Light label in title when resolved theme is light", () => {
+  it("shows monitor icon when theme is system", () => {
+    render(() => (
+      <ThemeToggle
+        theme={() => "system"}
+        setTheme={vi.fn()}
+        resolvedTheme={() => "light"}
+      />
+    ));
+    expect(screen.getByLabelText("System theme active")).toBeInTheDocument();
+  });
+
+  it("shows Light label in title when theme is light", () => {
     render(() => (
       <ThemeToggle
         theme={() => "light"}
@@ -47,7 +58,7 @@ describe("ThemeToggle", () => {
     expect(screen.getByTitle(/Light/)).toBeInTheDocument();
   });
 
-  it("shows Dark label in title when resolved theme is dark", () => {
+  it("shows Dark label in title when theme is dark", () => {
     render(() => (
       <ThemeToggle
         theme={() => "dark"}
@@ -58,7 +69,31 @@ describe("ThemeToggle", () => {
     expect(screen.getByTitle(/Dark/)).toBeInTheDocument();
   });
 
-  it("calls setTheme('dark') when light and clicked", () => {
+  it("shows System label in title when theme is system", () => {
+    render(() => (
+      <ThemeToggle
+        theme={() => "system"}
+        setTheme={vi.fn()}
+        resolvedTheme={() => "light"}
+      />
+    ));
+    expect(screen.getByTitle(/System/)).toBeInTheDocument();
+  });
+
+  it("cycles system → light when clicked", () => {
+    const setTheme = vi.fn();
+    render(() => (
+      <ThemeToggle
+        theme={() => "system"}
+        setTheme={setTheme}
+        resolvedTheme={() => "light"}
+      />
+    ));
+    fireEvent.click(screen.getByRole("button"));
+    expect(setTheme).toHaveBeenCalledWith("light");
+  });
+
+  it("cycles light → dark when clicked", () => {
     const setTheme = vi.fn();
     render(() => (
       <ThemeToggle
@@ -71,7 +106,7 @@ describe("ThemeToggle", () => {
     expect(setTheme).toHaveBeenCalledWith("dark");
   });
 
-  it("calls setTheme('light') when dark and clicked", () => {
+  it("cycles dark → system when clicked", () => {
     const setTheme = vi.fn();
     render(() => (
       <ThemeToggle
@@ -81,6 +116,6 @@ describe("ThemeToggle", () => {
       />
     ));
     fireEvent.click(screen.getByRole("button"));
-    expect(setTheme).toHaveBeenCalledWith("light");
+    expect(setTheme).toHaveBeenCalledWith("system");
   });
 });
