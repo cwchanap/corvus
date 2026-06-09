@@ -1,7 +1,7 @@
 import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
 import { Suspense } from "solid-js";
-import { MetaProvider } from "@solidjs/meta";
+import { MetaProvider, Link } from "@solidjs/meta";
 import { AuthProvider } from "./lib/auth/context";
 import { GraphQLProvider } from "./lib/graphql/provider";
 import "./app.css";
@@ -28,6 +28,7 @@ if (typeof window !== "undefined") {
 export default function App() {
   return (
     <MetaProvider>
+      <Link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       <GraphQLProvider>
         <AuthProvider>
           <Router
