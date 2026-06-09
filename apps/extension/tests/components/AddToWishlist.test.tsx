@@ -212,7 +212,7 @@ describe("AddToWishlist", () => {
     });
   });
 
-  it("closes new item modal when × is clicked", async () => {
+  it("closes new item modal when close button is clicked", async () => {
     render(() => <AddToWishlist />);
 
     await waitFor(() => screen.getByText("Awesome Product"));
@@ -221,7 +221,7 @@ describe("AddToWishlist", () => {
     fireEvent.change(selects[1]!, { target: { value: "__create_new_item__" } });
 
     await waitFor(() => screen.getByText("Create New Item"));
-    fireEvent.click(screen.getByRole("button", { name: "✕" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
     await waitFor(() => {
       expect(screen.queryByText("Create New Item")).toBeNull();
