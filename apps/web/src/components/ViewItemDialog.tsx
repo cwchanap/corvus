@@ -22,15 +22,15 @@ export function ViewItemDialog(props: ViewItemDialogProps) {
 
   return (
     <Show when={props.open && props.item}>
-      <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-card rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="fixed inset-0 bg-foreground/40 flex items-center justify-center z-50 p-4">
+        <div class="rounded-sm border border-border bg-card text-card-foreground max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <div class="p-6 space-y-6">
-            <div class="flex items-center justify-between">
+            <div class="flex items-start justify-between">
               <div>
-                <h2 class="text-xl font-semibold text-card-foreground">
+                <h2 class="text-xl font-display text-card-foreground">
                   {props.item?.title}
                 </h2>
-                <p class="text-xs text-muted-foreground mt-1">
+                <p class="font-mono text-xs uppercase tracking-wide text-muted-foreground mt-1">
                   Added {new Date(props.item!.created_at).toLocaleString()}
                 </p>
               </div>
@@ -38,57 +38,83 @@ export function ViewItemDialog(props: ViewItemDialogProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => props.onOpenChange(false)}
-                class="text-muted-foreground hover:text-foreground"
+                aria-label="Close dialog"
+                class="text-muted-foreground hover:text-foreground shrink-0"
               >
-                ×
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  class="h-4 w-4"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
               </Button>
             </div>
 
-            <div class="space-y-4">
-              <div>
-                <span class="text-xs uppercase tracking-wide text-muted-foreground">
+            <div class="space-y-4 divide-y divide-border">
+              <div class="pt-0">
+                <span class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                   Category
                 </span>
-                <p class="text-sm text-foreground mt-1">{categoryName()}</p>
+                <p class="font-serif text-sm text-foreground mt-1">
+                  {categoryName()}
+                </p>
               </div>
 
               <Show when={props.item?.description}>
-                <div>
-                  <span class="text-xs uppercase tracking-wide text-muted-foreground">
+                <div class="pt-4">
+                  <span class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                     Notes
                   </span>
-                  <p class="text-sm text-foreground whitespace-pre-wrap mt-1 leading-relaxed">
+                  <p class="font-serif text-sm text-foreground whitespace-pre-wrap mt-1 leading-relaxed">
                     {props.item?.description}
                   </p>
                 </div>
               </Show>
 
-              <div>
-                <span class="text-xs uppercase tracking-wide text-muted-foreground">
+              <div class="pt-4">
+                <span class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                   Links
                 </span>
                 <Show
                   when={props.item?.links && props.item.links.length > 0}
                   fallback={
-                    <p class="text-sm text-muted-foreground mt-1">
+                    <p class="font-serif text-sm text-muted-foreground mt-1">
                       No links saved for this item yet.
                     </p>
                   }
                 >
-                  <ul class="mt-2 space-y-2">
+                  <ul class="mt-2 divide-y divide-border">
                     <For each={props.item?.links}>
                       {(link) => (
-                        <li>
+                        <li class="flex items-center justify-between py-2">
                           <a
                             href={link.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="text-sm text-primary hover:text-primary/80 break-all transition-colors duration-200"
+                            class="font-serif text-sm text-primary hover:text-primary/80 break-all transition-colors duration-200 flex items-center gap-1.5"
                           >
                             {link.description || link.url}
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                              class="h-3 w-3 shrink-0"
+                            >
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" />
+                            </svg>
                           </a>
                           <Show when={link.is_primary}>
-                            <span class="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground border border-muted-foreground/30 rounded-full px-2 py-0.5">
+                            <span class="ml-2 font-mono text-[10px] uppercase tracking-wide text-muted-foreground border border-border rounded-sm px-2 py-0.5 shrink-0">
                               Primary
                             </span>
                           </Show>
