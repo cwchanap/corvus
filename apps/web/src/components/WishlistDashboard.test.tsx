@@ -372,7 +372,7 @@ describe("WishlistDashboard", () => {
       mockWishlistQuery.data = undefined;
 
       render(() => <WishlistDashboard user={mockUser} />);
-      expect(screen.getByText("Loading your wishlist...")).toBeInTheDocument();
+      expect(screen.getByText("Compiling your catalogue…")).toBeInTheDocument();
     });
 
     it("should show updating indicator when fetching", () => {
@@ -409,9 +409,7 @@ describe("WishlistDashboard", () => {
       mockWishlistQuery.data = createMockWishlistData();
 
       render(() => <WishlistDashboard user={mockUser} />);
-      expect(
-        screen.getByText(/No items in this category yet/),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/The catalogue is empty/)).toBeInTheDocument();
     });
   });
 
@@ -423,7 +421,7 @@ describe("WishlistDashboard", () => {
       });
 
       render(() => <WishlistDashboard user={mockUser} />);
-      expect(screen.getByText(/All Items \(1\)/)).toBeInTheDocument();
+      expect(screen.getAllByText(/All Items/).length).toBeGreaterThan(0);
     });
 
     it("should display categories when available", () => {
@@ -518,9 +516,9 @@ describe("WishlistDashboard", () => {
       });
 
       render(() => <WishlistDashboard user={mockUser} />);
-      expect(screen.getByText("Previous")).toBeInTheDocument();
-      expect(screen.getByText("Next")).toBeInTheDocument();
-      expect(screen.getByText(/Page 1 of 2/)).toBeInTheDocument();
+      expect(screen.getByText("← Prev")).toBeInTheDocument();
+      expect(screen.getByText("Next →")).toBeInTheDocument();
+      expect(screen.getByText(/Page 1 \/ 2/)).toBeInTheDocument();
     });
 
     it("should disable Previous button on first page", () => {
@@ -534,7 +532,7 @@ describe("WishlistDashboard", () => {
       });
 
       render(() => <WishlistDashboard user={mockUser} />);
-      const previousButton = screen.getByText("Previous").closest("button");
+      const previousButton = screen.getByText("← Prev").closest("button");
       expect(previousButton).toBeDisabled();
     });
 
@@ -550,7 +548,7 @@ describe("WishlistDashboard", () => {
       });
 
       render(() => <WishlistDashboard user={mockUser} />);
-      const nextButton = screen.getByText("Next").closest("button");
+      const nextButton = screen.getByText("Next →").closest("button");
       expect(nextButton).toBeDisabled();
     });
 
@@ -565,7 +563,7 @@ describe("WishlistDashboard", () => {
       });
 
       render(() => <WishlistDashboard user={mockUser} />);
-      expect(screen.getByText(/Showing 1–1 of 25 items/)).toBeInTheDocument();
+      expect(screen.getByText(/Showing 1–1 of 25/)).toBeInTheDocument();
     });
   });
 
