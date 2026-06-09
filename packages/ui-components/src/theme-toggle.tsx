@@ -5,7 +5,6 @@ type Theme = "light" | "dark" | "system";
 interface ThemeToggleProps {
   theme: () => Theme;
   setTheme: (theme: Theme) => void;
-  resolvedTheme: () => "light" | "dark";
 }
 
 export function ThemeToggle(props: ThemeToggleProps) {
