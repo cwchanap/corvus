@@ -47,9 +47,9 @@ export function GoogleAuthForm(props: GoogleAuthFormProps) {
   };
 
   return (
-    <Card class="w-full shadow-xl border-0 bg-card/80 backdrop-blur-sm">
-      <CardHeader class="text-center pb-4">
-        <CardTitle class="text-2xl text-card-foreground">
+    <Card class="w-full border border-border bg-card">
+      <CardHeader class="pb-4 text-center">
+        <CardTitle class="font-display text-2xl text-card-foreground">
           {TITLES[props.mode]}
         </CardTitle>
       </CardHeader>
@@ -57,7 +57,7 @@ export function GoogleAuthForm(props: GoogleAuthFormProps) {
         {errorMessage() && (
           <div
             role="alert"
-            class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200"
+            class="mb-4 rounded-sm border border-destructive/40 bg-destructive/10 px-4 py-3 font-serif text-sm text-destructive"
           >
             {errorMessage()}
           </div>
@@ -65,7 +65,7 @@ export function GoogleAuthForm(props: GoogleAuthFormProps) {
         <a
           href={getGoogleAuthStartUrl()}
           target="_self"
-          class="flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-gray-900 shadow-lg ring-1 ring-gray-200 transition-colors duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          class="flex w-full items-center justify-center gap-2 rounded-sm border border-primary bg-primary px-4 py-3 font-mono text-xs font-medium uppercase tracking-wide text-primary-foreground transition-colors duration-200 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
           {BUTTON_LABELS[props.mode]}
         </a>
