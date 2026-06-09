@@ -22,11 +22,11 @@ export function CorvusMark(props: CorvusMarkProps) {
       stroke-width="1.25"
       stroke-linecap="round"
       stroke-linejoin="round"
+      {...others}
       role={decorative() ? undefined : "img"}
       aria-hidden={decorative() ? "true" : undefined}
       aria-label={local.title}
       class={cn("text-primary", local.class)}
-      {...others}
     >
       {/* edges of the quadrilateral */}
       <path d="M10 14 L46 8 L54 34 L20 46 Z" opacity="0.5" />

@@ -133,11 +133,7 @@ export function WishlistView(props: WishlistViewProps) {
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-display">My Wishlist</h2>
         <div class="flex gap-2">
-          <ThemeToggle
-            theme={theme.theme}
-            setTheme={theme.setTheme}
-            resolvedTheme={theme.resolvedTheme}
-          />
+          <ThemeToggle theme={theme.theme} setTheme={theme.setTheme} />
           <Button
             size="sm"
             variant="outline"

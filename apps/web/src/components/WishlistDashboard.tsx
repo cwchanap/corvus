@@ -214,7 +214,6 @@ interface WishlistItemsSectionProps {
   pageRange: Accessor<{ start: number; end: number }>;
   displayPage: Accessor<number>;
   displayTotalPages: Accessor<number>;
-  pageSizeDisplay: Accessor<number>;
   canGoPrevious: Accessor<boolean>;
   canGoNext: Accessor<boolean>;
   onPrevious: () => void;
@@ -555,11 +554,6 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   const totalPages = createMemo(() => pagination()?.total_pages ?? 0);
   const canGoPrevious = createMemo(() => pagination()?.has_previous ?? false);
   const canGoNext = createMemo(() => pagination()?.has_next ?? false);
-  const pageSizeDisplay = createMemo(() =>
-    pagination()?.page_size && pagination()!.page_size > 0
-      ? pagination()!.page_size
-      : PAGE_SIZE,
-  );
   const displayPage = createMemo(() => Math.max(currentPage(), 1));
   const displayTotalPages = createMemo(() => {
     const total = totalPages();
@@ -715,11 +709,7 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
               </p>
             </div>
             <div class="flex items-center gap-3">
-              <ThemeToggle
-                theme={theme.theme}
-                setTheme={theme.setTheme}
-                resolvedTheme={theme.resolvedTheme}
-              />
+              <ThemeToggle theme={theme.theme} setTheme={theme.setTheme} />
               <A href="/profile">
                 <Button variant="link">Profile</Button>
               </A>
@@ -855,7 +845,6 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
               pageRange={pageRange}
               displayPage={displayPage}
               displayTotalPages={displayTotalPages}
-              pageSizeDisplay={pageSizeDisplay}
               canGoPrevious={canGoPrevious}
               canGoNext={canGoNext}
               onPrevious={() => {
