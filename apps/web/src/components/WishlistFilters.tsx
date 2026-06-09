@@ -29,7 +29,9 @@ export function WishlistFilters(props: WishlistFiltersProps) {
   return (
     <div class="mb-8 space-y-6">
       <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <h2 class="text-2xl font-bold text-foreground">{props.categoryName}</h2>
+        <h2 class="text-2xl font-display text-foreground">
+          {props.categoryName}
+        </h2>
         <div class="flex gap-2">
           <Show
             when={
@@ -37,19 +39,23 @@ export function WishlistFilters(props: WishlistFiltersProps) {
               (props.hasItems || props.isSelectionMode?.())
             }
           >
-            <Button
-              variant={props.isSelectionMode?.() ? "default" : "outline"}
-              onClick={props.onToggleSelectionMode}
-              class="px-4 py-2 rounded-xl font-medium transition-all duration-200"
-            >
+            <Button variant="outline" onClick={props.onToggleSelectionMode}>
               {props.isSelectionMode?.() ? "Cancel" : "Select"}
             </Button>
           </Show>
           <Show when={!props.isSelectionMode?.()}>
-            <Button
-              onClick={props.onAddItem}
-              class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-500 dark:to-pink-500 dark:hover:from-purple-600 dark:hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
+            <Button variant="default" onClick={props.onAddItem}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.5"
+                fill="none"
+                aria-hidden="true"
+                class="w-4 h-4 mr-1.5"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
               Add Item
             </Button>
           </Show>
