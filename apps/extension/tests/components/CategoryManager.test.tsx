@@ -144,19 +144,19 @@ describe("CategoryManager", () => {
   it("shows close button when onClose prop is provided", () => {
     const onClose = vi.fn();
     render(() => <CategoryManager onClose={onClose} />);
-    expect(screen.getByText("✕")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
   });
 
   it("calls onClose when close button is clicked", () => {
     const onClose = vi.fn();
     render(() => <CategoryManager onClose={onClose} />);
-    fireEvent.click(screen.getByText("✕"));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("does not show close button when onClose is not provided", () => {
     render(() => <CategoryManager />);
-    expect(screen.queryByText("✕")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
   });
 
   it("shows category names from wishlist data", () => {

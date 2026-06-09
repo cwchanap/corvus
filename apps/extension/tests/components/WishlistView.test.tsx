@@ -266,12 +266,12 @@ describe("WishlistView", () => {
     });
   });
 
-  it("closes ItemDetailsModal when × is clicked", async () => {
+  it("closes ItemDetailsModal when close button is clicked", async () => {
     render(() => <WishlistView />);
     fireEvent.click(screen.getByText("Laptop").closest("button")!);
 
     await waitFor(() => screen.getByText("Buy here"));
-    fireEvent.click(screen.getByText("×"));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
     await waitFor(() => {
       expect(screen.queryByText("Buy here")).toBeNull();

@@ -97,8 +97,26 @@ export function CategoryManager(props: CategoryManagerProps) {
           <div class="flex items-center justify-between">
             <CardTitle class="text-base">Manage Categories</CardTitle>
             <Show when={props.onClose}>
-              <Button variant="ghost" size="sm" onClick={props.onClose}>
-                ✕
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Close"
+                onClick={props.onClose}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
               </Button>
             </Show>
           </div>
