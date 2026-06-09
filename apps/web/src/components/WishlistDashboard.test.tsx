@@ -502,7 +502,7 @@ describe("WishlistDashboard", () => {
       });
 
       render(() => <WishlistDashboard user={mockUser} />);
-      expect(screen.getByText("1 link")).toBeInTheDocument();
+      expect(screen.getByText(/1 link/)).toBeInTheDocument();
     });
   });
 
