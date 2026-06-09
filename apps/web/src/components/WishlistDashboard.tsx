@@ -11,6 +11,7 @@ import { A, useNavigate } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import { ThemeToggle } from "@repo/ui-components/theme-toggle";
 import { PaperBackground } from "@repo/ui-components/paper-background";
+import { FeatherMark } from "@repo/ui-components/corvus-mark";
 import {
   Card,
   CardContent,
@@ -232,12 +233,12 @@ function WishlistItemsSection(props: WishlistItemsSectionProps) {
   return (
     <div class="lg:col-span-3">
       <Show when={props.wishlistQuery.isLoading && !props.wishlistQuery.data}>
-        <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
-          <CardContent class="text-center py-16">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-            <div class="text-muted-foreground">Loading your wishlist...</div>
-          </CardContent>
-        </Card>
+        <div class="border-t border-border py-16 text-center">
+          <div class="mx-auto mb-4 h-px w-24 origin-left bg-primary animate-rule" />
+          <div class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+            Compiling your catalogue…
+          </div>
+        </div>
       </Show>
 
       <Show when={props.wishlistQuery.data}>
@@ -251,15 +252,14 @@ function WishlistItemsSection(props: WishlistItemsSectionProps) {
         </Show>
 
         <Show when={!hasItems()}>
-          <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
-            <CardContent class="text-center py-16">
-              <div class="text-muted-foreground text-lg">
-                {props.searchQuery()
-                  ? `No items found matching "${props.searchQuery()}"`
-                  : "No items in this category yet. Add your first item!"}
-              </div>
-            </CardContent>
-          </Card>
+          <div class="flex flex-col items-center border-t border-border py-16 text-center">
+            <FeatherMark class="mb-4 h-12 w-6" />
+            <div class="font-serif text-lg text-muted-foreground">
+              {props.searchQuery()
+                ? `Nothing catalogued under "${props.searchQuery()}".`
+                : "The catalogue is empty. Add your first entry."}
+            </div>
+          </div>
         </Show>
 
         <Show when={hasItems()}>
@@ -277,38 +277,35 @@ function WishlistItemsSection(props: WishlistItemsSectionProps) {
                 />
               )}
             </For>
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-              <div class="text-sm text-muted-foreground">
+            <div class="flex flex-col gap-3 border-t border-border pt-4 font-mono text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+              <div>
                 <Show
                   when={props.totalItems() > 0 && props.pageRange().start > 0}
-                  fallback={<span>No items to display</span>}
+                  fallback={<span>No entries to display</span>}
                 >
-                  {`Showing ${props.pageRange().start}–${props.pageRange().end} of ${props.totalItems()} items`}
+                  {`Showing ${props.pageRange().start}–${props.pageRange().end} of ${props.totalItems()}`}
                 </Show>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-3">
                 <Button
-                  variant="outline"
+                  variant="link"
                   size="sm"
                   onClick={props.onPrevious}
                   disabled={!props.canGoPrevious()}
                 >
-                  Previous
+                  ← Prev
                 </Button>
-                <span class="text-sm font-medium text-muted-foreground">
-                  Page {props.displayPage()} of {props.displayTotalPages()}
+                <span>
+                  Page {props.displayPage()} / {props.displayTotalPages()}
                 </span>
                 <Button
-                  variant="outline"
+                  variant="link"
                   size="sm"
                   onClick={props.onNext}
                   disabled={!props.canGoNext()}
                 >
-                  Next
+                  Next →
                 </Button>
-                <span class="text-xs text-muted-foreground">
-                  {props.pageSizeDisplay()} per page
-                </span>
               </div>
             </div>
           </div>
@@ -747,58 +744,71 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Categories Sidebar */}
           <div class="lg:col-span-1">
-            <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+            <Card class="border border-border bg-card">
               <CardHeader class="pb-4">
                 <div class="flex items-center justify-between">
                   <div>
-                    <CardTitle class="text-xl text-card-foreground">
+                    <CardTitle class="font-display text-xl text-card-foreground">
                       Categories
                     </CardTitle>
-                    <CardDescription class="text-muted-foreground">
-                      Organize your wishlist
-                    </CardDescription>
+                    <CardDescription>Organize your wishlist</CardDescription>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <button
                     onClick={() => setCategoryManagerOpen(true)}
                     title="Manage Categories"
+                    aria-label="Manage categories"
+                    class="rounded-sm p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
                   >
-                    ⚙️
-                  </Button>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+                    </svg>
+                  </button>
                 </div>
               </CardHeader>
               <CardContent class="px-6 pb-6">
-                <div class="space-y-2">
+                <div class="space-y-0.5">
                   <button
                     onClick={() => setSelectedCategory(null)}
-                    class={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    class={`flex w-full items-baseline gap-2 border-l-2 px-3 py-2 text-left font-serif text-sm transition-colors ${
                       selectedCategory() === null
-                        ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
-                        : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-transparent text-foreground hover:bg-accent/40"
                     }`}
                   >
-                    All Items ({totalItems()})
+                    <span class="flex-1">All Items</span>
+                    <span class="font-mono text-xs text-muted-foreground">
+                      {totalItems()}
+                    </span>
                   </button>
                   <For each={categories()}>
                     {(category: WishlistCategory) => (
                       <button
                         onClick={() => setSelectedCategory(category.id)}
-                        class={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                        class={`flex w-full items-center gap-2 border-l-2 px-3 py-2 text-left font-serif text-sm transition-colors ${
                           selectedCategory() === category.id
-                            ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
-                            : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-transparent text-foreground hover:bg-accent/40"
                         }`}
                       >
-                        <div class="flex items-center space-x-3">
-                          <div
-                            class="w-3 h-3 rounded-full"
-                            style={{
-                              "background-color": category.color || "#6366f1",
-                            }}
-                          />
-                          <span class="flex-1">{category.name}</span>
-                        </div>
+                        <span
+                          class="h-2 w-2 flex-shrink-0 rounded-full"
+                          style={{
+                            "background-color":
+                              category.color || "hsl(var(--primary))",
+                          }}
+                        />
+                        <span class="flex-1">{category.name}</span>
                       </button>
                     )}
                   </For>
