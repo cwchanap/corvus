@@ -70,7 +70,6 @@ function SortableWishlistItem(props: {
   isSelected?: boolean;
   onToggleSelect?: (id: string) => void;
 }) {
-  const style = {} as const;
   const createdAtLabel = () => {
     const d = new Date(props.item.created_at as unknown as string);
     return isNaN(d.getTime()) ? "just now" : d.toLocaleDateString();
@@ -94,96 +93,114 @@ function SortableWishlistItem(props: {
   };
 
   return (
-    <div style={style}>
-      <Card
-        class={`transition-all duration-200 hover:shadow-lg shadow-md border-0 bg-card/80 backdrop-blur-sm ${
-          props.isSelected ? "ring-2 ring-primary" : ""
-        }`}
-      >
-        <CardContent class="p-6">
-          <div class="flex items-start justify-between">
-            <button
-              type="button"
-              onClick={handleClick}
-              class="flex-1 text-left bg-transparent border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg transition-colors"
-            >
-              <div class="flex items-start gap-3">
-                {/* Selection Checkbox */}
-                <Show when={props.isSelectionMode}>
-                  <input
-                    type="checkbox"
-                    checked={props.isSelected}
-                    onChange={handleCheckboxChange}
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={`Select ${props.item.title}`}
-                    class="mt-1 w-5 h-5 rounded border-2 cursor-pointer accent-primary flex-shrink-0"
-                  />
-                </Show>
-
-                <div class="flex flex-col gap-2 flex-1">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <h3 class="font-semibold text-card-foreground text-lg hover:text-primary transition-colors">
-                      {props.item.title}
-                    </h3>
-                    <Show
-                      when={props.item.status && props.item.status !== "want"}
-                    >
-                      <span
-                        class={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          props.item.status === "purchased"
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-                        }`}
-                      >
-                        {props.item.status}
-                      </span>
-                    </Show>
-                    <Show when={props.item.priority != null}>
-                      <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-medium">
-                        P{props.item.priority}
-                      </span>
-                    </Show>
-                  </div>
-
-                  <Show when={props.item.description}>
-                    <p class="text-sm text-muted-foreground leading-relaxed">
-                      {props.item.description}
-                    </p>
-                  </Show>
-
-                  <div class="text-xs text-muted-foreground flex items-center justify-between pt-2">
-                    <div class="flex items-center">
-                      <span class="w-2 h-2 bg-primary rounded-full mr-2" />
-                      Added {createdAtLabel()}
-                    </div>
-                    <div class="text-xs">
-                      {itemLinksCount()} link{itemLinksCount() !== 1 ? "s" : ""}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </button>
-            <Show when={!props.isSelectionMode}>
-              <div class="flex gap-2">
-                <button
-                  onClick={() => props.onEdit(props.item)}
-                  class="text-muted-foreground hover:text-primary hover:bg-accent ml-2 p-2 rounded-lg transition-all duration-200"
-                  title="Edit item"
-                >
-                  ✏️
-                </button>
-                <button
-                  onClick={() => props.onDelete(props.item.id)}
-                  class="text-destructive hover:text-destructive/80 hover:bg-destructive/10 p-2 rounded-lg transition-all duration-200 font-bold text-lg"
-                  title="Delete item"
-                >
-                  ×
-                </button>
-              </div>
+    <div
+      class={`group relative border-b border-border py-5 transition-colors ${
+        props.isSelected ? "bg-primary/5" : "hover:bg-accent/40"
+      }`}
+    >
+      <div class="flex items-start justify-between gap-4">
+        <button
+          type="button"
+          onClick={handleClick}
+          class="flex-1 rounded-sm border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <div class="flex items-start gap-3">
+            <Show when={props.isSelectionMode}>
+              <input
+                type="checkbox"
+                checked={props.isSelected}
+                onChange={handleCheckboxChange}
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Select ${props.item.title}`}
+                class="mt-1.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded-none border border-input accent-[hsl(var(--primary))]"
+              />
             </Show>
+
+            <div class="flex flex-1 flex-col gap-1.5">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="font-serif text-lg font-medium text-foreground transition-colors group-hover:text-primary">
+                  {props.item.title}
+                </h3>
+                <Show when={props.item.status && props.item.status !== "want"}>
+                  <span
+                    class={`rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider ${
+                      props.item.status === "purchased"
+                        ? "border-primary/30 bg-primary/10 text-primary"
+                        : "border-border bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {props.item.status}
+                  </span>
+                </Show>
+                <Show when={props.item.priority != null}>
+                  <span class="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    P{props.item.priority}
+                  </span>
+                </Show>
+              </div>
+
+              <Show when={props.item.description}>
+                <p class="font-serif text-sm leading-relaxed text-muted-foreground">
+                  {props.item.description}
+                </p>
+              </Show>
+
+              <div class="pt-1 font-mono text-xs text-muted-foreground">
+                Added {createdAtLabel()} · {itemLinksCount()} link
+                {itemLinksCount() !== 1 ? "s" : ""}
+              </div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </button>
+
+        <Show when={!props.isSelectionMode}>
+          <div class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+            <button
+              onClick={() => props.onEdit(props.item)}
+              class="rounded-sm p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+              title="Edit item"
+              aria-label={`Edit ${props.item.title}`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => props.onDelete(props.item.id)}
+              class="rounded-sm p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              title="Delete item"
+              aria-label={`Delete ${props.item.title}`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 6h18" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                <path d="M10 11v6M14 11v6" />
+              </svg>
+            </button>
+          </div>
+        </Show>
+      </div>
     </div>
   );
 }
@@ -246,7 +263,7 @@ function WishlistItemsSection(props: WishlistItemsSectionProps) {
         </Show>
 
         <Show when={hasItems()}>
-          <div class="space-y-4">
+          <div class="border-t border-border">
             <For each={props.filteredItems()}>
               {(item: WishlistItem) => (
                 <SortableWishlistItem
