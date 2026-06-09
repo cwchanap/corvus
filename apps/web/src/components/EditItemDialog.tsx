@@ -115,27 +115,41 @@ export function EditItemDialog(props: EditItemDialogProps) {
 
   return (
     <Show when={props.open}>
-      <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-card rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="fixed inset-0 bg-foreground/40 flex items-center justify-center z-50 p-4">
+        <div class="rounded-sm border border-border bg-card text-card-foreground max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <div class="p-6">
             <div class="flex items-center justify-between mb-6">
-              <h2 class="text-xl font-semibold text-card-foreground">
+              <h2 class="text-xl font-display text-card-foreground">
                 Edit Wishlist Item
               </h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => props.onOpenChange(false)}
+                aria-label="Close dialog"
                 class="text-muted-foreground hover:text-foreground"
               >
-                ×
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  class="h-4 w-4"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
               </Button>
             </div>
 
             <form onSubmit={handleSubmit} class="space-y-6">
               {/* Title */}
               <div class="space-y-2">
-                <label class="text-sm font-medium text-foreground">Title</label>
+                <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                  Title
+                </label>
                 <Input
                   type="text"
                   placeholder="Item title"
@@ -148,20 +162,20 @@ export function EditItemDialog(props: EditItemDialogProps) {
 
               {/* Description */}
               <div class="space-y-2">
-                <label class="text-sm font-medium text-foreground">
+                <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                   Description (optional)
                 </label>
                 <textarea
                   placeholder="Notes, size, color, etc."
                   value={description()}
                   onInput={(e) => setDescription(e.currentTarget.value)}
-                  class="w-full min-h-[80px] px-3 py-2 border border-input bg-background text-foreground rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  class="w-full min-h-[80px] px-3 py-2 border border-input bg-background font-serif text-foreground rounded-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 />
               </div>
 
               {/* Category */}
               <div class="space-y-2">
-                <label class="text-sm font-medium text-foreground">
+                <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                   Category
                 </label>
                 <Select
@@ -180,7 +194,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
 
               {/* Status */}
               <fieldset class="space-y-2">
-                <legend class="text-sm font-medium text-foreground">
+                <legend class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                   Status
                 </legend>
                 <div class="flex gap-3">
@@ -199,7 +213,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
                           onChange={() => setStatus(s)}
                           class="accent-primary"
                         />
-                        <span class="text-sm capitalize text-foreground">
+                        <span class="font-mono text-xs uppercase tracking-wide text-foreground">
                           {s}
                         </span>
                       </label>
@@ -210,7 +224,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
 
               {/* Priority */}
               <div class="space-y-2">
-                <label class="text-sm font-medium text-foreground">
+                <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                   Priority
                 </label>
                 <Select
@@ -258,7 +272,7 @@ export function EditItemDialog(props: EditItemDialogProps) {
                 </Button>
                 <Button
                   type="submit"
-                  class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                  class="flex-1"
                   disabled={props.submitting || !title().trim()}
                 >
                   {props.submitting ? "Updating..." : "Update Item"}

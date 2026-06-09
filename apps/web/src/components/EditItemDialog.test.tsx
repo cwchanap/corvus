@@ -144,7 +144,7 @@ describe("EditItemDialog", () => {
       />
     ));
 
-    fireEvent.click(screen.getByText("×"));
+    fireEvent.click(screen.getByRole("button", { name: "Close dialog" }));
     expect(mockOnOpenChange).toHaveBeenCalledWith(false);
   });
 
