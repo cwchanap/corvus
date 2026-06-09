@@ -158,7 +158,7 @@ describe("ItemDetailsModal", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls onClose when × button is clicked", () => {
+  it("calls onClose when close button is clicked", () => {
     const onClose = vi.fn();
     render(() => (
       <ItemDetailsModal
@@ -168,7 +168,7 @@ describe("ItemDetailsModal", () => {
         onOpenLink={vi.fn()}
       />
     ));
-    fireEvent.click(screen.getByText("×"));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledOnce();
   });
 

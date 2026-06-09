@@ -131,7 +131,7 @@ export function WishlistView(props: WishlistViewProps) {
   return (
     <div class="flex h-full w-full flex-col space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold">My Wishlist</h2>
+        <h2 class="text-lg font-display">My Wishlist</h2>
         <div class="flex gap-2">
           <ThemeToggle
             theme={theme.theme}
@@ -224,10 +224,10 @@ export function WishlistView(props: WishlistViewProps) {
                               <button
                                 type="button"
                                 onClick={() => openItemDetails(item)}
-                                class="min-w-0 flex-1 text-left bg-transparent border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+                                class="min-w-0 flex-1 text-left bg-transparent border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                               >
                                 <h3
-                                  class="font-medium text-sm truncate hover:text-primary transition-colors"
+                                  class="font-serif text-sm truncate hover:text-primary transition-colors"
                                   title={item.title}
                                 >
                                   {item.title}
