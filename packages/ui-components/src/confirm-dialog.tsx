@@ -29,22 +29,24 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         {/* Backdrop */}
         <div
           data-testid="confirm-dialog-backdrop"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+          class="fixed inset-0 bg-foreground/40"
           onClick={handleCancel}
         />
 
         {/* Dialog */}
-        <div class="relative z-50 w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg">
+        <div class="relative z-50 w-full max-w-md rounded-sm border border-border bg-card p-6 text-card-foreground">
           <div class="space-y-4">
             <div class="space-y-2">
-              <h2 class="text-lg font-semibold text-card-foreground">
+              <h2 class="font-display text-lg font-semibold text-card-foreground">
                 {props.title}
               </h2>
               <Show when={props.description}>
-                <p class="text-sm text-muted-foreground">{props.description}</p>
+                <p class="font-serif text-sm text-muted-foreground">
+                  {props.description}
+                </p>
               </Show>
               <Show when={props.children}>
-                <div class="text-sm text-muted-foreground">
+                <div class="font-serif text-sm text-muted-foreground">
                   {props.children}
                 </div>
               </Show>
