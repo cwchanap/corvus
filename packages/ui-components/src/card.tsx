@@ -9,7 +9,7 @@ export function Card(props: CardProps) {
   return (
     <div
       class={cn(
-        "rounded-lg border bg-card text-card-foreground shadow-sm",
+        "rounded-sm border border-border bg-card text-card-foreground",
         local.class,
       )}
       {...others}
@@ -35,7 +35,7 @@ export function CardTitle(props: CardTitleProps) {
   return (
     <h3
       class={cn(
-        "text-2xl font-semibold leading-none tracking-tight",
+        "font-display text-2xl font-semibold leading-tight tracking-tight",
         local.class,
       )}
       {...others}
@@ -49,7 +49,13 @@ export function CardDescription(props: CardDescriptionProps) {
   const [local, others] = splitProps(props, ["class"]);
 
   return (
-    <p class={cn("text-sm text-muted-foreground", local.class)} {...others} />
+    <p
+      class={cn(
+        "font-mono text-xs uppercase tracking-wide text-muted-foreground",
+        local.class,
+      )}
+      {...others}
+    />
   );
 }
 
