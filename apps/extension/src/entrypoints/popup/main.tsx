@@ -21,8 +21,10 @@ function LoadingScreen() {
   return (
     <div class="flex h-full w-full items-center justify-center bg-background">
       <div class="space-y-1 text-center">
-        <div class="text-sm font-medium">Loading wishlist…</div>
-        <div class="text-xs text-muted-foreground">
+        <div class="font-mono text-xs uppercase tracking-wide">
+          Loading wishlist…
+        </div>
+        <div class="font-serif text-sm text-muted-foreground">
           Hang tight while we sync your data.
         </div>
       </div>
@@ -54,10 +56,12 @@ function ErrorScreen(props: {
   return (
     <div class="flex h-full w-full flex-col items-center justify-center gap-3 bg-background px-4 text-center">
       <div class="space-y-1">
-        <div class="text-sm font-semibold text-destructive">
+        <div class="font-mono text-xs uppercase tracking-wide text-destructive">
           {props.isAuthError ? "Not signed in" : "Unable to load wishlist"}
         </div>
-        <div class="text-xs text-muted-foreground">{props.message}</div>
+        <div class="font-serif text-sm text-muted-foreground">
+          {props.message}
+        </div>
       </div>
       <Show
         when={props.isAuthError}
