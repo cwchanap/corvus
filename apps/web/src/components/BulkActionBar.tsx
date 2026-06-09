@@ -104,21 +104,19 @@ export function BulkActionBar(props: BulkActionBarProps) {
   return (
     <>
       <Show when={props.selectedCount() > 0}>
-        <div class="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-sm border-t border-border shadow-2xl">
+        <div class="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-sm">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex flex-col sm:flex-row items-center gap-4 justify-between">
               {/* Left: Selection Info */}
               <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                  <span class="text-primary font-semibold">
-                    {props.selectedCount()}
-                  </span>
-                </div>
-                <span class="text-foreground font-medium">
+                <span class="font-mono text-xs uppercase tracking-wide text-primary bg-primary/10 px-2 py-1 rounded-sm">
+                  {props.selectedCount()}
+                </span>
+                <span class="font-mono text-xs uppercase tracking-wide text-foreground">
                   {props.selectedCount() === 1 ? "item" : "items"} selected
                 </span>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={props.onSelectAll}
                   disabled={props.isProcessing}
@@ -151,11 +149,11 @@ export function BulkActionBar(props: BulkActionBarProps) {
                     Move to...
                   </Button>
                   <Show when={showMoveDropdown()}>
-                    <div class="absolute bottom-full mb-2 right-0 w-56 bg-card border border-border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    <div class="absolute bottom-full mb-2 right-0 w-56 bg-card border border-border rounded-sm shadow-sm z-50 max-h-64 overflow-y-auto">
                       <div class="py-1">
                         <button
                           onClick={() => handleMoveClick(null)}
-                          class="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                          class="w-full text-left px-4 py-2 text-sm font-serif text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                         >
                           Uncategorized
                         </button>
@@ -163,14 +161,14 @@ export function BulkActionBar(props: BulkActionBarProps) {
                           {(category) => (
                             <button
                               onClick={() => handleMoveClick(category.id)}
-                              class="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                              class="w-full text-left px-4 py-2 text-sm font-serif text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                             >
                               <div class="flex items-center gap-2">
                                 <div
-                                  class="w-3 h-3 rounded-full"
+                                  class="w-3 h-3 rounded-sm"
                                   style={{
                                     "background-color":
-                                      category.color || "#6366f1",
+                                      category.color || "#6b4c3b",
                                   }}
                                 />
                                 <span>{category.name}</span>
@@ -194,7 +192,7 @@ export function BulkActionBar(props: BulkActionBarProps) {
                 </Button>
 
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={props.onCancel}
                   disabled={props.isProcessing}
