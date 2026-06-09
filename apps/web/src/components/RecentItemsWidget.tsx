@@ -43,9 +43,9 @@ export function RecentItemsWidget(props: RecentItemsWidgetProps) {
         recentQuery.isLoading || recentQuery.error || recentItems().length > 0
       }
     >
-      <Card class="shadow-xl border-0 bg-card/80 backdrop-blur-sm mb-6">
+      <Card class="border border-border bg-card rounded-sm mb-6">
         <CardHeader class="pb-3">
-          <CardTitle class="text-base text-card-foreground">
+          <CardTitle class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
             Recently Added
           </CardTitle>
         </CardHeader>
@@ -53,7 +53,7 @@ export function RecentItemsWidget(props: RecentItemsWidgetProps) {
           <Show when={recentQuery.isLoading}>
             <div class="space-y-2">
               <For each={[1, 2, 3]}>
-                {() => <div class="h-10 rounded-lg bg-muted animate-pulse" />}
+                {() => <div class="h-10 rounded-sm bg-muted animate-pulse" />}
               </For>
             </div>
           </Show>
@@ -69,18 +69,18 @@ export function RecentItemsWidget(props: RecentItemsWidgetProps) {
                   <button
                     type="button"
                     onClick={() => props.onViewItem(item)}
-                    class="w-full text-left flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors duration-150 group"
+                    class="w-full text-left flex items-center justify-between gap-3 px-3 py-2 rounded-sm hover:bg-accent transition-colors duration-150 group"
                   >
                     <div class="flex-1 min-w-0">
-                      <p class="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                      <p class="font-serif text-sm text-foreground truncate group-hover:text-primary transition-colors">
                         {item.title}
                       </p>
-                      <p class="text-xs text-muted-foreground truncate">
+                      <p class="font-mono text-xs text-muted-foreground truncate">
                         {getCategoryName(item.category_id)}
                       </p>
                     </div>
                     <span
-                      class="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0"
+                      class="font-mono text-xs text-muted-foreground whitespace-nowrap flex-shrink-0"
                       title={parseDateAsUTC(item.created_at).toLocaleString()}
                     >
                       {formatRelativeTime(item.created_at)}
