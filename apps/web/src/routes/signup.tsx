@@ -2,6 +2,8 @@ import { Title } from "@solidjs/meta";
 import { useSearchParams } from "@solidjs/router";
 import { GoogleAuthForm } from "../components/auth/GoogleAuthForm";
 import { ThemeProvider } from "../lib/theme/context";
+import { CorvusMark } from "@repo/ui-components/corvus-mark";
+import { PaperBackground } from "@repo/ui-components/paper-background";
 
 export default function SignUp() {
   const [searchParams] = useSearchParams();
@@ -12,14 +14,16 @@ export default function SignUp() {
   return (
     <ThemeProvider>
       <Title>Sign Up - Corvus</Title>
-      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 py-8 px-4 sm:px-6 lg:px-8">
+      <PaperBackground />
+      <div class="relative flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
         <div class="w-full max-w-sm">
-          <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <div class="mb-8 flex flex-col items-center text-center">
+            <CorvusMark title="Corvus" class="mb-4 h-12 w-12 animate-rise" />
+            <h1 class="font-display text-4xl font-semibold tracking-tight text-foreground animate-rise">
               Corvus
             </h1>
-            <p class="text-muted-foreground text-sm mt-2">
-              Your personal wishlist companion
+            <p class="mt-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              A catalogue of desire
             </p>
           </div>
           <GoogleAuthForm mode="signup" error={error} />

@@ -16,6 +16,16 @@ vi.mock("../lib/theme/context", () => ({
   ),
 }));
 
+vi.mock("@repo/ui-components/corvus-mark", () => ({
+  CorvusMark: (props: { title?: string; class?: string }) => (
+    <svg aria-label={props.title} />
+  ),
+}));
+
+vi.mock("@repo/ui-components/paper-background", () => ({
+  PaperBackground: () => null,
+}));
+
 vi.mock("../components/auth/GoogleAuthForm", () => ({
   GoogleAuthForm: (props: { mode: string; error?: string }) => (
     <div
@@ -45,9 +55,7 @@ describe("SignUp route", () => {
 
   it("renders the tagline", () => {
     render(() => <SignUp />);
-    expect(
-      screen.getByText("Your personal wishlist companion"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("A catalogue of desire")).toBeInTheDocument();
   });
 
   it("passes empty error to GoogleAuthForm when no search param present", () => {
