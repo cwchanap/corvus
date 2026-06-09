@@ -10,6 +10,8 @@
     "./select": "./src/select.tsx",
     "./badge": "./src/badge.tsx",
     "./theme-toggle": "./src/theme-toggle.tsx",
+    "./corvus-mark": "./src/corvus-mark.tsx",
+    "./paper-background": "./src/paper-background.tsx",
     "./confirm-dialog": "./src/confirm-dialog.tsx",
     "./styles": "./src/styles.css"
   },
