@@ -28,7 +28,6 @@ export function CorvusMark(props: CorvusMarkProps) {
       class={cn("text-primary", local.class)}
       {...others}
     >
-      {local.title ? <title>{local.title}</title> : null}
       {/* edges of the quadrilateral */}
       <path d="M10 14 L46 8 L54 34 L20 46 Z" opacity="0.5" />
       {/* stars */}
