@@ -147,10 +147,14 @@ export function EditItemDialog(props: EditItemDialogProps) {
             <form onSubmit={handleSubmit} class="space-y-6">
               {/* Title */}
               <div class="space-y-2">
-                <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                <label
+                  for="edit-item-title"
+                  class="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+                >
                   Title
                 </label>
                 <Input
+                  id="edit-item-title"
                   type="text"
                   placeholder="Item title"
                   value={title()}
@@ -162,10 +166,14 @@ export function EditItemDialog(props: EditItemDialogProps) {
 
               {/* Description */}
               <div class="space-y-2">
-                <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                <label
+                  for="edit-item-description"
+                  class="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+                >
                   Description (optional)
                 </label>
                 <textarea
+                  id="edit-item-description"
                   placeholder="Notes, size, color, etc."
                   value={description()}
                   onInput={(e) => setDescription(e.currentTarget.value)}
@@ -175,10 +183,14 @@ export function EditItemDialog(props: EditItemDialogProps) {
 
               {/* Category */}
               <div class="space-y-2">
-                <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                <label
+                  for="edit-item-category"
+                  class="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+                >
                   Category
                 </label>
                 <Select
+                  id="edit-item-category"
                   value={categoryId()}
                   onChange={(e) => setCategoryId(e.currentTarget.value)}
                   class="w-full"
@@ -224,10 +236,14 @@ export function EditItemDialog(props: EditItemDialogProps) {
 
               {/* Priority */}
               <div class="space-y-2">
-                <label class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                <label
+                  for="edit-item-priority"
+                  class="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+                >
                   Priority
                 </label>
                 <Select
+                  id="edit-item-priority"
                   value={priority()}
                   onChange={(e) => setPriority(e.currentTarget.value)}
                   class="w-full"
