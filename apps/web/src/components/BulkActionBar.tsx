@@ -168,7 +168,7 @@ export function BulkActionBar(props: BulkActionBarProps) {
                                   class="w-3 h-3 rounded-sm"
                                   style={{
                                     "background-color":
-                                      category.color || "#6b4c3b",
+                                      category.color || "hsl(var(--primary))",
                                   }}
                                 />
                                 <span>{category.name}</span>

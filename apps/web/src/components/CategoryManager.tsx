@@ -203,7 +203,8 @@ export function CategoryManager(props: CategoryManagerProps) {
                         data-testid="category-color"
                         class="w-4 h-4 rounded-full border border-border"
                         style={{
-                          "background-color": category.color || "#6366f1",
+                          "background-color":
+                            category.color || "hsl(var(--primary))",
                         }}
                       />
                       <span class="font-serif text-sm">{category.name}</span>
