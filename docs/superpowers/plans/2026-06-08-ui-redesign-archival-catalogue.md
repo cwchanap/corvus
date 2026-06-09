@@ -63,7 +63,7 @@
 
 ---
 
-# PHASE 1 — Foundation (tokens, fonts, shared components, identity)
+## PHASE 1 — Foundation (tokens, fonts, shared components, identity)
 
 ### Task 1: Install fonts and wire `fontFamily`
 
@@ -886,7 +886,7 @@ Expected: all PASS. (Web pages still carry hardcoded gradients — fixed in Phas
 
 ---
 
-# PHASE 2 — Web auth + profile
+## PHASE 2 — Web auth + profile
 
 ### Task 11: Editorial auth pages (`signin`, `signup`, `GoogleAuthForm`)
 
@@ -1139,7 +1139,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ---
 
-# PHASE 3 — Web dashboard + dialogs
+## PHASE 3 — Web dashboard + dialogs
 
 > These files are large. For each task: keep all signals, effects, handlers, props, and data flow **exactly** as they are. Change only markup/classes/icons. After each task run the matching `*.test.tsx` suite and fix assertions that target removed styling (re-point them at visible text/roles).
 
@@ -1790,7 +1790,7 @@ Expected: no matches (or only intentional ones you can justify). Fix any straggl
 
 ---
 
-# PHASE 4 — Extension
+## PHASE 4 — Extension
 
 ### Task 21: Re-theme extension surfaces
 
@@ -1853,7 +1853,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ---
 
-# PHASE 5 — Final sweep
+## PHASE 5 — Final sweep
 
 ### Task 22: Favicon + full repo gate
 
@@ -1926,7 +1926,3 @@ If desired, set the spec's `Status:` to `Implemented` and commit.
 - **Token contrast:** if any text fails contrast against paper (especially `muted-foreground` on `card`), darken `--muted-foreground` by a few % L in `styles.css` rather than overriding per-component.
 - **Dark mode:** every task's classes use semantic tokens, so dark (espresso) is covered automatically; spot-check it in Task 20 Step 2.
 - **Logic invariant:** no task changes a signal, effect, handler, GraphQL call, or prop. If a test only fails because it asserted old styling/emoji/copy, fix the _test's assertion_; if a test fails on behavior, you changed something you shouldn't have — revert and reapply as markup-only.
-
-```
-
-```
