@@ -249,7 +249,7 @@ describe("CategoryManager", () => {
       />
     ));
 
-    expect(screen.getByText("✕")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
   });
 
   it("does not render close button when onClose is not provided", () => {
@@ -257,7 +257,9 @@ describe("CategoryManager", () => {
       <CategoryManager categories={mockCategories} onRefetch={mockOnRefetch} />
     ));
 
-    expect(screen.queryByText("✕")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Close" }),
+    ).not.toBeInTheDocument();
   });
 
   it("calls onClose when close button is clicked", () => {
@@ -269,7 +271,7 @@ describe("CategoryManager", () => {
       />
     ));
 
-    fireEvent.click(screen.getByText("✕"));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(mockOnClose).toHaveBeenCalled();
   });
 
