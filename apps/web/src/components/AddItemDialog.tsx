@@ -88,15 +88,15 @@ export function AddItemDialog(props: AddItemDialogProps) {
 
   return (
     <Show when={props.open}>
-      <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-card rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="fixed inset-0 bg-foreground/40 flex items-center justify-center z-50 p-4">
+        <div class="rounded-sm border border-border bg-card text-card-foreground max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <div class="p-6">
             <div class="flex items-center justify-between mb-6">
               <div>
-                <h2 class="text-xl font-semibold text-card-foreground">
+                <h2 class="text-xl font-display text-card-foreground">
                   Add Wishlist Item
                 </h2>
-                <p class="mt-1 text-sm text-muted-foreground">
+                <p class="mt-1 text-sm font-serif text-muted-foreground">
                   Provide details for the item you'd like to add.
                 </p>
               </div>
@@ -104,9 +104,21 @@ export function AddItemDialog(props: AddItemDialogProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => props.onOpenChange(false)}
+                aria-label="Close dialog"
                 class="text-muted-foreground hover:text-foreground"
               >
-                ×
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  class="h-4 w-4"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
               </Button>
             </div>
 
@@ -114,7 +126,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
               <div class="space-y-3">
                 <label
                   for="add-item-title"
-                  class="block text-sm font-medium text-foreground"
+                  class="block font-mono text-xs uppercase tracking-wide text-muted-foreground"
                 >
                   Title
                 </label>
@@ -123,7 +135,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
                   value={title()}
                   onInput={(e) => setTitle(e.currentTarget.value)}
                   placeholder="Item title"
-                  class="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground"
+                  class="w-full"
                   required
                 />
               </div>
@@ -131,13 +143,13 @@ export function AddItemDialog(props: AddItemDialogProps) {
               <div class="space-y-3">
                 <label
                   for="add-item-description"
-                  class="block text-sm font-medium text-foreground"
+                  class="block font-mono text-xs uppercase tracking-wide text-muted-foreground"
                 >
                   Description (optional)
                 </label>
                 <textarea
                   id="add-item-description"
-                  class="w-full min-h-24 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="w-full min-h-24 resize-y rounded-sm border border-border bg-background px-4 py-3 text-sm font-serif text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                   value={description()}
                   onInput={(e) => setDescription(e.currentTarget.value)}
                   placeholder="Notes, size, color, etc."
@@ -148,7 +160,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
                 <div class="space-y-3">
                   <label
                     for="add-item-category"
-                    class="block text-sm font-medium text-foreground"
+                    class="block font-mono text-xs uppercase tracking-wide text-muted-foreground"
                   >
                     Category
                   </label>
@@ -156,7 +168,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
                     id="add-item-category"
                     value={categoryId()}
                     onChange={(e) => setCategoryId(e.currentTarget.value)}
-                    class="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 bg-background text-foreground"
+                    class="w-full"
                   >
                     <For each={props.categories}>
                       {(c) => <option value={c.id}>{c.name}</option>}
@@ -168,7 +180,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
               <div class="space-y-3">
                 <label
                   for="add-item-status"
-                  class="block text-sm font-medium text-foreground"
+                  class="block font-mono text-xs uppercase tracking-wide text-muted-foreground"
                 >
                   Status
                 </label>
@@ -178,7 +190,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
                   onChange={(e) =>
                     setStatus(e.currentTarget.value as WishlistItemStatus)
                   }
-                  class="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 bg-background text-foreground"
+                  class="w-full"
                 >
                   <option value="want">Want</option>
                   <option value="purchased">Purchased</option>
@@ -189,7 +201,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
               <div class="space-y-3">
                 <label
                   for="add-item-priority"
-                  class="block text-sm font-medium text-foreground"
+                  class="block font-mono text-xs uppercase tracking-wide text-muted-foreground"
                 >
                   Priority (optional)
                 </label>
@@ -197,7 +209,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
                   id="add-item-priority"
                   value={priority()}
                   onChange={(e) => setPriority(e.currentTarget.value)}
-                  class="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 bg-background text-foreground"
+                  class="w-full"
                 >
                   <option value="">Unset</option>
                   <option value="1">1 — Highest</option>
@@ -239,7 +251,7 @@ export function AddItemDialog(props: AddItemDialogProps) {
                 </Button>
                 <Button
                   type="submit"
-                  class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                  class="flex-1"
                   disabled={props.submitting || !title().trim()}
                 >
                   {props.submitting ? "Adding..." : "Add Item"}
