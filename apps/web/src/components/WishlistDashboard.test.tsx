@@ -346,7 +346,7 @@ describe("WishlistDashboard", () => {
     it("should render header with user name", () => {
       render(() => <WishlistDashboard user={mockUser} />);
       expect(screen.getByText("Corvus Wishlist")).toBeInTheDocument();
-      expect(screen.getByText(/Welcome back, John Doe!/)).toBeInTheDocument();
+      expect(screen.getByText(/Welcome back, John Doe/)).toBeInTheDocument();
     });
 
     it("should render Profile link", () => {

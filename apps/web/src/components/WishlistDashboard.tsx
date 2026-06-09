@@ -10,6 +10,7 @@ import type { Accessor } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 import { Button } from "@repo/ui-components/button";
 import { ThemeToggle } from "@repo/ui-components/theme-toggle";
+import { PaperBackground } from "@repo/ui-components/paper-background";
 import {
   Card,
   CardContent,
@@ -686,17 +687,17 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
   };
 
   return (
-    <div class="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
-      {/* Header */}
-      <header class="bg-card/80 backdrop-blur-sm shadow-lg border-b border-border">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-center py-6">
+    <div class="relative min-h-screen">
+      <PaperBackground />
+      <header class="relative border-b border-border">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between py-8">
             <div>
-              <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 class="font-display text-3xl font-semibold tracking-tight text-foreground">
                 Corvus Wishlist
               </h1>
-              <p class="text-sm text-muted-foreground mt-1">
-                Welcome back, {props.user.name}!
+              <p class="mt-1 font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                Welcome back, {props.user.name}
               </p>
             </div>
             <div class="flex items-center gap-3">
@@ -706,18 +707,9 @@ export function WishlistDashboard(props: WishlistDashboardProps) {
                 resolvedTheme={theme.resolvedTheme}
               />
               <A href="/profile">
-                <Button
-                  variant="ghost"
-                  class="text-foreground hover:text-primary hover:bg-accent transition-colors duration-200"
-                >
-                  Profile
-                </Button>
+                <Button variant="link">Profile</Button>
               </A>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                class="border-border text-foreground hover:bg-accent transition-colors duration-200"
-              >
+              <Button variant="outline" onClick={handleLogout}>
                 Sign Out
               </Button>
             </div>
