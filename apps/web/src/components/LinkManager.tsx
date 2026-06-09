@@ -42,7 +42,7 @@ export function LinkManager(props: LinkManagerProps) {
   return (
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <label class="block text-sm font-medium text-foreground">
+        <label class="block font-mono text-xs uppercase tracking-wide text-muted-foreground">
           Links (optional)
         </label>
         <div class="flex gap-2">
@@ -51,7 +51,8 @@ export function LinkManager(props: LinkManagerProps) {
               type="button"
               variant="ghost"
               onClick={props.onRemoveAllLinks}
-              class="text-xs px-2 py-1 text-muted-foreground hover:text-destructive"
+              aria-label="Remove all links"
+              class="font-mono text-xs uppercase tracking-wide text-muted-foreground hover:text-destructive px-2 py-1"
             >
               Remove All
             </Button>
@@ -60,9 +61,22 @@ export function LinkManager(props: LinkManagerProps) {
             type="button"
             variant="outline"
             onClick={props.onAddLink}
-            class="text-sm px-3 py-1 border-border text-foreground hover:bg-muted"
+            aria-label="Add link"
+            class="flex items-center gap-1.5 text-sm px-3 py-1"
           >
-            + Add Link
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              class="h-3.5 w-3.5"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Add Link
           </Button>
         </div>
       </div>
@@ -71,8 +85,10 @@ export function LinkManager(props: LinkManagerProps) {
         when={hasVisibleLinks()}
         fallback={
           <div class="text-center py-8 text-muted-foreground">
-            <p class="text-sm">{props.emptyMessage || "No links added yet"}</p>
-            <p class="text-xs mt-1">
+            <p class="font-serif text-sm">
+              {props.emptyMessage || "No links added yet"}
+            </p>
+            <p class="font-mono text-xs mt-1">
               {props.emptySubMessage ||
                 "You can add links now or later after creating the item"}
             </p>
@@ -82,7 +98,7 @@ export function LinkManager(props: LinkManagerProps) {
         <div class="space-y-3">
           <Index each={visibleLinks()}>
             {(visibleLink, index) => (
-              <div class="border border-border bg-muted/30 rounded-lg p-4 space-y-3">
+              <div class="border border-border bg-accent/20 rounded-sm p-4 space-y-3">
                 <div class="flex items-center justify-end">
                   <Button
                     type="button"
@@ -90,9 +106,21 @@ export function LinkManager(props: LinkManagerProps) {
                     onClick={() =>
                       props.onRemoveLink(visibleLink().originalIndex)
                     }
-                    class="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs p-1"
+                    aria-label="Remove link"
+                    class="text-destructive hover:text-destructive hover:bg-destructive/10 p-1"
                   >
-                    Remove
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                      class="h-4 w-4"
+                    >
+                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6" />
+                    </svg>
                   </Button>
                 </div>
 
@@ -107,12 +135,12 @@ export function LinkManager(props: LinkManagerProps) {
                     )
                   }
                   placeholder="Enter website URL"
-                  class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  class="w-full"
                   required
                 />
                 <Show when={props.duplicateWarnings?.[index]}>
                   {(title) => (
-                    <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    <p class="font-mono text-xs text-amber-600 dark:text-amber-400 mt-1">
                       This URL is already saved under &ldquo;{title()}&rdquo;.
                       You may still save it as a duplicate.
                     </p>
@@ -129,7 +157,7 @@ export function LinkManager(props: LinkManagerProps) {
                     )
                   }
                   placeholder="Link description (optional)"
-                  class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  class="w-full"
                 />
               </div>
             )}

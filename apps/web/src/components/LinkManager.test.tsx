@@ -113,7 +113,7 @@ describe("LinkManager", () => {
   it("should call onAddLink when 'Add Link' button is clicked", () => {
     renderLinkManager();
 
-    const addButton = screen.getByText("+ Add Link");
+    const addButton = screen.getByRole("button", { name: "Add link" });
     fireEvent.click(addButton);
 
     expect(mockOnAddLink).toHaveBeenCalledTimes(1);
@@ -140,8 +140,10 @@ describe("LinkManager", () => {
 
     renderLinkManager({ links: mockLinks });
 
-    // getAllByText guarantees at least one element exists (throws otherwise)
-    const removeButtons = screen.getAllByText("Remove");
+    // getAllByRole guarantees at least one element exists (throws otherwise)
+    const removeButtons = screen.getAllByRole("button", {
+      name: "Remove link",
+    });
     fireEvent.click(removeButtons[0]!);
 
     expect(mockOnRemoveLink).toHaveBeenCalledWith(0);
@@ -199,7 +201,9 @@ describe("LinkManager", () => {
     renderLinkManager({ links: mockLinks });
 
     // Should only render one link (the non-deleted one)
-    const removeButtons = screen.queryAllByText("Remove");
+    const removeButtons = screen.queryAllByRole("button", {
+      name: "Remove link",
+    });
     expect(removeButtons).toHaveLength(1);
   });
 
@@ -271,7 +275,9 @@ describe("LinkManager", () => {
 
     renderLinkManager({ links: mockLinks });
 
-    const removeButtons = screen.getAllByText("Remove");
+    const removeButtons = screen.getAllByRole("button", {
+      name: "Remove link",
+    });
     expect(removeButtons).toHaveLength(3);
   });
 
@@ -279,7 +285,9 @@ describe("LinkManager", () => {
     renderLinkManager();
 
     expect(screen.getByText("Links (optional)")).toBeInTheDocument();
-    expect(screen.getByText("+ Add Link")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add link" }),
+    ).toBeInTheDocument();
   });
 
   it("should have URL input with type='url'", () => {
