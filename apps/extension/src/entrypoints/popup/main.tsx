@@ -1,6 +1,9 @@
 import { render } from "solid-js/web";
 import { createSignal, Show, Switch, Match } from "solid-js";
 import "@repo/ui-components/styles";
+import "@fontsource-variable/fraunces";
+import "@fontsource-variable/newsreader";
+import "@fontsource-variable/spline-sans-mono";
 import { Button } from "@repo/ui-components/button";
 import { ThemeProvider } from "../../lib/theme/context";
 import { AddToWishlist } from "../../components/AddToWishlist";

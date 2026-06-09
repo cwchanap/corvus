@@ -6,6 +6,9 @@ import { AuthProvider } from "./lib/auth/context";
 import { GraphQLProvider } from "./lib/graphql/provider";
 import "./app.css";
 import "@repo/ui-components/styles";
+import "@fontsource-variable/fraunces";
+import "@fontsource-variable/newsreader";
+import "@fontsource-variable/spline-sans-mono";
 
 // Suppress ResizeObserver loop warnings
 if (typeof window !== "undefined") {

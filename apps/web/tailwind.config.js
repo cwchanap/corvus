@@ -47,6 +47,17 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        display: ['"Fraunces Variable"', "Fraunces", "Georgia", "serif"],
+        serif: ['"Newsreader Variable"', "Newsreader", "Georgia", "serif"],
+        mono: [
+          '"Spline Sans Mono Variable"',
+          '"Spline Sans Mono"',
+          "ui-monospace",
+          "monospace",
+        ],
+        sans: ['"Newsreader Variable"', "Newsreader", "Georgia", "serif"],
+      },
     },
   },
   plugins: [],
