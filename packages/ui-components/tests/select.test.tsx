@@ -38,7 +38,7 @@ describe("Select", () => {
   it("applies base styling classes", () => {
     const { container } = render(() => <Select />);
     const select = container.querySelector("select")!;
-    expect(select.className).toContain("rounded-md");
+    expect(select.className).toContain("rounded-sm");
     expect(select.className).toContain("border");
   });
 
