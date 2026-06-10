@@ -100,23 +100,23 @@ function SortableWishlistItem(props: {
       }`}
     >
       <div class="flex items-start justify-between gap-4">
-        <button
-          type="button"
-          onClick={handleClick}
-          class="flex-1 rounded-sm border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <div class="flex items-start gap-3">
-            <Show when={props.isSelectionMode}>
-              <input
-                type="checkbox"
-                checked={props.isSelected}
-                onChange={handleCheckboxChange}
-                onClick={(e) => e.stopPropagation()}
-                aria-label={`Select ${props.item.title}`}
-                class="mt-1.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded-none border border-input accent-[hsl(var(--primary))]"
-              />
-            </Show>
+        <div class="flex items-start gap-3 flex-1">
+          <Show when={props.isSelectionMode}>
+            <input
+              type="checkbox"
+              checked={props.isSelected}
+              onChange={handleCheckboxChange}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Select ${props.item.title}`}
+              class="mt-1.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded-none border border-input accent-[hsl(var(--primary))]"
+            />
+          </Show>
 
+          <button
+            type="button"
+            onClick={handleClick}
+            class="flex-1 rounded-sm border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
             <div class="flex flex-1 flex-col gap-1.5">
               <div class="flex flex-wrap items-center gap-2">
                 <h3 class="font-serif text-lg font-medium text-foreground transition-colors group-hover:text-primary">
@@ -151,8 +151,8 @@ function SortableWishlistItem(props: {
                 {itemLinksCount() !== 1 ? "s" : ""}
               </div>
             </div>
-          </div>
-        </button>
+          </button>
+        </div>
 
         <Show when={!props.isSelectionMode}>
           <div class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">

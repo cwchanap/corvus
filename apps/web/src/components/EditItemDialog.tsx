@@ -85,14 +85,14 @@ export function EditItemDialog(props: EditItemDialogProps) {
     }
   });
 
-  const handleSubmit = (e: Event) => {
+  const handleSubmit = async (e: Event) => {
     e.preventDefault();
 
     if (!props.item) return;
 
     const parsedPriority = priority() ? parseInt(priority(), 10) : undefined;
 
-    props.onSubmit({
+    await props.onSubmit({
       id: props.item.id,
       title: title().trim(),
       description: description().trim() || undefined,
