@@ -155,7 +155,7 @@ function SortableWishlistItem(props: {
         </button>
 
         <Show when={!props.isSelectionMode}>
-          <div class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <div class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
             <button
               onClick={() => props.onEdit(props.item)}
               class="rounded-sm p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
