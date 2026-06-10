@@ -44,6 +44,7 @@ const darkTheme = {
     "--border": "30 8% 22%",
     "--input": "30 8% 26%",
     "--ring": "14 65% 52%",
+    "--radius": "0.125rem",
 } as const;
 
 export type ThemeTokensMode = "light" | "dark";
