@@ -44,7 +44,7 @@ export default {
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
-        sm: "0px",
+        sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
         display: ['"Fraunces Variable"', "Fraunces", "Georgia", "serif"],
@@ -55,6 +55,9 @@ export default {
           "ui-monospace",
           "monospace",
         ],
+        // Intentional: "sans" maps to a serif font (Newsreader) for the
+        // archival catalogue aesthetic. The app body uses serif typography
+        // throughout — this is not a mistake.
         sans: ['"Newsreader Variable"', "Newsreader", "Georgia", "serif"],
       },
     },
