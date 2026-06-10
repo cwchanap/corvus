@@ -254,7 +254,9 @@ export function WishlistView(props: WishlistViewProps) {
                                   variant="secondary"
                                   class="text-xs"
                                   style={{
-                                    "background-color": category?.color + "20",
+                                    "background-color": category?.color
+                                      ? category.color + "20"
+                                      : undefined,
                                     color: category?.color ?? undefined,
                                   }}
                                 >
