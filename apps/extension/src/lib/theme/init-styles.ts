@@ -1,59 +1,60 @@
 // Design token values shared with the UI package. We reuse these so the
 // extension can update CSS variables when the resolved theme changes.
+// Keep in sync with packages/ui-components/src/styles.css
 const lightTheme = {
-  "--background": "0 0% 100%",
-  "--foreground": "222.2 84% 4.9%",
-  "--primary": "210 40% 98%",
-  "--primary-foreground": "222.2 47.4% 11.2%",
-  "--secondary": "210 40% 96%",
-  "--secondary-foreground": "222.2 47.4% 11.2%",
-  "--accent": "210 40% 96%",
-  "--accent-foreground": "222.2 47.4% 11.2%",
-  "--destructive": "0 84.2% 60.2%",
-  "--destructive-foreground": "210 40% 98%",
-  "--muted": "210 40% 96%",
-  "--muted-foreground": "215.4 16.3% 46.9%",
-  "--card": "0 0% 100%",
-  "--card-foreground": "222.2 84% 4.9%",
-  "--popover": "0 0% 100%",
-  "--popover-foreground": "222.2 84% 4.9%",
-  "--border": "214.3 31.8% 91.4%",
-  "--input": "214.3 31.8% 91.4%",
-  "--ring": "222.2 84% 4.9%",
-  "--radius": "0.5rem",
+    "--background": "40 33% 94%",
+    "--foreground": "30 10% 12%",
+    "--primary": "14 60% 32%",
+    "--primary-foreground": "42 44% 97%",
+    "--secondary": "38 22% 88%",
+    "--secondary-foreground": "30 10% 18%",
+    "--accent": "38 26% 86%",
+    "--accent-foreground": "30 10% 14%",
+    "--destructive": "4 56% 38%",
+    "--destructive-foreground": "42 44% 97%",
+    "--muted": "38 22% 90%",
+    "--muted-foreground": "33 10% 40%",
+    "--card": "42 44% 97%",
+    "--card-foreground": "30 10% 12%",
+    "--popover": "42 44% 97%",
+    "--popover-foreground": "30 10% 12%",
+    "--border": "36 18% 82%",
+    "--input": "36 18% 78%",
+    "--ring": "14 60% 32%",
+    "--radius": "0.125rem",
 } as const;
 
 const darkTheme = {
-  "--background": "222.2 84% 4.9%",
-  "--foreground": "210 40% 98%",
-  "--primary": "222.2 47.4% 11.2%",
-  "--primary-foreground": "210 40% 98%",
-  "--secondary": "217.2 32.6% 17.5%",
-  "--secondary-foreground": "210 40% 98%",
-  "--accent": "217.2 32.6% 17.5%",
-  "--accent-foreground": "210 40% 98%",
-  "--destructive": "0 62.8% 30.6%",
-  "--destructive-foreground": "210 40% 98%",
-  "--muted": "217.2 32.6% 17.5%",
-  "--muted-foreground": "215 20.2% 65.1%",
-  "--card": "222.2 84% 4.9%",
-  "--card-foreground": "210 40% 98%",
-  "--popover": "222.2 84% 4.9%",
-  "--popover-foreground": "210 40% 98%",
-  "--border": "217.2 32.6% 17.5%",
-  "--input": "217.2 32.6% 17.5%",
-  "--ring": "212.7 26.8% 83.9%",
+    "--background": "30 12% 8%",
+    "--foreground": "40 30% 90%",
+    "--primary": "14 65% 52%",
+    "--primary-foreground": "30 12% 8%",
+    "--secondary": "30 8% 18%",
+    "--secondary-foreground": "40 30% 90%",
+    "--accent": "30 8% 20%",
+    "--accent-foreground": "40 30% 92%",
+    "--destructive": "4 60% 50%",
+    "--destructive-foreground": "40 30% 92%",
+    "--muted": "30 8% 16%",
+    "--muted-foreground": "36 12% 60%",
+    "--card": "30 10% 11%",
+    "--card-foreground": "40 30% 90%",
+    "--popover": "30 10% 11%",
+    "--popover-foreground": "40 30% 90%",
+    "--border": "30 8% 22%",
+    "--input": "30 8% 26%",
+    "--ring": "14 65% 52%",
 } as const;
 
 export type ThemeTokensMode = "light" | "dark";
 
 export const applyThemeVariables = (mode: ThemeTokensMode) => {
-  const root = document.documentElement;
-  const values = mode === "dark" ? darkTheme : lightTheme;
+    const root = document.documentElement;
+    const values = mode === "dark" ? darkTheme : lightTheme;
 
-  Object.entries(values).forEach(([property, value]) => {
-    root.style.setProperty(property, value);
-  });
+    Object.entries(values).forEach(([property, value]) => {
+        root.style.setProperty(property, value);
+    });
 };
 
 // Initialize CSS variables so the popup has a consistent baseline before
