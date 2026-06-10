@@ -91,6 +91,13 @@ describe("applyThemeVariables", () => {
                 document.documentElement.style.getPropertyValue("--border"),
             ).toBe("30 8% 22%");
         });
+
+        it("sets radius", () => {
+            applyThemeVariables("dark");
+            expect(
+                document.documentElement.style.getPropertyValue("--radius"),
+            ).toBe("0.125rem");
+        });
     });
 
     it("overwrites previous theme variables when switching", () => {
@@ -127,5 +134,6 @@ describe("applyThemeVariables", () => {
         expect(style.getPropertyValue("--popover")).toBe("30 10% 11%");
         expect(style.getPropertyValue("--ring")).toBe("14 65% 52%");
         expect(style.getPropertyValue("--input")).toBe("30 8% 26%");
+        expect(style.getPropertyValue("--radius")).toBe("0.125rem");
     });
 });
