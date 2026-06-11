@@ -161,7 +161,7 @@ export function CategoryManager(props: CategoryManagerProps) {
                     {(category) => {
                       const itemCount = getItemCount(category.id);
                       return (
-                        <div class="flex items-center justify-between p-2 border rounded">
+                        <div class="flex items-center justify-between p-2 border rounded-sm">
                           <div class="flex items-center gap-2">
                             <div
                               class="w-3 h-3 rounded-full"
