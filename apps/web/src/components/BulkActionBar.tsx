@@ -104,7 +104,7 @@ export function BulkActionBar(props: BulkActionBarProps) {
   return (
     <>
       <Show when={props.selectedCount() > 0}>
-        <div class="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-sm">
+        <div class="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex flex-col sm:flex-row items-center gap-4 justify-between">
               {/* Left: Selection Info */}
@@ -149,7 +149,7 @@ export function BulkActionBar(props: BulkActionBarProps) {
                     Move to...
                   </Button>
                   <Show when={showMoveDropdown()}>
-                    <div class="absolute bottom-full mb-2 right-0 w-56 bg-card border border-border rounded-sm shadow-sm z-50 max-h-64 overflow-y-auto">
+                    <div class="absolute bottom-full mb-2 right-0 w-56 bg-card border border-border rounded-sm z-50 max-h-64 overflow-y-auto">
                       <div class="py-1">
                         <button
                           onClick={() => handleMoveClick(null)}

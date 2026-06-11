@@ -249,7 +249,7 @@ describe("CategoryManager", () => {
     render(() => <CategoryManager />);
     const input = screen.getByPlaceholderText("Category name...");
     fireEvent.input(input, { target: { value: "New Category" } });
-    fireEvent.keyPress(input, { key: "Enter", code: "Enter", charCode: 13 });
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
     await waitFor(() => {
       expect(mockCreateCategory).toHaveBeenCalled();
