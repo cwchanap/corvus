@@ -331,7 +331,7 @@ export function AddToWishlist(props: AddToWishlistProps) {
 
       <Show when={isNewItemModalOpen()}>
         <div
-          class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 px-4"
           onClick={() => {
             if (!isCreatingNewItem()) {
               closeNewItemModal();
