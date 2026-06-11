@@ -140,7 +140,7 @@ export function LinkManager(props: LinkManagerProps) {
                 />
                 <Show when={props.duplicateWarnings?.[index]}>
                   {(title) => (
-                    <p class="font-mono text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    <p class="font-mono text-xs text-primary mt-1">
                       This URL is already saved under &ldquo;{title()}&rdquo;.
                       You may still save it as a duplicate.
                     </p>
