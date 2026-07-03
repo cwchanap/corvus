@@ -1,0 +1,14 @@
+# gitleaks configuration
+# Uses the default rule set bundled with gitleaks, plus allowlist for known
+# false positives in this repo. Run: `gitleaks git --log-opts="--all" .`
+
+[allowlist]
+description = "Repo-level allowlist for known-safe values"
+paths = [
+    # Browser extension manifest ships a PUBLIC RSA key by design
+    '''apps/extension/wxt\.config\.ts''',
+]
+regexes = [
+    # Test fixtures use obviously-fake passwords
+    '''StrongPass123''',
+]

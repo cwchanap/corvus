@@ -47,3 +47,6 @@ yarn-error.log*
 
 # Claude
 .claude/settings.local.json
+
+# Never commit seeded credentials or local-only admin routes
+**/admin/seed-test-user.ts
