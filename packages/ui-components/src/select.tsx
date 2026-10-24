@@ -1,8 +1,7 @@
-import { splitProps, JSX, For } from "solid-js";
+import { splitProps, For, type JSX } from "solid-js";
 import { cn } from "./utils";
 
-export interface SelectProps
-  extends JSX.SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps extends JSX.SelectHTMLAttributes<HTMLSelectElement> {
   class?: string;
   options?: Array<{ value: string; label: string }>;
 }
