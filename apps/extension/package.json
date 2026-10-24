@@ -17,25 +17,25 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
-    "@fontsource-variable/fraunces": "^5.2.9",
-    "@fontsource-variable/newsreader": "^5.2.10",
-    "@fontsource-variable/spline-sans-mono": "^5.2.8",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/newsreader": "^5.3.0",
+    "@fontsource-variable/spline-sans-mono": "^5.3.0",
     "@repo/common": "workspace:*",
     "@repo/ui-components": "workspace:*",
-    "solid-js": "^1.8.11",
-    "wxt": "^0.19.9"
+    "solid-js": "1.9.7",
+    "wxt": "^0.21.4"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/chrome": "^0.1.1",
+    "@types/chrome": "^0.3.5",
     "@types/node": "^22.15.3",
-    "autoprefixer": "^10.4.17",
+    "autoprefixer": "^10.6.1",
     "eslint": "^9.31.0",
-    "postcss": "^8.4.35",
+    "postcss": "^8.5.30",
     "tailwindcss": "^3.4.1",
     "typescript": "5.8.2",
-    "vite-plugin-solid": "^2.8.2",
+    "vite-plugin-solid": "^2.11.14",
     "vitest": "^3.2.4"
   }
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@solidjs/testing-library";
-import { JSX } from "solid-js";
+import { type JSX } from "solid-js";
 import { AuthProvider, useAuth } from "./context";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 
