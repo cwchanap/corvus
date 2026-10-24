@@ -5,8 +5,8 @@ import {
   createEffect,
   onMount,
   onCleanup,
-  JSX,
 } from "solid-js";
+import type { JSX } from "solid-js";
 import { applyThemeVariables } from "./init-styles";
 
 type Theme = "light" | "dark" | "system";
@@ -65,7 +65,7 @@ export function ThemeProvider(props: ThemeProviderProps) {
     // Load saved theme
     chrome.storage.local.get(["theme"], (result) => {
       if (result.theme) {
-        setTheme(result.theme);
+        setTheme(result.theme as Theme);
       }
     });
 

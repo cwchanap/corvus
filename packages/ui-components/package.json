@@ -24,7 +24,7 @@
   "dependencies": {
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
-    "solid-js": "^1.9.17",
+    "solid-js": "1.9.7",
     "tailwind-merge": "^2.2.0"
   },
   "devDependencies": {

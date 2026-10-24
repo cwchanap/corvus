@@ -40,7 +40,7 @@ function parseCssVariables(cssContent: string, selector: ":root" | ".dark") {
     const varRegex = /--([a-z-]+):\s*([^;]+);/g;
     let varMatch;
     while ((varMatch = varRegex.exec(block)) !== null) {
-        vars[`--${varMatch[1]}`] = varMatch[2].trim();
+        vars[`--${varMatch[1]}`] = varMatch[2]!.trim();
     }
     return vars;
 }
@@ -51,11 +51,11 @@ function parseTsThemeVars(tsContent: string, varName: string) {
     const match = regex.exec(tsContent);
     if (!match) return vars;
 
-    const block = match[1];
+    const block = match[1]!;
     const propRegex = /"([^"]+)":\s*"([^"]+)"/g;
     let propMatch;
     while ((propMatch = propRegex.exec(block)) !== null) {
-        vars[propMatch[1]] = propMatch[2];
+        vars[propMatch[1]!] = propMatch[2]!;
     }
     return vars;
 }
