@@ -31,7 +31,7 @@
     "@cloudflare/vite-plugin": "^1.64.0",
     "@cloudflare/workers-types": "^4.20241218.0",
     "@graphql-codegen/cli": "^5.0.3",
-    "@graphql-codegen/typescript": "^4.1.2",
+    "@graphql-codegen/typescript": "^6.1.2",
     "@graphql-codegen/typescript-resolvers": "^4.3.3",
     "@vitest/coverage-v8": "^3.2.4",
     "drizzle-kit": "^0.31.11",
